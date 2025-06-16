@@ -18,21 +18,21 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   onDelete
 }) => {
   return (
-    <div className={`${appointment.color} rounded-lg p-3 border-2 border-dashed relative group`}>
-      <div className="font-medium text-sm">
+    <div className={`${appointment.color} rounded-lg p-3 border-2 border-dashed relative group shadow-sm`}>
+      <div className="font-semibold text-sm text-gray-800">
         {appointment.title}
       </div>
-      <div className="text-xs mt-1">
+      <div className="text-xs mt-1 text-gray-700 font-medium">
         {appointment.client}
       </div>
       {appointment.email && (
-        <div className="text-xs mt-1 flex items-center gap-1">
+        <div className="text-xs mt-1 flex items-center gap-1 text-gray-600">
           <Mail className="h-3 w-3" />
           {appointment.email}
         </div>
       )}
       {appointment.phone && (
-        <div className="text-xs mt-1 flex items-center gap-1">
+        <div className="text-xs mt-1 flex items-center gap-1 text-gray-600">
           <Phone className="h-3 w-3" />
           {appointment.phone}
         </div>
@@ -41,7 +41,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 w-6 p-0"
+          className="h-6 w-6 p-0 bg-white/80 hover:bg-white"
           onClick={() => onEdit(appointment)}
         >
           <Edit className="h-3 w-3" />
@@ -49,7 +49,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+          className="h-6 w-6 p-0 text-red-600 hover:text-red-700 bg-white/80 hover:bg-white"
           onClick={() => onDelete(appointment.id)}
         >
           <Trash2 className="h-3 w-3" />

@@ -24,7 +24,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 }) => {
   return (
     <div className="relative">
-      <div className="flex items-center text-xs text-gray-400 mb-1">
+      <div className="flex items-center text-xs font-medium text-gray-600 mb-2 bg-gray-100 px-2 py-1 rounded">
         {time}
       </div>
       {appointment ? (
@@ -37,7 +37,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       ) : (
         <Button
           variant="ghost"
-          className="w-full h-12 border-2 border-dashed border-gray-200 hover:border-gray-300 text-gray-400 hover:text-gray-600"
+          className="w-full h-12 border-2 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-gray-500 hover:text-gray-700 transition-all duration-200"
           onClick={() => onAddAppointment(employee.id, time)}
         >
           <Plus className="h-4 w-4" />

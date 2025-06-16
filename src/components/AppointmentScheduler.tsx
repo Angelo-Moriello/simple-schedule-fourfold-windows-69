@@ -6,12 +6,24 @@ import FullCalendar from './FullCalendar';
 import AppointmentForm from './AppointmentForm';
 import EmployeeColumn from './EmployeeColumn';
 import DateNavigation from './DateNavigation';
+import EmployeeManager from './EmployeeManager';
 
 const defaultEmployees: Employee[] = [
   { id: 1, name: 'Marco Rossi', color: 'bg-blue-100 border-blue-300' },
   { id: 2, name: 'Anna Verdi', color: 'bg-green-100 border-green-300' },
   { id: 3, name: 'Luca Bianchi', color: 'bg-yellow-100 border-yellow-300' },
   { id: 4, name: 'Sara Neri', color: 'bg-purple-100 border-purple-300' }
+];
+
+const employeeColors = [
+  'bg-blue-100 border-blue-300',
+  'bg-green-100 border-green-300',
+  'bg-yellow-100 border-yellow-300',
+  'bg-purple-100 border-purple-300',
+  'bg-pink-100 border-pink-300',
+  'bg-indigo-100 border-indigo-300',
+  'bg-orange-100 border-orange-300',
+  'bg-teal-100 border-teal-300'
 ];
 
 const timeSlots = [
@@ -92,6 +104,84 @@ const AppointmentScheduler = () => {
 
   const handleFormDataChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddEmployee = (name: string) => {
+    const newId = Math.max(...employees.map(e => e.id), 0) + 1;
+    const colorIndex = employees.length % employeeColors.length;
+    const newEmployee: Employee = {
+      id: newId,
+      name,
+      color: employeeColors[colorIndex]
+    };
+    setEmployees(prev => [...prev, newEmployee]);
+    toast({
+      title: "Dipendente aggiunto",
+      description: `${name} è stato aggiunto con successo.`,
+    });
+  };
+
+  const handleRemoveEmployee = (employeeId: number) => {
+    if (employees.length <= 1) {
+      toast({
+        title: "Errore",
+        description: "Deve esserci almeno un dipendente.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+    setAppointments(prev => prev.filter(apt => apt.employeeId !== employeeId));
+    toast({
+      title: "Dipendente rimosso",
+      description: "Il dipendente e tutti i suoi appuntamenti sono stati rimossi.",
+    });
+  };
+
+  const handleBackupData = () => {
+    const data = {
+      appointments,
+      employees,
+      exportDate: new Date().toISOString(),
+      version: '1.0'
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `agenda-backup-${format(new Date(), 'yyyy-MM-dd-HH-mm')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Backup creato",
+      description: "I dati sono stati salvati con successo.",
+    });
+  };
+
+  const handleRestoreData = (data: any) => {
+    try {
+      if (data.appointments && data.employees) {
+        setAppointments(data.appointments);
+        setEmployees(data.employees);
+        toast({
+          title: "Backup ripristinato",
+          description: "I dati sono stati ripristinati con successo.",
+        });
+      } else {
+        throw new Error('Formato file non valido');
+      }
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: "Impossibile ripristinare il backup. Verifica il formato del file.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleAddAppointment = (employeeId: number, time: string) => {
@@ -195,15 +285,24 @@ const AppointmentScheduler = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-        <DateNavigation
-          currentDate={currentDate}
-          onPrevDay={handlePrevDay}
-          onNextDay={handleNextDay}
-          onToday={handleToday}
-          onOpenCalendar={() => setIsCalendarOpen(true)}
-        />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <DateNavigation
+            currentDate={currentDate}
+            onPrevDay={handlePrevDay}
+            onNextDay={handleNextDay}
+            onToday={handleToday}
+            onOpenCalendar={() => setIsCalendarOpen(true)}
+          />
+          <EmployeeManager
+            employees={employees}
+            onAddEmployee={handleAddEmployee}
+            onRemoveEmployee={handleRemoveEmployee}
+            onBackupData={handleBackupData}
+            onRestoreData={handleRestoreData}
+          />
+        </div>
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {employees.map(employee => (
             <EmployeeColumn
               key={employee.id}
