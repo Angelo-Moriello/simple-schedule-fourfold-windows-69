@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,11 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Plus, Edit, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Edit, Trash2, Calendar } from 'lucide-react';
 import { format, addDays, subDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Appointment, Employee } from '@/types/appointment';
 import { toast } from '@/hooks/use-toast';
+import FullCalendar from './FullCalendar';
 
 const employees: Employee[] = [
   { id: 1, name: 'Marco Rossi', color: 'bg-blue-100 border-blue-300' },
@@ -30,6 +30,7 @@ const AppointmentScheduler = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -152,6 +153,10 @@ const AppointmentScheduler = () => {
     resetForm();
   };
 
+  const handleCalendarDateSelect = (date: Date) => {
+    setCurrentDate(date);
+  };
+
   const getAppointmentsForEmployee = (employeeId: number) => {
     return appointments.filter(apt => 
       apt.employeeId === employeeId && apt.date === dateKey
@@ -181,6 +186,15 @@ const AppointmentScheduler = () => {
               </Button>
               <Button variant="outline" size="sm" onClick={handleNextDay}>
                 <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsCalendarOpen(true)}
+                className="ml-2"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Calendario
               </Button>
             </div>
             <h1 className="text-2xl font-semibold text-gray-800">
@@ -373,6 +387,15 @@ const AppointmentScheduler = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Full Calendar Dialog */}
+        <FullCalendar
+          isOpen={isCalendarOpen}
+          onClose={() => setIsCalendarOpen(false)}
+          appointments={appointments}
+          employees={employees}
+          onDateSelect={handleCalendarDateSelect}
+        />
       </div>
     </div>
   );
