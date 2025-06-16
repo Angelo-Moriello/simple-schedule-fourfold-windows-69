@@ -8,6 +8,9 @@ export interface Appointment {
   client: string;
   duration: number; // in minutes
   notes?: string;
+  email?: string;
+  phone?: string;
+  color: string; // colore per l'etichetta
 }
 
 export interface Employee {

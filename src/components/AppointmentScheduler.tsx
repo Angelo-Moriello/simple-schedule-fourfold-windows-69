@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, addDays, subDays } from 'date-fns';
 import { Appointment, Employee } from '@/types/appointment';
@@ -8,7 +7,7 @@ import AppointmentForm from './AppointmentForm';
 import EmployeeColumn from './EmployeeColumn';
 import DateNavigation from './DateNavigation';
 
-const employees: Employee[] = [
+const defaultEmployees: Employee[] = [
   { id: 1, name: 'Marco Rossi', color: 'bg-blue-100 border-blue-300' },
   { id: 2, name: 'Anna Verdi', color: 'bg-green-100 border-green-300' },
   { id: 3, name: 'Luca Bianchi', color: 'bg-yellow-100 border-yellow-300' },
@@ -18,12 +17,13 @@ const employees: Employee[] = [
 const timeSlots = [
   '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
   '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
-  '16:00', '16:30', '17:00', '17:30'
+  '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'
 ];
 
 const AppointmentScheduler = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>(defaultEmployees);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
@@ -33,23 +33,35 @@ const AppointmentScheduler = () => {
     title: '',
     client: '',
     duration: '30',
-    notes: ''
+    notes: '',
+    email: '',
+    phone: '',
+    color: 'bg-blue-100 border-blue-300 text-blue-800'
   });
 
   const dateKey = format(currentDate, 'yyyy-MM-dd');
 
-  // Load appointments from localStorage
+  // Load data from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('appointments');
-    if (saved) {
-      setAppointments(JSON.parse(saved));
+    const savedAppointments = localStorage.getItem('appointments');
+    const savedEmployees = localStorage.getItem('employees');
+    
+    if (savedAppointments) {
+      setAppointments(JSON.parse(savedAppointments));
+    }
+    if (savedEmployees) {
+      setEmployees(JSON.parse(savedEmployees));
     }
   }, []);
 
-  // Save appointments to localStorage
+  // Save data to localStorage
   useEffect(() => {
     localStorage.setItem('appointments', JSON.stringify(appointments));
   }, [appointments]);
+
+  useEffect(() => {
+    localStorage.setItem('employees', JSON.stringify(employees));
+  }, [employees]);
 
   const handlePrevDay = () => {
     setCurrentDate(prev => subDays(prev, 1));
@@ -70,7 +82,10 @@ const AppointmentScheduler = () => {
       title: '',
       client: '',
       duration: '30',
-      notes: ''
+      notes: '',
+      email: '',
+      phone: '',
+      color: 'bg-blue-100 border-blue-300 text-blue-800'
     });
     setEditingAppointment(null);
   };
@@ -96,7 +111,10 @@ const AppointmentScheduler = () => {
       title: appointment.title,
       client: appointment.client,
       duration: appointment.duration.toString(),
-      notes: appointment.notes || ''
+      notes: appointment.notes || '',
+      email: appointment.email || '',
+      phone: appointment.phone || '',
+      color: appointment.color
     });
     setIsDialogOpen(true);
   };
@@ -106,6 +124,16 @@ const AppointmentScheduler = () => {
     toast({
       title: "Appuntamento eliminato",
       description: "L'appuntamento è stato rimosso con successo.",
+    });
+  };
+
+  const handleUpdateEmployeeName = (employeeId: number, newName: string) => {
+    setEmployees(prev => prev.map(emp => 
+      emp.id === employeeId ? { ...emp, name: newName } : emp
+    ));
+    toast({
+      title: "Nome dipendente aggiornato",
+      description: `Il nome è stato cambiato in "${newName}".`,
     });
   };
 
@@ -129,7 +157,10 @@ const AppointmentScheduler = () => {
       title: formData.title,
       client: formData.client,
       duration: parseInt(formData.duration),
-      notes: formData.notes
+      notes: formData.notes,
+      email: formData.email,
+      phone: formData.phone,
+      color: formData.color
     };
 
     if (editingAppointment) {
@@ -164,7 +195,6 @@ const AppointmentScheduler = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <DateNavigation
           currentDate={currentDate}
           onPrevDay={handlePrevDay}
@@ -173,7 +203,6 @@ const AppointmentScheduler = () => {
           onOpenCalendar={() => setIsCalendarOpen(true)}
         />
 
-        {/* Calendar Grid */}
         <div className="grid grid-cols-4 gap-4">
           {employees.map(employee => (
             <EmployeeColumn
@@ -185,11 +214,11 @@ const AppointmentScheduler = () => {
               onAddAppointment={handleAddAppointment}
               onEditAppointment={handleEditAppointment}
               onDeleteAppointment={handleDeleteAppointment}
+              onUpdateEmployeeName={handleUpdateEmployeeName}
             />
           ))}
         </div>
 
-        {/* Add/Edit Appointment Dialog */}
         <AppointmentForm
           isOpen={isDialogOpen}
           onClose={handleCloseDialog}
@@ -201,7 +230,6 @@ const AppointmentScheduler = () => {
           timeSlots={timeSlots}
         />
 
-        {/* Full Calendar Dialog */}
         <FullCalendar
           isOpen={isCalendarOpen}
           onClose={() => setIsCalendarOpen(false)}

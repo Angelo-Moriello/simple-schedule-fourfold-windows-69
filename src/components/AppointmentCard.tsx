@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Mail, Phone } from 'lucide-react';
 import { Appointment, Employee } from '@/types/appointment';
 
 interface AppointmentCardProps {
@@ -18,13 +18,25 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   onDelete
 }) => {
   return (
-    <div className={`${employee.color} rounded-lg p-3 border-2 border-dashed relative group`}>
-      <div className="font-medium text-sm text-gray-800">
+    <div className={`${appointment.color} rounded-lg p-3 border-2 border-dashed relative group`}>
+      <div className="font-medium text-sm">
         {appointment.title}
       </div>
-      <div className="text-xs text-gray-600 mt-1">
+      <div className="text-xs mt-1">
         {appointment.client}
       </div>
+      {appointment.email && (
+        <div className="text-xs mt-1 flex items-center gap-1">
+          <Mail className="h-3 w-3" />
+          {appointment.email}
+        </div>
+      )}
+      {appointment.phone && (
+        <div className="text-xs mt-1 flex items-center gap-1">
+          <Phone className="h-3 w-3" />
+          {appointment.phone}
+        </div>
+      )}
       <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
         <Button
           variant="ghost"

@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Appointment, Employee } from '@/types/appointment';
 import TimeSlot from './TimeSlot';
+import EmployeeNameEditor from './EmployeeNameEditor';
 
 interface EmployeeColumnProps {
   employee: Employee;
@@ -12,6 +13,7 @@ interface EmployeeColumnProps {
   onAddAppointment: (employeeId: number, time: string) => void;
   onEditAppointment: (appointment: Appointment) => void;
   onDeleteAppointment: (appointmentId: string) => void;
+  onUpdateEmployeeName: (employeeId: number, newName: string) => void;
 }
 
 const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
@@ -21,14 +23,16 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
   dateKey,
   onAddAppointment,
   onEditAppointment,
-  onDeleteAppointment
+  onDeleteAppointment,
+  onUpdateEmployeeName
 }) => {
   return (
     <Card className="h-fit">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg text-center font-medium text-gray-700">
-          {employee.name}
-        </CardTitle>
+        <EmployeeNameEditor
+          employee={employee}
+          onUpdateName={onUpdateEmployeeName}
+        />
       </CardHeader>
       <CardContent className="space-y-2">
         {timeSlots.map(time => {
