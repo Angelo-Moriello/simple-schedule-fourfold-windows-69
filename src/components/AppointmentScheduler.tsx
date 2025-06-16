@@ -1,17 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Plus, Edit, Trash2, Calendar } from 'lucide-react';
 import { format, addDays, subDays } from 'date-fns';
-import { it } from 'date-fns/locale';
 import { Appointment, Employee } from '@/types/appointment';
 import { toast } from '@/hooks/use-toast';
 import FullCalendar from './FullCalendar';
+import AppointmentForm from './AppointmentForm';
+import EmployeeColumn from './EmployeeColumn';
+import DateNavigation from './DateNavigation';
 
 const employees: Employee[] = [
   { id: 1, name: 'Marco Rossi', color: 'bg-blue-100 border-blue-300' },
@@ -78,6 +73,10 @@ const AppointmentScheduler = () => {
       notes: ''
     });
     setEditingAppointment(null);
+  };
+
+  const handleFormDataChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleAddAppointment = (employeeId: number, time: string) => {
@@ -157,236 +156,50 @@ const AppointmentScheduler = () => {
     setCurrentDate(date);
   };
 
-  const getAppointmentsForEmployee = (employeeId: number) => {
-    return appointments.filter(apt => 
-      apt.employeeId === employeeId && apt.date === dateKey
-    ).sort((a, b) => a.time.localeCompare(b.time));
-  };
-
-  const isTimeSlotOccupied = (employeeId: number, time: string) => {
-    return appointments.some(apt => 
-      apt.employeeId === employeeId && 
-      apt.date === dateKey && 
-      apt.time === time
-    );
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    resetForm();
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={handlePrevDay}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleToday}>
-                Oggi
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleNextDay}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setIsCalendarOpen(true)}
-                className="ml-2"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Calendario
-              </Button>
-            </div>
-            <h1 className="text-2xl font-semibold text-gray-800">
-              {format(currentDate, 'EEEE d MMMM yyyy', { locale: it })}
-            </h1>
-            <div className="w-32"></div>
-          </div>
-        </div>
+        <DateNavigation
+          currentDate={currentDate}
+          onPrevDay={handlePrevDay}
+          onNextDay={handleNextDay}
+          onToday={handleToday}
+          onOpenCalendar={() => setIsCalendarOpen(true)}
+        />
 
         {/* Calendar Grid */}
         <div className="grid grid-cols-4 gap-4">
           {employees.map(employee => (
-            <Card key={employee.id} className="h-fit">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg text-center font-medium text-gray-700">
-                  {employee.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {timeSlots.map(time => {
-                  const appointment = appointments.find(apt => 
-                    apt.employeeId === employee.id && 
-                    apt.date === dateKey && 
-                    apt.time === time
-                  );
-
-                  return (
-                    <div key={time} className="relative">
-                      <div className="flex items-center text-xs text-gray-400 mb-1">
-                        {time}
-                      </div>
-                      {appointment ? (
-                        <div className={`${employee.color} rounded-lg p-3 border-2 border-dashed relative group`}>
-                          <div className="font-medium text-sm text-gray-800">
-                            {appointment.title}
-                          </div>
-                          <div className="text-xs text-gray-600 mt-1">
-                            {appointment.client}
-                          </div>
-                          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={() => handleEditAppointment(appointment)}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                              onClick={() => handleDeleteAppointment(appointment.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          className="w-full h-12 border-2 border-dashed border-gray-200 hover:border-gray-300 text-gray-400 hover:text-gray-600"
-                          onClick={() => handleAddAppointment(employee.id, time)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
+            <EmployeeColumn
+              key={employee.id}
+              employee={employee}
+              appointments={appointments}
+              timeSlots={timeSlots}
+              dateKey={dateKey}
+              onAddAppointment={handleAddAppointment}
+              onEditAppointment={handleEditAppointment}
+              onDeleteAppointment={handleDeleteAppointment}
+            />
           ))}
         </div>
 
         {/* Add/Edit Appointment Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {editingAppointment ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="employee">Dipendente</Label>
-                  <Select
-                    value={formData.employeeId}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, employeeId: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona dipendente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map(employee => (
-                        <SelectItem key={employee.id} value={employee.id.toString()}>
-                          {employee.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="time">Orario</Label>
-                  <Select
-                    value={formData.time}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, time: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona orario" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {timeSlots.map(time => (
-                        <SelectItem key={time} value={time}>
-                          {time}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="title">Titolo Appuntamento</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Es. Consulenza, Riunione..."
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="client">Cliente</Label>
-                <Input
-                  id="client"
-                  value={formData.client}
-                  onChange={(e) => setFormData(prev => ({ ...prev, client: e.target.value }))}
-                  placeholder="Nome del cliente"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="duration">Durata (minuti)</Label>
-                <Select
-                  value={formData.duration}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, duration: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="15">15 minuti</SelectItem>
-                    <SelectItem value="30">30 minuti</SelectItem>
-                    <SelectItem value="45">45 minuti</SelectItem>
-                    <SelectItem value="60">1 ora</SelectItem>
-                    <SelectItem value="90">1.5 ore</SelectItem>
-                    <SelectItem value="120">2 ore</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="notes">Note (opzionale)</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Note aggiuntive..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                >
-                  Annulla
-                </Button>
-                <Button type="submit">
-                  {editingAppointment ? 'Salva Modifiche' : 'Crea Appuntamento'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <AppointmentForm
+          isOpen={isDialogOpen}
+          onClose={handleCloseDialog}
+          onSubmit={handleSubmit}
+          editingAppointment={editingAppointment}
+          formData={formData}
+          onFormDataChange={handleFormDataChange}
+          employees={employees}
+          timeSlots={timeSlots}
+        />
 
         {/* Full Calendar Dialog */}
         <FullCalendar
