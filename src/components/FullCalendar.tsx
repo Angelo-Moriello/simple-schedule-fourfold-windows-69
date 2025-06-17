@@ -82,23 +82,27 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
     const dayAppointments = getAppointmentsForDate(dateKey);
     
     return (
-      <div className="p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
           {employees.map(employee => {
             const employeeAppointments = dayAppointments.filter(apt => apt.employeeId === employee.id);
             return (
-              <Card key={employee.id} className="h-64">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">{employee.name}</CardTitle>
+              <Card key={employee.id} className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-t-lg">
+                  <CardTitle className="text-lg font-semibold text-gray-800">{employee.name}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-1">
-                  {employeeAppointments.map(appointment => (
-                    <div key={appointment.id} className={`${employee.color} p-2 rounded text-xs`}>
-                      <div className="font-medium">{appointment.time}</div>
-                      <div>{appointment.title}</div>
-                      <div className="text-gray-600">{appointment.client}</div>
-                    </div>
-                  ))}
+                <CardContent className="space-y-3 p-4">
+                  {employeeAppointments.length > 0 ? (
+                    employeeAppointments.map(appointment => (
+                      <div key={appointment.id} className="bg-gradient-to-r from-blue-100 to-purple-100 p-3 rounded-lg border-l-4 border-blue-500">
+                        <div className="font-semibold text-gray-800">{appointment.time}</div>
+                        <div className="text-gray-700 font-medium">{appointment.title}</div>
+                        <div className="text-gray-600 text-sm">{appointment.client}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-gray-500 text-center py-8 italic">Nessun appuntamento</div>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -114,8 +118,8 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
     const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
     return (
-      <div className="p-4">
-        <div className="grid grid-cols-7 gap-2">
+      <div className="p-6">
+        <div className="grid grid-cols-7 gap-4">
           {days.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
             const dayAppointments = getAppointmentsForDate(dateKey);
@@ -124,22 +128,25 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
             return (
               <Card 
                 key={dateKey} 
-                className={`h-32 cursor-pointer hover:bg-gray-50 ${isToday ? 'ring-2 ring-blue-500' : ''}`}
+                className={`h-48 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 border-0 bg-white/80 backdrop-blur-sm ${isToday ? 'ring-2 ring-blue-500 bg-blue-50/80' : ''}`}
                 onClick={() => handleDateClick(day)}
               >
-                <CardHeader className="pb-1">
-                  <CardTitle className="text-xs text-center">
+                <CardHeader className="pb-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg">
+                  <CardTitle className="text-sm text-center font-semibold">
                     {format(day, 'EEE d', { locale: it })}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-1">
-                  {dayAppointments.slice(0, 3).map(appointment => (
-                    <div key={appointment.id} className="bg-blue-100 p-1 rounded text-xs truncate">
-                      {appointment.time} - {appointment.title}
+                <CardContent className="space-y-1 p-2">
+                  {dayAppointments.slice(0, 4).map(appointment => (
+                    <div key={appointment.id} className="bg-gradient-to-r from-blue-100 to-purple-100 p-1 rounded text-xs truncate border-l-2 border-blue-400">
+                      <div className="font-medium">{appointment.time}</div>
+                      <div className="text-gray-700">{appointment.title}</div>
                     </div>
                   ))}
-                  {dayAppointments.length > 3 && (
-                    <div className="text-xs text-gray-500">+{dayAppointments.length - 3} altri</div>
+                  {dayAppointments.length > 4 && (
+                    <div className="text-xs text-gray-600 font-medium bg-gray-100 p-1 rounded text-center">
+                      +{dayAppointments.length - 4} altri
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -152,27 +159,30 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
 
   const renderMonthView = () => {
     return (
-      <div className="p-4">
-        <Calendar
-          mode="single"
-          selected={currentDate}
-          onSelect={(date) => date && handleDateClick(date)}
-          className="w-full"
-          locale={it}
-          modifiers={{
-            hasAppointments: (date) => {
-              const dateKey = format(date, 'yyyy-MM-dd');
-              return getAppointmentsForDate(dateKey).length > 0;
-            }
-          }}
-          modifiersStyles={{
-            hasAppointments: { 
-              backgroundColor: '#dbeafe', 
-              color: '#1e40af',
-              fontWeight: 'bold'
-            }
-          }}
-        />
+      <div className="p-6 flex justify-center">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border-0">
+          <Calendar
+            mode="single"
+            selected={currentDate}
+            onSelect={(date) => date && handleDateClick(date)}
+            className="w-full"
+            locale={it}
+            modifiers={{
+              hasAppointments: (date) => {
+                const dateKey = format(date, 'yyyy-MM-dd');
+                return getAppointmentsForDate(dateKey).length > 0;
+              }
+            }}
+            modifiersStyles={{
+              hasAppointments: { 
+                backgroundColor: '#dbeafe', 
+                color: '#1e40af',
+                fontWeight: 'bold',
+                borderRadius: '8px'
+              }
+            }}
+          />
+        </div>
       </div>
     );
   };
@@ -184,8 +194,8 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
     });
 
     return (
-      <div className="p-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      <div className="p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
           {months.map(month => {
             const monthKey = format(month, 'yyyy-MM');
             const monthAppointments = appointments.filter(apt => apt.date.startsWith(monthKey));
@@ -193,20 +203,21 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
             return (
               <Card 
                 key={monthKey} 
-                className="h-24 cursor-pointer hover:bg-gray-50"
+                className="h-32 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 border-0 bg-white/80 backdrop-blur-sm"
                 onClick={() => {
                   setCurrentDate(month);
                   setView('month');
                 }}
               >
-                <CardHeader className="pb-1">
-                  <CardTitle className="text-sm text-center">
+                <CardHeader className="pb-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg">
+                  <CardTitle className="text-lg text-center font-semibold text-gray-800">
                     {format(month, 'MMMM', { locale: it })}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-center text-xs text-gray-600">
-                    {monthAppointments.length} appuntamenti
+                <CardContent className="flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{monthAppointments.length}</div>
+                    <div className="text-xs text-gray-600">appuntamenti</div>
                   </div>
                 </CardContent>
               </Card>
@@ -251,32 +262,51 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Calendario Completo</DialogTitle>
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-blue-50 to-purple-50 border-0 shadow-2xl">
+        <DialogHeader className="bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-4">
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Calendario Completo
+          </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Controls */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handlePrevious}>
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4 bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-lg">
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handlePrevious}
+                className="h-10 w-10 rounded-full border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200"
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={handleToday}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleToday}
+                className="px-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
+              >
                 Oggi
               </Button>
-              <Button variant="outline" size="sm" onClick={handleNext}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleNext}
+                className="h-10 w-10 rounded-full border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200"
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
             
-            <h2 className="text-lg sm:text-xl font-semibold text-center truncate max-w-full sm:max-w-[300px] px-2">
-              {getTitle()}
-            </h2>
+            <div className="text-center">
+              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                {getTitle()}
+              </h2>
+            </div>
             
             <Select value={view} onValueChange={(value: ViewType) => setView(value)}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-36 rounded-full border-gray-200 bg-white/80 backdrop-blur-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -289,7 +319,9 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
           </div>
 
           {/* Calendar Content */}
-          {renderContent()}
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg">
+            {renderContent()}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

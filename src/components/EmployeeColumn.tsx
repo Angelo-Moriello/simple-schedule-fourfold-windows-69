@@ -39,8 +39,13 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
       <AccordionItem value={`employee-${employee.id}`} className="border rounded-lg bg-white shadow-sm">
         <AccordionTrigger className="px-4 py-2 hover:no-underline">
           <div className="flex justify-between items-center w-full">
-            <span className="font-medium">{employee.name}</span>
-            <span className="text-sm bg-blue-100 px-2 py-1 rounded-full">
+            <div className="flex-1 text-left">
+              <EmployeeNameEditor
+                employee={employee}
+                onUpdateName={onUpdateEmployeeName}
+              />
+            </div>
+            <span className="text-sm bg-blue-100 px-2 py-1 rounded-full ml-2">
               {employeeAppointments.length} appuntamenti
             </span>
           </div>
