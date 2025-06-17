@@ -293,9 +293,9 @@ const AppointmentScheduler = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-8">
           <DateNavigation
             currentDate={currentDate}
             onPrevDay={handlePrevDay}
@@ -312,7 +312,7 @@ const AppointmentScheduler = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {employees.map(employee => (
             <EmployeeColumn
               key={employee.id}

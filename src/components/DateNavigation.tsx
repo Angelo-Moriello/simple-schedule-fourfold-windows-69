@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+
 interface DateNavigationProps {
   currentDate: Date;
   onPrevDay: () => void;
@@ -10,6 +12,7 @@ interface DateNavigationProps {
   onToday: () => void;
   onOpenCalendar: () => void;
 }
+
 const DateNavigation: React.FC<DateNavigationProps> = ({
   currentDate,
   onPrevDay,
@@ -17,30 +20,55 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
   onToday,
   onOpenCalendar
 }) => {
-  return <div className="shadow-sm border p-4 sm:p-6 mb-6 bg-zinc-100 mx-0 rounded-lg px-[8px]">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={onPrevDay}>
+  return (
+    <div className="bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl rounded-2xl p-6 mb-8 mx-4">
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onPrevDay}
+            className="h-10 w-10 rounded-full border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={onToday}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onToday}
+            className="px-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
+          >
             Oggi
           </Button>
-          <Button variant="outline" size="sm" onClick={onNextDay}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onNextDay}
+            className="h-10 w-10 rounded-full border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={onOpenCalendar} className="ml-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onOpenCalendar}
+            className="px-4 rounded-full border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 ml-3"
+          >
             <Calendar className="h-4 w-4 mr-2" />
             Calendario
           </Button>
         </div>
-        <h1 className="text-xl sm:text-2xl text-gray-800 text-center font-semibold break-words">
-          {format(currentDate, 'EEEE d MMMM yyyy', {
-          locale: it
-        })}
-        </h1>
-        <div className="hidden sm:block w-32"></div>
+        
+        <div className="text-center lg:text-left">
+          <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+            {format(currentDate, 'EEEE d MMMM yyyy', { locale: it })}
+          </h1>
+        </div>
+        
+        <div className="hidden lg:block w-48"></div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default DateNavigation;
