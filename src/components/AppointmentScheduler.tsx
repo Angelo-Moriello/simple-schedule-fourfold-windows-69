@@ -53,24 +53,34 @@ const AppointmentScheduler = () => {
 
   const dateKey = format(currentDate, 'yyyy-MM-dd');
 
-  // Load data from localStorage
+  // Load data from localStorage on component mount
   useEffect(() => {
     const savedAppointments = localStorage.getItem('appointments');
     const savedEmployees = localStorage.getItem('employees');
     
     if (savedAppointments) {
-      setAppointments(JSON.parse(savedAppointments));
+      try {
+        setAppointments(JSON.parse(savedAppointments));
+      } catch (error) {
+        console.error('Error loading appointments from localStorage:', error);
+      }
     }
+    
     if (savedEmployees) {
-      setEmployees(JSON.parse(savedEmployees));
+      try {
+        setEmployees(JSON.parse(savedEmployees));
+      } catch (error) {
+        console.error('Error loading employees from localStorage:', error);
+      }
     }
   }, []);
 
-  // Save data to localStorage
+  // Save appointments to localStorage whenever appointments change
   useEffect(() => {
     localStorage.setItem('appointments', JSON.stringify(appointments));
   }, [appointments]);
 
+  // Save employees to localStorage whenever employees change
   useEffect(() => {
     localStorage.setItem('employees', JSON.stringify(employees));
   }, [employees]);
@@ -285,7 +295,7 @@ const AppointmentScheduler = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
           <DateNavigation
             currentDate={currentDate}
             onPrevDay={handlePrevDay}
