@@ -1,10 +1,8 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-
 interface DateNavigationProps {
   currentDate: Date;
   onPrevDay: () => void;
@@ -12,7 +10,6 @@ interface DateNavigationProps {
   onToday: () => void;
   onOpenCalendar: () => void;
 }
-
 const DateNavigation: React.FC<DateNavigationProps> = ({
   currentDate,
   onPrevDay,
@@ -20,8 +17,7 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
   onToday,
   onOpenCalendar
 }) => {
-  return (
-    <div className="shadow-sm border p-4 sm:p-6 mb-6 bg-zinc-100 mx-0 rounded-lg">
+  return <div className="shadow-sm border p-4 sm:p-6 mb-6 bg-zinc-100 mx-0 rounded-lg px-[8px]">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" onClick={onPrevDay}>
@@ -40,13 +36,11 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
         </div>
         <h1 className="text-xl sm:text-2xl text-gray-800 text-center font-semibold break-words">
           {format(currentDate, 'EEEE d MMMM yyyy', {
-            locale: it
-          })}
+          locale: it
+        })}
         </h1>
         <div className="hidden sm:block w-32"></div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default DateNavigation;
