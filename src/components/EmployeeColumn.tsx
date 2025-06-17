@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Appointment, Employee } from '@/types/appointment';
 import TimeSlot from './TimeSlot';
 import EmployeeNameEditor from './EmployeeNameEditor';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface EmployeeColumnProps {
   employee: Employee;
@@ -26,8 +27,54 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
   onDeleteAppointment,
   onUpdateEmployeeName
 }) => {
-  return (
-    <Card className="h-fit">
+  // Count appointments for this employee on this day
+  const employeeAppointments = appointments.filter(apt => 
+    apt.employeeId === employee.id && 
+    apt.date === dateKey
+  );
+  
+  // Mobile accordion view
+  const mobileView = (
+    <Accordion type="single" collapsible className="w-full lg:hidden">
+      <AccordionItem value={`employee-${employee.id}`} className="border rounded-lg bg-white shadow-sm">
+        <AccordionTrigger className="px-4 py-2 hover:no-underline">
+          <div className="flex justify-between items-center w-full">
+            <span className="font-medium">{employee.name}</span>
+            <span className="text-sm bg-blue-100 px-2 py-1 rounded-full">
+              {employeeAppointments.length} appuntamenti
+            </span>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-4 pb-4">
+          <div className="space-y-2 mt-2">
+            {timeSlots.map(time => {
+              const appointment = appointments.find(apt => 
+                apt.employeeId === employee.id && 
+                apt.date === dateKey && 
+                apt.time === time
+              );
+
+              return (
+                <TimeSlot
+                  key={time}
+                  time={time}
+                  appointment={appointment}
+                  employee={employee}
+                  onAddAppointment={onAddAppointment}
+                  onEditAppointment={onEditAppointment}
+                  onDeleteAppointment={onDeleteAppointment}
+                />
+              );
+            })}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+
+  // Desktop card view
+  const desktopView = (
+    <Card className="h-fit hidden lg:block">
       <CardHeader className="pb-3">
         <EmployeeNameEditor
           employee={employee}
@@ -56,6 +103,13 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
         })}
       </CardContent>
     </Card>
+  );
+
+  return (
+    <>
+      {mobileView}
+      {desktopView}
+    </>
   );
 };
 

@@ -83,7 +83,7 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
     
     return (
       <div className="p-4">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {employees.map(employee => {
             const employeeAppointments = dayAppointments.filter(apt => apt.employeeId === employee.id);
             return (
@@ -158,6 +158,7 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
           selected={currentDate}
           onSelect={(date) => date && handleDateClick(date)}
           className="w-full"
+          locale={it}
           modifiers={{
             hasAppointments: (date) => {
               const dateKey = format(date, 'yyyy-MM-dd');
@@ -184,7 +185,7 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
 
     return (
       <div className="p-4">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {months.map(month => {
             const monthKey = format(month, 'yyyy-MM');
             const monthAppointments = appointments.filter(apt => apt.date.startsWith(monthKey));
@@ -257,7 +258,7 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
         
         <div className="space-y-4">
           {/* Controls */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handlePrevious}>
                 <ChevronLeft className="h-4 w-4" />
@@ -270,7 +271,9 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
               </Button>
             </div>
             
-            <h2 className="text-xl font-semibold">{getTitle()}</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-center truncate max-w-full sm:max-w-[300px] px-2">
+              {getTitle()}
+            </h2>
             
             <Select value={view} onValueChange={(value: ViewType) => setView(value)}>
               <SelectTrigger className="w-32">
