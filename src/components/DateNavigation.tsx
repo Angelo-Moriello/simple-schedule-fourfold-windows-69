@@ -17,7 +17,7 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
   onToday,
   onOpenCalendar
 }) => {
-  return <div className="bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl rounded-2xl p-6 mb-8 py-[17px] mx-0 px-[204px]">
+  return <div className="bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl rounded-2xl p-6 mb-8 py-[17px] mx-0 px-[8px]">
       <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={onPrevDay} className="h-10 w-10 rounded-full border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200">
