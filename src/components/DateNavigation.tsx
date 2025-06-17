@@ -17,7 +17,7 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
   onToday,
   onOpenCalendar
 }) => {
-  return <div className="bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl rounded-2xl p-6 mb-8 px-0 mx-[3px] py-[17px]">
+  return <div className="bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl rounded-2xl p-6 mb-8 py-[17px] mx-0 px-[8px]">
       <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={onPrevDay} className="h-10 w-10 rounded-full border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200">
@@ -29,7 +29,7 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
           <Button variant="outline" size="sm" onClick={onNextDay} className="h-10 w-10 rounded-full border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200">
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={onOpenCalendar} className="rounded-full border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 ml-3 px-[11px]">
+          <Button variant="outline" size="sm" onClick={onOpenCalendar} className="rounded-full border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 ml-3 px-[10px] mx-0">
             <Calendar className="h-4 w-4 mr-2" />
             Calendario
           </Button>
