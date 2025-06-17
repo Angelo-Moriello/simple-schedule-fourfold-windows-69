@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -160,7 +159,7 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
   const renderMonthView = () => {
     return (
       <div className="p-6 flex justify-center">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border-0">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border-0 w-full max-w-md">
           <Calendar
             mode="single"
             selected={currentDate}
@@ -262,9 +261,9 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-blue-50 to-purple-50 border-0 shadow-2xl">
+      <DialogContent className="max-w-7xl max-h-[95vh] w-[95vw] overflow-y-auto bg-gradient-to-br from-blue-50 to-purple-50 border-0 shadow-2xl">
         <DialogHeader className="bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-4">
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-center">
             Calendario Completo
           </DialogTitle>
         </DialogHeader>
@@ -272,7 +271,7 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
         <div className="space-y-6">
           {/* Controls */}
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4 bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-lg">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 order-2 lg:order-1">
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -299,23 +298,25 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
               </Button>
             </div>
             
-            <div className="text-center">
-              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+            <div className="text-center order-1 lg:order-2">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                 {getTitle()}
               </h2>
             </div>
             
-            <Select value={view} onValueChange={(value: ViewType) => setView(value)}>
-              <SelectTrigger className="w-36 rounded-full border-gray-200 bg-white/80 backdrop-blur-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="day">Giorno</SelectItem>
-                <SelectItem value="week">Settimana</SelectItem>
-                <SelectItem value="month">Mese</SelectItem>
-                <SelectItem value="year">Anno</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="order-3 lg:order-3">
+              <Select value={view} onValueChange={(value: ViewType) => setView(value)}>
+                <SelectTrigger className="w-36 rounded-full border-gray-200 bg-white/80 backdrop-blur-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Giorno</SelectItem>
+                  <SelectItem value="week">Settimana</SelectItem>
+                  <SelectItem value="month">Mese</SelectItem>
+                  <SelectItem value="year">Anno</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Calendar Content */}
