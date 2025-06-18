@@ -3,12 +3,13 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Users, Trash2, Download, Upload } from 'lucide-react';
 import { Employee } from '@/types/appointment';
 
 interface EmployeeManagerProps {
   employees: Employee[];
-  onAddEmployee: (name: string) => void;
+  onAddEmployee: (name: string, specialization: 'Parrucchiere' | 'Estetista') => void;
   onRemoveEmployee: (employeeId: number) => void;
   onBackupData: () => void;
   onRestoreData: (data: any) => void;
@@ -23,11 +24,13 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newEmployeeName, setNewEmployeeName] = useState('');
+  const [newEmployeeSpecialization, setNewEmployeeSpecialization] = useState<'Parrucchiere' | 'Estetista'>('Parrucchiere');
 
   const handleAddEmployee = () => {
     if (newEmployeeName.trim()) {
-      onAddEmployee(newEmployeeName.trim());
+      onAddEmployee(newEmployeeName.trim(), newEmployeeSpecialization);
       setNewEmployeeName('');
+      setNewEmployeeSpecialization('Parrucchiere');
     }
   };
 
@@ -50,9 +53,9 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Users className="h-4 w-4" />
-          Gestisci Dipendenti
+        <Button variant="outline" className="gap-2 h-10 sm:h-12 px-3 sm:px-4 text-xs sm:text-sm">
+          <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Gestisci</span> Dipendenti
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
@@ -60,15 +63,28 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({
           <DialogTitle>Gestione Dipendenti</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="flex gap-2">
+          <div className="space-y-2">
             <Input
               placeholder="Nome nuovo dipendente"
               value={newEmployeeName}
               onChange={(e) => setNewEmployeeName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddEmployee()}
             />
-            <Button onClick={handleAddEmployee}>
-              <Plus className="h-4 w-4" />
+            <Select
+              value={newEmployeeSpecialization}
+              onValueChange={(value: 'Parrucchiere' | 'Estetista') => setNewEmployeeSpecialization(value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleziona specializzazione" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Parrucchiere">Parrucchiere</SelectItem>
+                <SelectItem value="Estetista">Estetista</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleAddEmployee} className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
+              Aggiungi Dipendente
             </Button>
           </div>
           
@@ -76,7 +92,10 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({
             <h4 className="font-medium">Dipendenti esistenti:</h4>
             {employees.map(employee => (
               <div key={employee.id} className="flex items-center justify-between p-2 border rounded">
-                <span>{employee.name}</span>
+                <div>
+                  <span className="font-medium">{employee.name}</span>
+                  <span className="text-sm text-gray-500 ml-2">({employee.specialization})</span>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
