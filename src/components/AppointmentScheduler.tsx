@@ -7,12 +7,13 @@ import AppointmentForm from './AppointmentForm';
 import EmployeeColumn from './EmployeeColumn';
 import DateNavigation from './DateNavigation';
 import EmployeeManager from './EmployeeManager';
+import VacationManager from './VacationManager';
 
 const defaultEmployees: Employee[] = [
-  { id: 1, name: 'Marco Rossi', color: 'bg-blue-100 border-blue-300' },
-  { id: 2, name: 'Anna Verdi', color: 'bg-green-100 border-green-300' },
-  { id: 3, name: 'Luca Bianchi', color: 'bg-yellow-100 border-yellow-300' },
-  { id: 4, name: 'Sara Neri', color: 'bg-purple-100 border-purple-300' }
+  { id: 1, name: 'Marco Rossi', color: 'bg-blue-100 border-blue-300', vacations: [] },
+  { id: 2, name: 'Anna Verdi', color: 'bg-green-100 border-green-300', vacations: [] },
+  { id: 3, name: 'Luca Bianchi', color: 'bg-yellow-100 border-yellow-300', vacations: [] },
+  { id: 4, name: 'Sara Neri', color: 'bg-purple-100 border-purple-300', vacations: [] }
 ];
 
 const employeeColors = [
@@ -122,7 +123,8 @@ const AppointmentScheduler = () => {
     const newEmployee: Employee = {
       id: newId,
       name,
-      color: employeeColors[colorIndex]
+      color: employeeColors[colorIndex],
+      vacations: []
     };
     setEmployees(prev => [...prev, newEmployee]);
     toast({
@@ -237,6 +239,16 @@ const AppointmentScheduler = () => {
     });
   };
 
+  const handleUpdateEmployeeVacations = (employeeId: number, vacations: string[]) => {
+    setEmployees(prev => prev.map(emp => 
+      emp.id === employeeId ? { ...emp, vacations } : emp
+    ));
+    toast({
+      title: "Ferie aggiornate",
+      description: "Le ferie del dipendente sono state aggiornate con successo.",
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -303,13 +315,19 @@ const AppointmentScheduler = () => {
             onToday={handleToday}
             onOpenCalendar={() => setIsCalendarOpen(true)}
           />
-          <EmployeeManager
-            employees={employees}
-            onAddEmployee={handleAddEmployee}
-            onRemoveEmployee={handleRemoveEmployee}
-            onBackupData={handleBackupData}
-            onRestoreData={handleRestoreData}
-          />
+          <div className="flex gap-3">
+            <EmployeeManager
+              employees={employees}
+              onAddEmployee={handleAddEmployee}
+              onRemoveEmployee={handleRemoveEmployee}
+              onBackupData={handleBackupData}
+              onRestoreData={handleRestoreData}
+            />
+            <VacationManager
+              employees={employees}
+              onUpdateEmployeeVacations={handleUpdateEmployeeVacations}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

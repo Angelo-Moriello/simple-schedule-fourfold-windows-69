@@ -33,10 +33,16 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
     apt.date === dateKey
   );
   
+  // Check if current date is a vacation day for this employee
+  const isVacationDay = employee.vacations?.includes(dateKey) || false;
+  
   // Mobile accordion view
   const mobileView = (
     <Accordion type="single" collapsible className="w-full lg:hidden">
-      <AccordionItem value={`employee-${employee.id}`} className="border rounded-lg bg-white shadow-sm">
+      <AccordionItem 
+        value={`employee-${employee.id}`} 
+        className={`border rounded-lg shadow-sm ${isVacationDay ? 'bg-red-50 border-red-200' : 'bg-white'}`}
+      >
         <AccordionTrigger className="px-4 py-2 hover:no-underline">
           <div className="flex justify-between items-center w-full">
             <div className="flex-1 text-left">
@@ -44,9 +50,12 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                 employee={employee}
                 onUpdateName={onUpdateEmployeeName}
               />
+              {isVacationDay && (
+                <div className="text-xs text-red-600 font-medium mt-1">In Ferie</div>
+              )}
             </div>
-            <span className="text-sm bg-blue-100 px-2 py-1 rounded-full ml-2">
-              {employeeAppointments.length} appuntamenti
+            <span className={`text-sm px-2 py-1 rounded-full ml-2 ${isVacationDay ? 'bg-red-200 text-red-800' : 'bg-blue-100'}`}>
+              {isVacationDay ? 'Ferie' : `${employeeAppointments.length} appuntamenti`}
             </span>
           </div>
         </AccordionTrigger>
@@ -68,6 +77,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                   onAddAppointment={onAddAppointment}
                   onEditAppointment={onEditAppointment}
                   onDeleteAppointment={onDeleteAppointment}
+                  isVacationDay={isVacationDay}
                 />
               );
             })}
@@ -79,12 +89,15 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
 
   // Desktop card view
   const desktopView = (
-    <Card className="h-fit hidden lg:block">
-      <CardHeader className="pb-3">
+    <Card className={`h-fit hidden lg:block ${isVacationDay ? 'bg-red-50 border-red-200' : ''}`}>
+      <CardHeader className={`pb-3 ${isVacationDay ? 'bg-red-100' : ''}`}>
         <EmployeeNameEditor
           employee={employee}
           onUpdateName={onUpdateEmployeeName}
         />
+        {isVacationDay && (
+          <div className="text-xs text-red-600 font-medium">In Ferie</div>
+        )}
       </CardHeader>
       <CardContent className="space-y-2">
         {timeSlots.map(time => {
@@ -103,6 +116,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
               onAddAppointment={onAddAppointment}
               onEditAppointment={onEditAppointment}
               onDeleteAppointment={onDeleteAppointment}
+              isVacationDay={isVacationDay}
             />
           );
         })}

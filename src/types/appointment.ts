@@ -17,4 +17,5 @@ export interface Employee {
   id: number;
   name: string;
   color: string;
+  vacations?: string[]; // array of dates in 'yyyy-MM-dd' format
 }

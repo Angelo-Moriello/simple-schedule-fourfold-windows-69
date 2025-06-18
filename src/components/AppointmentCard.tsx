@@ -9,16 +9,18 @@ interface AppointmentCardProps {
   employee: Employee;
   onEdit: (appointment: Appointment) => void;
   onDelete: (appointmentId: string) => void;
+  isVacationDay?: boolean;
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
   appointment,
   employee,
   onEdit,
-  onDelete
+  onDelete,
+  isVacationDay = false
 }) => {
   return (
-    <div className={`${appointment.color} rounded-lg p-3 border-2 border-dashed relative group shadow-sm`}>
+    <div className={`${isVacationDay ? 'bg-red-100 border-red-300' : appointment.color} rounded-lg p-3 border-2 border-dashed relative group shadow-sm ${isVacationDay ? 'opacity-75' : ''}`}>
       <div className="font-semibold text-sm text-gray-800">
         {appointment.title}
       </div>
@@ -43,6 +45,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           size="sm"
           className="h-6 w-6 p-0 bg-white/80 hover:bg-white"
           onClick={() => onEdit(appointment)}
+          disabled={isVacationDay}
         >
           <Edit className="h-3 w-3" />
         </Button>
