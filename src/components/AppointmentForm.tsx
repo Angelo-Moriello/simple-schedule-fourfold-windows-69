@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Appointment, Employee, serviceCategories } from '@/types/appointment';
+import { Appointment, Employee, ServiceCategory } from '@/types/appointment';
 import { Calendar, Clock, User, Mail, Phone, Palette, FileText, ExternalLink, Scissors } from 'lucide-react';
 
 interface AppointmentFormProps {
@@ -28,6 +29,7 @@ interface AppointmentFormProps {
   onFormDataChange: (field: string, value: string) => void;
   employees: Employee[];
   timeSlots: string[];
+  serviceCategories: Record<'Parrucchiere' | 'Estetista', ServiceCategory>;
 }
 
 const appointmentColors = [
@@ -49,7 +51,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   formData,
   onFormDataChange,
   employees,
-  timeSlots
+  timeSlots,
+  serviceCategories
 }) => {
   const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
   const availableServices = selectedEmployee && serviceCategories[selectedEmployee.specialization] 
@@ -67,15 +70,15 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl">
-        <DialogHeader className="pb-6">
-          <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-2xl sm:rounded-3xl">
+        <DialogHeader className="pb-4 sm:pb-6">
+          <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             {editingAppointment ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={onSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <Label htmlFor="employee" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <User className="h-4 w-4" />
@@ -88,7 +91,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   onFormDataChange('serviceType', ''); // Reset service when changing employee
                 }}
               >
-                <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+                <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                   <SelectValue placeholder="Seleziona dipendente" />
                 </SelectTrigger>
                 <SelectContent>
@@ -110,7 +113,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.time}
                 onValueChange={(value) => onFormDataChange('time', value)}
               >
-                <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+                <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                   <SelectValue placeholder="Seleziona orario" />
                 </SelectTrigger>
                 <SelectContent>
@@ -124,7 +127,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <Label htmlFor="serviceType" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <Scissors className="h-4 w-4" />
@@ -135,7 +138,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 onValueChange={(value) => onFormDataChange('serviceType', value)}
                 disabled={!selectedEmployee}
               >
-                <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+                <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                   <SelectValue placeholder={selectedEmployee ? "Seleziona servizio" : "Prima seleziona dipendente"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -158,12 +161,12 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.title}
                 onChange={(e) => onFormDataChange('title', e.target.value)}
                 placeholder="Es. Consulenza, Riunione..."
-                className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+                className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <Label htmlFor="client" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <User className="h-4 w-4" />
@@ -174,7 +177,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.client}
                 onChange={(e) => onFormDataChange('client', e.target.value)}
                 placeholder="Nome del cliente"
-                className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+                className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
               />
             </div>
             
@@ -187,7 +190,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.color}
                 onValueChange={(value) => onFormDataChange('color', value)}
               >
-                <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+                <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                   <SelectValue placeholder="Seleziona colore" />
                 </SelectTrigger>
                 <SelectContent>
@@ -204,7 +207,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <Mail className="h-4 w-4" />
@@ -216,7 +219,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.email}
                 onChange={(e) => onFormDataChange('email', e.target.value)}
                 placeholder="email@esempio.com"
-                className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+                className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
               />
             </div>
             
@@ -231,7 +234,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.phone}
                 onChange={(e) => onFormDataChange('phone', e.target.value)}
                 placeholder="+39 123 456 7890"
-                className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+                className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
               />
             </div>
           </div>
@@ -245,7 +248,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               value={formData.duration}
               onValueChange={(value) => onFormDataChange('duration', value)}
             >
-              <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+              <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -274,29 +277,29 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             />
           </div>
 
-          <div className="flex flex-col lg:flex-row justify-between gap-4 pt-6 border-t border-gray-100">
+          <div className="flex flex-col gap-4 pt-4 sm:pt-6 border-t border-gray-100">
             <Button
               type="button"
               variant="outline"
               onClick={handleGoogleCalendarSync}
-              className="h-12 px-6 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg"
+              className="w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Aggiungi a Google Calendar
             </Button>
             
-            <div className="flex flex-col lg:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="h-12 px-8 rounded-xl border-gray-300 hover:bg-gray-50 transition-all duration-200"
+                className="w-full sm:w-auto h-10 sm:h-12 px-6 sm:px-8 rounded-xl border-gray-300 hover:bg-gray-50 transition-all duration-200"
               >
                 Annulla
               </Button>
               <Button 
                 type="submit"
-                className="h-12 px-8 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
+                className="w-full sm:w-auto h-10 sm:h-12 px-6 sm:px-8 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
               >
                 {editingAppointment ? 'Salva Modifiche' : 'Crea Appuntamento'}
               </Button>

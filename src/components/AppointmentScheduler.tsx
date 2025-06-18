@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, addDays, subDays } from 'date-fns';
-import { Appointment, Employee, serviceCategories } from '@/types/appointment';
+import { Appointment, Employee, serviceCategories as defaultServiceCategories, ServiceCategory } from '@/types/appointment';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import EmployeeColumn from './EmployeeColumn';
 import DateNavigation from './DateNavigation';
 import EmployeeManager from './EmployeeManager';
 import VacationManager from './VacationManager';
+import ServiceManager from './ServiceManager';
 
 const defaultEmployees: Employee[] = [
   { id: 1, name: 'Marco Rossi', color: 'bg-blue-100 border-blue-300', vacations: [], specialization: 'Parrucchiere' },
@@ -41,6 +42,7 @@ const AppointmentScheduler = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [employees, setEmployees] = useState<Employee[]>(defaultEmployees);
+  const [serviceCategories, setServiceCategories] = useState<Record<'Parrucchiere' | 'Estetista', ServiceCategory>>(defaultServiceCategories);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
@@ -63,6 +65,7 @@ const AppointmentScheduler = () => {
   useEffect(() => {
     const savedAppointments = localStorage.getItem('appointments');
     const savedEmployees = localStorage.getItem('employees');
+    const savedServiceCategories = localStorage.getItem('serviceCategories');
     
     if (savedAppointments) {
       try {
@@ -79,6 +82,14 @@ const AppointmentScheduler = () => {
         console.error('Error loading employees from localStorage:', error);
       }
     }
+
+    if (savedServiceCategories) {
+      try {
+        setServiceCategories(JSON.parse(savedServiceCategories));
+      } catch (error) {
+        console.error('Error loading service categories from localStorage:', error);
+      }
+    }
   }, []);
 
   // Save appointments to localStorage whenever appointments change
@@ -90,6 +101,11 @@ const AppointmentScheduler = () => {
   useEffect(() => {
     localStorage.setItem('employees', JSON.stringify(employees));
   }, [employees]);
+
+  // Save service categories to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('serviceCategories', JSON.stringify(serviceCategories));
+  }, [serviceCategories]);
 
   const handlePrevDay = () => {
     setCurrentDate(prev => subDays(prev, 1));
@@ -158,10 +174,19 @@ const AppointmentScheduler = () => {
     });
   };
 
+  const handleUpdateServices = (updatedCategories: Record<'Parrucchiere' | 'Estetista', ServiceCategory>) => {
+    setServiceCategories(updatedCategories);
+    toast({
+      title: "Servizi aggiornati",
+      description: "Le categorie di servizi sono state aggiornate con successo.",
+    });
+  };
+
   const handleBackupData = () => {
     const data = {
       appointments,
       employees,
+      serviceCategories,
       exportDate: new Date().toISOString(),
       version: '1.0'
     };
@@ -187,6 +212,9 @@ const AppointmentScheduler = () => {
       if (data.appointments && data.employees) {
         setAppointments(data.appointments);
         setEmployees(data.employees);
+        if (data.serviceCategories) {
+          setServiceCategories(data.serviceCategories);
+        }
         toast({
           title: "Backup ripristinato",
           description: "I dati sono stati ripristinati con successo.",
@@ -272,7 +300,7 @@ const AppointmentScheduler = () => {
     // Verifica compatibilità servizio-specializzazione
     const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
     if (selectedEmployee) {
-      const allowedServices = serviceCategories[selectedEmployee.specialization].services;
+      const allowedServices = serviceCategories[selectedEmployee.specialization]?.services || [];
       if (!allowedServices.includes(formData.serviceType)) {
         toast({
           title: "Errore",
@@ -329,7 +357,7 @@ const AppointmentScheduler = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
         {/* Header responsive */}
         <div className="flex flex-col space-y-4 mb-6 sm:mb-8">
           <DateNavigation
@@ -341,36 +369,36 @@ const AppointmentScheduler = () => {
           />
           
           {/* Buttons row - responsive */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-col gap-3 sm:gap-4">
             <Button
               onClick={() => navigate('/history')}
-              className="flex-1 sm:flex-none h-10 sm:h-12 px-3 sm:px-6 text-xs sm:text-sm rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
+              className="w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6 text-sm sm:text-base rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
             >
-              <History className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              Storico
+              <History className="h-4 w-4 mr-2" />
+              Storico Appuntamenti
             </Button>
-            <div className="flex gap-2 sm:gap-3">
-              <div className="flex-1 sm:flex-none">
-                <EmployeeManager
-                  employees={employees}
-                  onAddEmployee={handleAddEmployee}
-                  onRemoveEmployee={handleRemoveEmployee}
-                  onBackupData={handleBackupData}
-                  onRestoreData={handleRestoreData}
-                />
-              </div>
-              <div className="flex-1 sm:flex-none">
-                <VacationManager
-                  employees={employees}
-                  onUpdateEmployeeVacations={handleUpdateEmployeeVacations}
-                />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <EmployeeManager
+                employees={employees}
+                onAddEmployee={handleAddEmployee}
+                onRemoveEmployee={handleRemoveEmployee}
+                onBackupData={handleBackupData}
+                onRestoreData={handleRestoreData}
+              />
+              <VacationManager
+                employees={employees}
+                onUpdateEmployeeVacations={handleUpdateEmployeeVacations}
+              />
+              <ServiceManager
+                serviceCategories={serviceCategories}
+                onUpdateServices={handleUpdateServices}
+              />
             </div>
           </div>
         </div>
 
         {/* Grid responsive */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {employees.map(employee => (
             <EmployeeColumn
               key={employee.id}
@@ -395,6 +423,7 @@ const AppointmentScheduler = () => {
           onFormDataChange={handleFormDataChange}
           employees={employees}
           timeSlots={timeSlots}
+          serviceCategories={serviceCategories}
         />
 
         <FullCalendar
