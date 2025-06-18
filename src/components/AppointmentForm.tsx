@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Appointment, Employee } from '@/types/appointment';
-import { Calendar, Clock, User, Mail, Phone, Palette, FileText, ExternalLink } from 'lucide-react';
+import { Calendar, Clock, User, Mail, Phone, Palette, FileText, ExternalLink, Scissors } from 'lucide-react';
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -24,6 +24,7 @@ interface AppointmentFormProps {
     email: string;
     phone: string;
     color: string;
+    serviceType: string;
   };
   onFormDataChange: (field: string, value: string) => void;
   employees: Employee[];
@@ -41,6 +42,15 @@ const appointmentColors = [
   { label: 'Grigio', value: 'bg-gray-100 border-gray-300 text-gray-800' }
 ];
 
+const serviceTypes = [
+  'Piega',
+  'Colore',
+  'Taglio',
+  'Colpi di sole',
+  'Trattamento',
+  'Altro'
+];
+
 const AppointmentForm: React.FC<AppointmentFormProps> = ({
   isOpen,
   onClose,
@@ -55,7 +65,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     const startDate = new Date(`${new Date().toISOString().split('T')[0]}T${formData.time}:00`);
     const endDate = new Date(startDate.getTime() + parseInt(formData.duration) * 60000);
     
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(formData.title)}&dates=${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent(`Cliente: ${formData.client}\nEmail: ${formData.email}\nTelefono: ${formData.phone}\nNote: ${formData.notes}`)}&location=${encodeURIComponent('Studio')}`;
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(formData.title)}&dates=${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent(`Cliente: ${formData.client}\nServizio: ${formData.serviceType}\nEmail: ${formData.email}\nTelefono: ${formData.phone}\nNote: ${formData.notes}`)}&location=${encodeURIComponent('Studio')}`;
     
     window.open(googleCalendarUrl, '_blank');
   };
@@ -115,19 +125,43 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               </Select>
             </div>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="title" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <FileText className="h-4 w-4" />
-              Titolo Appuntamento
-            </Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => onFormDataChange('title', e.target.value)}
-              placeholder="Es. Consulenza, Riunione..."
-              className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
-            />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="serviceType" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <Scissors className="h-4 w-4" />
+                Tipo di Servizio
+              </Label>
+              <Select
+                value={formData.serviceType}
+                onValueChange={(value) => onFormDataChange('serviceType', value)}
+              >
+                <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+                  <SelectValue placeholder="Seleziona servizio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {serviceTypes.map(service => (
+                    <SelectItem key={service} value={service}>
+                      {service}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="title" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <FileText className="h-4 w-4" />
+                Titolo Appuntamento
+              </Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => onFormDataChange('title', e.target.value)}
+                placeholder="Es. Consulenza, Riunione..."
+                className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

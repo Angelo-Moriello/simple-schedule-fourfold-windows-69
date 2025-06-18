@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { format, addDays, subDays } from 'date-fns';
 import { Appointment, Employee } from '@/types/appointment';
 import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { History } from 'lucide-react';
 import FullCalendar from './FullCalendar';
 import AppointmentForm from './AppointmentForm';
 import EmployeeColumn from './EmployeeColumn';
@@ -34,6 +37,7 @@ const timeSlots = [
 ];
 
 const AppointmentScheduler = () => {
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [employees, setEmployees] = useState<Employee[]>(defaultEmployees);
@@ -49,7 +53,8 @@ const AppointmentScheduler = () => {
     notes: '',
     email: '',
     phone: '',
-    color: 'bg-blue-100 border-blue-300 text-blue-800'
+    color: 'bg-blue-100 border-blue-300 text-blue-800',
+    serviceType: ''
   });
 
   const dateKey = format(currentDate, 'yyyy-MM-dd');
@@ -108,7 +113,8 @@ const AppointmentScheduler = () => {
       notes: '',
       email: '',
       phone: '',
-      color: 'bg-blue-100 border-blue-300 text-blue-800'
+      color: 'bg-blue-100 border-blue-300 text-blue-800',
+      serviceType: ''
     });
     setEditingAppointment(null);
   };
@@ -216,7 +222,8 @@ const AppointmentScheduler = () => {
       notes: appointment.notes || '',
       email: appointment.email || '',
       phone: appointment.phone || '',
-      color: appointment.color
+      color: appointment.color,
+      serviceType: appointment.serviceType || ''
     });
     setIsDialogOpen(true);
   };
@@ -252,10 +259,10 @@ const AppointmentScheduler = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.employeeId || !formData.time || !formData.title || !formData.client) {
+    if (!formData.employeeId || !formData.time || !formData.title || !formData.client || !formData.serviceType) {
       toast({
         title: "Errore",
-        description: "Compila tutti i campi obbligatori.",
+        description: "Compila tutti i campi obbligatori incluso il tipo di servizio.",
         variant: "destructive"
       });
       return;
@@ -272,7 +279,8 @@ const AppointmentScheduler = () => {
       notes: formData.notes,
       email: formData.email,
       phone: formData.phone,
-      color: formData.color
+      color: formData.color,
+      serviceType: formData.serviceType
     };
 
     if (editingAppointment) {
@@ -316,6 +324,13 @@ const AppointmentScheduler = () => {
             onOpenCalendar={() => setIsCalendarOpen(true)}
           />
           <div className="flex gap-3">
+            <Button
+              onClick={() => navigate('/history')}
+              className="h-12 px-6 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
+            >
+              <History className="h-4 w-4 mr-2" />
+              Storico Appuntamenti
+            </Button>
             <EmployeeManager
               employees={employees}
               onAddEmployee={handleAddEmployee}

@@ -11,6 +11,7 @@ export interface Appointment {
   email?: string;
   phone?: string;
   color: string; // colore per l'etichetta
+  serviceType: string; // nuovo campo per il tipo di servizio
 }
 
 export interface Employee {
