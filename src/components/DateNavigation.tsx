@@ -1,10 +1,8 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-
 interface DateNavigationProps {
   currentDate: Date;
   onPrevDay: () => void;
@@ -12,7 +10,6 @@ interface DateNavigationProps {
   onToday: () => void;
   onOpenCalendar: () => void;
 }
-
 const DateNavigation: React.FC<DateNavigationProps> = ({
   currentDate,
   onPrevDay,
@@ -20,9 +17,8 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
   onToday,
   onOpenCalendar
 }) => {
-  return (
-    <div className="w-full flex justify-center">
-      <div className="bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl rounded-2xl p-6 mb-8 py-[17px] mx-0 px-[8px] w-full max-w-4xl">
+  return <div className="w-full flex justify-center">
+      <div className="bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl rounded-2xl p-6 mb-8 mx-0 px-[8px] w-full max-w-4xl py-[25px]">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-6">
           <div className="flex items-center gap-3 order-2 lg:order-1">
             <Button variant="outline" size="sm" onClick={onPrevDay} className="h-10 w-10 rounded-full border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200">
@@ -39,8 +35,8 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
           <div className="text-center flex-1 order-1 lg:order-2">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent px-2 truncate">
               {format(currentDate, 'EEEE d MMMM yyyy', {
-                locale: it
-              })}
+              locale: it
+            })}
             </h1>
           </div>
           
@@ -52,8 +48,6 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default DateNavigation;
