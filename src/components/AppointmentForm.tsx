@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Appointment, Employee } from '@/types/appointment';
+import { Appointment, Employee, serviceCategories } from '@/types/appointment';
 import { Calendar, Clock, User, Mail, Phone, Palette, FileText, ExternalLink, Scissors } from 'lucide-react';
 
 interface AppointmentFormProps {
@@ -42,15 +41,6 @@ const appointmentColors = [
   { label: 'Grigio', value: 'bg-gray-100 border-gray-300 text-gray-800' }
 ];
 
-const serviceTypes = [
-  'Piega',
-  'Colore',
-  'Taglio',
-  'Colpi di sole',
-  'Trattamento',
-  'Altro'
-];
-
 const AppointmentForm: React.FC<AppointmentFormProps> = ({
   isOpen,
   onClose,
@@ -61,6 +51,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   employees,
   timeSlots
 }) => {
+  const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
+  const availableServices = selectedEmployee ? serviceCategories[selectedEmployee.specialization].services : [];
+
   const handleGoogleCalendarSync = () => {
     const startDate = new Date(`${new Date().toISOString().split('T')[0]}T${formData.time}:00`);
     const endDate = new Date(startDate.getTime() + parseInt(formData.duration) * 60000);
@@ -88,7 +81,10 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               </Label>
               <Select
                 value={formData.employeeId}
-                onValueChange={(value) => onFormDataChange('employeeId', value)}
+                onValueChange={(value) => {
+                  onFormDataChange('employeeId', value);
+                  onFormDataChange('serviceType', ''); // Reset service when changing employee
+                }}
               >
                 <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                   <SelectValue placeholder="Seleziona dipendente" />
@@ -96,7 +92,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 <SelectContent>
                   {employees.map(employee => (
                     <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.name}
+                      {employee.name} ({employee.specialization})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -130,17 +126,18 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="serviceType" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <Scissors className="h-4 w-4" />
-                Tipo di Servizio
+                Tipo di Servizio {selectedEmployee && `(${selectedEmployee.specialization})`}
               </Label>
               <Select
                 value={formData.serviceType}
                 onValueChange={(value) => onFormDataChange('serviceType', value)}
+                disabled={!selectedEmployee}
               >
                 <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
-                  <SelectValue placeholder="Seleziona servizio" />
+                  <SelectValue placeholder={selectedEmployee ? "Seleziona servizio" : "Prima seleziona dipendente"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {serviceTypes.map(service => (
+                  {availableServices.map(service => (
                     <SelectItem key={service} value={service}>
                       {service}
                     </SelectItem>

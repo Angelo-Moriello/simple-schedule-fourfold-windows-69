@@ -11,7 +11,7 @@ export interface Appointment {
   email?: string;
   phone?: string;
   color: string; // colore per l'etichetta
-  serviceType: string; // nuovo campo per il tipo di servizio
+  serviceType: string;
 }
 
 export interface Employee {
@@ -19,4 +19,21 @@ export interface Employee {
   name: string;
   color: string;
   vacations?: string[]; // array of dates in 'yyyy-MM-dd' format
+  specialization: 'Parrucchiere' | 'Estetista';
 }
+
+export interface ServiceCategory {
+  name: string;
+  services: string[];
+}
+
+export const serviceCategories: Record<'Parrucchiere' | 'Estetista', ServiceCategory> = {
+  Parrucchiere: {
+    name: 'Parrucchiere',
+    services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
+  },
+  Estetista: {
+    name: 'Estetista',
+    services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+  }
+};

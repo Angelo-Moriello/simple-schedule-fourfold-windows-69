@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, addDays, subDays } from 'date-fns';
-import { Appointment, Employee } from '@/types/appointment';
+import { Appointment, Employee, serviceCategories } from '@/types/appointment';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,10 +13,10 @@ import EmployeeManager from './EmployeeManager';
 import VacationManager from './VacationManager';
 
 const defaultEmployees: Employee[] = [
-  { id: 1, name: 'Marco Rossi', color: 'bg-blue-100 border-blue-300', vacations: [] },
-  { id: 2, name: 'Anna Verdi', color: 'bg-green-100 border-green-300', vacations: [] },
-  { id: 3, name: 'Luca Bianchi', color: 'bg-yellow-100 border-yellow-300', vacations: [] },
-  { id: 4, name: 'Sara Neri', color: 'bg-purple-100 border-purple-300', vacations: [] }
+  { id: 1, name: 'Marco Rossi', color: 'bg-blue-100 border-blue-300', vacations: [], specialization: 'Parrucchiere' },
+  { id: 2, name: 'Anna Verdi', color: 'bg-green-100 border-green-300', vacations: [], specialization: 'Estetista' },
+  { id: 3, name: 'Luca Bianchi', color: 'bg-yellow-100 border-yellow-300', vacations: [], specialization: 'Parrucchiere' },
+  { id: 4, name: 'Sara Neri', color: 'bg-purple-100 border-purple-300', vacations: [], specialization: 'Estetista' }
 ];
 
 const employeeColors = [
@@ -123,19 +123,20 @@ const AppointmentScheduler = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAddEmployee = (name: string) => {
+  const handleAddEmployee = (name: string, specialization: 'Parrucchiere' | 'Estetista') => {
     const newId = Math.max(...employees.map(e => e.id), 0) + 1;
     const colorIndex = employees.length % employeeColors.length;
     const newEmployee: Employee = {
       id: newId,
       name,
       color: employeeColors[colorIndex],
-      vacations: []
+      vacations: [],
+      specialization
     };
     setEmployees(prev => [...prev, newEmployee]);
     toast({
       title: "Dipendente aggiunto",
-      description: `${name} è stato aggiunto con successo.`,
+      description: `${name} (${specialization}) è stato aggiunto con successo.`,
     });
   };
 
@@ -268,6 +269,20 @@ const AppointmentScheduler = () => {
       return;
     }
 
+    // Verifica compatibilità servizio-specializzazione
+    const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
+    if (selectedEmployee) {
+      const allowedServices = serviceCategories[selectedEmployee.specialization].services;
+      if (!allowedServices.includes(formData.serviceType)) {
+        toast({
+          title: "Errore",
+          description: `${selectedEmployee.name} (${selectedEmployee.specialization}) non può eseguire questo servizio.`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     const newAppointment: Appointment = {
       id: editingAppointment?.id || Date.now().toString(),
       employeeId: parseInt(formData.employeeId),
@@ -314,8 +329,9 @@ const AppointmentScheduler = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
+        {/* Header responsive */}
+        <div className="flex flex-col space-y-4 mb-6 sm:mb-8">
           <DateNavigation
             currentDate={currentDate}
             onPrevDay={handlePrevDay}
@@ -323,29 +339,38 @@ const AppointmentScheduler = () => {
             onToday={handleToday}
             onOpenCalendar={() => setIsCalendarOpen(true)}
           />
-          <div className="flex gap-3">
+          
+          {/* Buttons row - responsive */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <Button
               onClick={() => navigate('/history')}
-              className="h-12 px-6 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
+              className="flex-1 sm:flex-none h-10 sm:h-12 px-3 sm:px-6 text-xs sm:text-sm rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
             >
-              <History className="h-4 w-4 mr-2" />
-              Storico Appuntamenti
+              <History className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              Storico
             </Button>
-            <EmployeeManager
-              employees={employees}
-              onAddEmployee={handleAddEmployee}
-              onRemoveEmployee={handleRemoveEmployee}
-              onBackupData={handleBackupData}
-              onRestoreData={handleRestoreData}
-            />
-            <VacationManager
-              employees={employees}
-              onUpdateEmployeeVacations={handleUpdateEmployeeVacations}
-            />
+            <div className="flex gap-2 sm:gap-3">
+              <div className="flex-1 sm:flex-none">
+                <EmployeeManager
+                  employees={employees}
+                  onAddEmployee={handleAddEmployee}
+                  onRemoveEmployee={handleRemoveEmployee}
+                  onBackupData={handleBackupData}
+                  onRestoreData={handleRestoreData}
+                />
+              </div>
+              <div className="flex-1 sm:flex-none">
+                <VacationManager
+                  employees={employees}
+                  onUpdateEmployeeVacations={handleUpdateEmployeeVacations}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Grid responsive */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
           {employees.map(employee => (
             <EmployeeColumn
               key={employee.id}
