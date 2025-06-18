@@ -3,19 +3,29 @@ import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Calendar, User, Briefcase, ArrowLeft } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Search, Calendar, User, Briefcase, ArrowLeft, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { Appointment, Employee } from '@/types/appointment';
+import Statistics from '@/components/Statistics';
 
 const AppointmentHistory = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showStatistics, setShowStatistics] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   // Carica i dati dal localStorage
   const appointments: Appointment[] = JSON.parse(localStorage.getItem('appointments') || '[]');
   const employees: Employee[] = JSON.parse(localStorage.getItem('employees') || '[]');
+
+  // Ottieni tutti i nomi clienti unici per l'omnibox
+  const uniqueClients = useMemo(() => {
+    const clients = new Set(appointments.map(app => app.client));
+    return Array.from(clients).filter(client => client.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [appointments, searchTerm]);
 
   // Filtra e ordina gli appuntamenti
   const filteredAppointments = useMemo(() => {
@@ -39,6 +49,10 @@ const AppointmentHistory = () => {
     }
   };
 
+  if (showStatistics) {
+    return <Statistics appointments={appointments} employees={employees} onBack={() => setShowStatistics(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="max-w-6xl mx-auto px-4 py-6">
@@ -53,17 +67,45 @@ const AppointmentHistory = () => {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
             Storico Appuntamenti
           </h1>
+          <Button
+            onClick={() => setShowStatistics(true)}
+            className="ml-auto bg-purple-600 hover:bg-purple-700"
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Statistiche
+          </Button>
         </div>
 
         <div className="mb-6">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Cerca per nome cliente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500"
-            />
+            <Command className="rounded-lg border shadow-md">
+              <CommandInput
+                placeholder="Cerca per nome cliente..."
+                value={searchTerm}
+                onValueChange={setSearchTerm}
+                onFocus={() => setShowSearch(true)}
+                onBlur={() => setTimeout(() => setShowSearch(false), 200)}
+              />
+              {showSearch && uniqueClients.length > 0 && (
+                <CommandList className="max-h-48">
+                  <CommandGroup>
+                    {uniqueClients.map((client) => (
+                      <CommandItem
+                        key={client}
+                        onSelect={() => {
+                          setSearchTerm(client);
+                          setShowSearch(false);
+                        }}
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        {client}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                  <CommandEmpty>Nessun cliente trovato</CommandEmpty>
+                </CommandList>
+              )}
+            </Command>
           </div>
         </div>
 
