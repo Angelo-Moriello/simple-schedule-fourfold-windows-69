@@ -52,7 +52,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   timeSlots
 }) => {
   const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
-  const availableServices = selectedEmployee ? serviceCategories[selectedEmployee.specialization].services : [];
+  const availableServices = selectedEmployee && serviceCategories[selectedEmployee.specialization] 
+    ? serviceCategories[selectedEmployee.specialization].services 
+    : [];
 
   const handleGoogleCalendarSync = () => {
     const startDate = new Date(`${new Date().toISOString().split('T')[0]}T${formData.time}:00`);
