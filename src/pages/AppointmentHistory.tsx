@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { Appointment, Employee } from '@/types/appointment';
 import { loadAppointments, loadEmployees } from '@/utils/dataStorage';
 import Statistics from '@/components/Statistics';
-import Header from '@/components/Header';
+import SimpleHeader from '@/components/SimpleHeader';
 
 type DateFilter = 'all' | 'today' | 'week' | 'month' | 'custom';
 
@@ -113,7 +113,7 @@ const AppointmentHistory = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="w-full max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-        <Header 
+        <SimpleHeader 
           title="Storico Appuntamenti"
           subtitle={`${filteredAppointments.length} appuntamenti trovati`}
         >
@@ -133,7 +133,7 @@ const AppointmentHistory = () => {
             <BarChart3 className="h-4 w-4 mr-2" />
             Statistiche
           </Button>
-        </Header>
+        </SimpleHeader>
 
         {/* Enhanced filters */}
         <div className="space-y-4 mb-6">
