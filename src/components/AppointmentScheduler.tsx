@@ -26,6 +26,7 @@ import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
 import EmployeeNameEditor from './EmployeeNameEditor';
 import VacationManager from './VacationManager';
+import ServiceCategoryManager from './ServiceCategoryManager';
 import { toast } from 'sonner';
 
 const AppointmentScheduler = () => {
@@ -361,6 +362,7 @@ const AppointmentScheduler = () => {
               employees={employees}
               onUpdateEmployeeVacations={handleUpdateEmployeeVacations}
             />
+            <ServiceCategoryManager />
           </div>
           <Button onClick={handleOpenEmployeeForm} className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-3">
             Gestisci Dipendenti
@@ -378,23 +380,6 @@ const AppointmentScheduler = () => {
                     employee={employee}
                     onUpdateName={updateEmployeeName}
                   />
-                  
-                  {/* Specialization selector */}
-                  <Select 
-                    onValueChange={(value) => {
-                      const updatedEmployee = { ...employee, specialization: value as 'Parrucchiere' | 'Estetista' };
-                      updateEmployee(updatedEmployee);
-                    }} 
-                    defaultValue={employee.specialization}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Seleziona Categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Parrucchiere">Parrucchiere</SelectItem>
-                      <SelectItem value="Estetista">Estetista</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 {/* Time slots grid */}

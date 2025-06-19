@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Mail, Phone } from 'lucide-react';
+import { Edit, Trash2, Mail, Phone, Briefcase } from 'lucide-react';
 import { Appointment, Employee } from '@/types/appointment';
 
 interface AppointmentCardProps {
@@ -26,6 +26,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       </div>
       <div className="text-xs mt-1 text-gray-700 font-medium">
         {appointment.client}
+      </div>
+      <div className="text-xs mt-1 flex items-center gap-1 text-purple-600 font-medium">
+        <Briefcase className="h-3 w-3" />
+        {appointment.serviceType || 'Non specificato'}
       </div>
       {appointment.email && (
         <div className="text-xs mt-1 flex items-center gap-1 text-gray-600">
