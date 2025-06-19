@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -41,6 +40,15 @@ const generateTimeSlots = () => {
     slots.push(`${String(i).padStart(2, '0')}:30`);
   }
   return slots;
+};
+
+// Generate a proper UUID
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 };
 
 const AppointmentForm: React.FC<AppointmentFormProps> = ({
@@ -163,7 +171,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
     try {
       const appointmentData: Appointment = {
-        id: appointmentToEdit?.id || Date.now().toString(),
+        id: appointmentToEdit?.id || generateUUID(), // Use proper UUID generation
         employeeId: parseInt(formData.employeeId),
         date: format(date, 'yyyy-MM-dd'),
         time: formData.time,

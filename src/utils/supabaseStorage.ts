@@ -2,6 +2,15 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Appointment, Employee } from '@/types/appointment';
 
+// Generate a proper UUID
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 // Employee operations
 export const saveEmployeesToSupabase = async (employees: Employee[]) => {
   try {
@@ -133,31 +142,33 @@ export const saveAppointmentsToSupabase = async (appointments: Appointment[]) =>
   try {
     console.log('Salvataggio appuntamenti su Supabase:', appointments);
     
-    // First, clear existing appointments
-    const { error: deleteError } = await supabase.from('appointments').delete().neq('id', '');
+    // First, clear existing appointments - use proper condition to avoid UUID errors
+    const { error: deleteError } = await supabase.from('appointments').delete().gt('created_at', '2000-01-01');
     if (deleteError) {
       console.error('Errore nella cancellazione appuntamenti esistenti:', deleteError);
       throw deleteError;
     }
     
-    // Insert new appointments
+    // Insert new appointments with proper UUID conversion
     if (appointments.length > 0) {
-      const { error: insertError } = await supabase.from('appointments').insert(
-        appointments.map(app => ({
-          id: app.id,
-          employee_id: app.employeeId,
-          date: app.date,
-          time: app.time,
-          title: app.title,
-          client: app.client,
-          duration: app.duration,
-          notes: app.notes,
-          email: app.email,
-          phone: app.phone,
-          color: app.color,
-          service_type: app.serviceType
-        }))
-      );
+      const appointmentsToInsert = appointments.map(app => ({
+        id: app.id.includes('-') ? app.id : generateUUID(), // Convert timestamp IDs to UUID
+        employee_id: app.employeeId,
+        date: app.date,
+        time: app.time,
+        title: app.title,
+        client: app.client,
+        duration: app.duration,
+        notes: app.notes,
+        email: app.email,
+        phone: app.phone,
+        color: app.color,
+        service_type: app.serviceType
+      }));
+      
+      console.log('Appuntamenti con UUID corretti:', appointmentsToInsert);
+      
+      const { error: insertError } = await supabase.from('appointments').insert(appointmentsToInsert);
       if (insertError) {
         console.error('Errore nell\'inserimento appuntamenti:', insertError);
         throw insertError;
@@ -209,8 +220,12 @@ export const loadAppointmentsFromSupabase = async (): Promise<Appointment[]> => 
 export const addAppointmentToSupabase = async (appointment: Appointment) => {
   try {
     console.log('Aggiunta appuntamento a Supabase:', appointment);
+    
+    // Ensure we have a proper UUID
+    const appointmentId = appointment.id.includes('-') ? appointment.id : generateUUID();
+    
     const { error } = await supabase.from('appointments').insert({
-      id: appointment.id,
+      id: appointmentId,
       employee_id: appointment.employeeId,
       date: appointment.date,
       time: appointment.time,
@@ -304,7 +319,12 @@ export const migrateLocalStorageToSupabase = async () => {
       const appointments = JSON.parse(storedAppointments);
       console.log('Appuntamenti da migrare:', appointments);
       if (appointments.length > 0) {
-        await saveAppointmentsToSupabase(appointments);
+        // Convert timestamp IDs to UUIDs during migration
+        const appointmentsWithUUIDs = appointments.map((app: Appointment) => ({
+          ...app,
+          id: app.id.includes('-') ? app.id : generateUUID() // Convert timestamp IDs to UUID
+        }));
+        await saveAppointmentsToSupabase(appointmentsWithUUIDs);
         console.log('Appuntamenti migrati con successo');
       }
     }
