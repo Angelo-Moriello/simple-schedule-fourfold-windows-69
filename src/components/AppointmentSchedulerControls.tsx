@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Clock, TrendingUp, Plane, Settings, Users } from 'lucide-react';
+import { Clock, TrendingUp, Scissors, Users } from 'lucide-react';
 import VacationManager from './VacationManager';
 import ServiceCategoryManager from './ServiceCategoryManager';
 import DateNavigator from './DateNavigator';
+import LogoManager from './LogoManager';
 import { Employee } from '@/types/appointment';
 
 interface AppointmentSchedulerControlsProps {
@@ -43,12 +44,7 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
       </div>
       
       {/* Seconda riga: Tutti i pulsanti con stile uniforme */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <VacationManager 
-          employees={employees}
-          onUpdateEmployeeVacations={onUpdateEmployeeVacations}
-        />
-        
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <Button 
           variant="outline" 
           className="h-10 px-3 gap-2 text-sm"
@@ -58,8 +54,6 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
           Storico
         </Button>
         
-        <ServiceCategoryManager />
-        
         <Button 
           variant="outline" 
           className="h-10 px-3 gap-2 text-sm"
@@ -68,6 +62,15 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
           <TrendingUp className="h-4 w-4" />
           Statistiche
         </Button>
+        
+        <ServiceCategoryManager />
+        
+        <VacationManager 
+          employees={employees}
+          onUpdateEmployeeVacations={onUpdateEmployeeVacations}
+        />
+        
+        <LogoManager />
         
         <Button 
           onClick={onOpenEmployeeForm} 

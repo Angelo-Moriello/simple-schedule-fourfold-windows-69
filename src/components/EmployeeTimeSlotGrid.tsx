@@ -1,9 +1,8 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Employee, Appointment } from '@/types/appointment';
-import { getOccupiedSlots, isSlotOccupied } from '@/utils/timeSlotUtils';
 import TimeSlot from './TimeSlot';
 import EmployeeNameEditor from './EmployeeNameEditor';
 
@@ -46,12 +45,20 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
     return employee.vacations.includes(dateString);
   }, [employees]);
 
-  const getEmployeeAppointmentsForTimeSlot = (employeeId: number, time: string) => {
+  const getEmployeeAppointmentsForTimeSlot = useCallback((employeeId: number, time: string) => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     return appointments.find(
       appointment => appointment.employeeId === employeeId && appointment.date === dateString && appointment.time === time
     );
-  };
+  }, [appointments, selectedDate]);
+
+  // Filtra gli appuntamenti per la data selezionata
+  const todaysAppointments = appointments.filter(appointment => 
+    appointment.date === format(selectedDate, 'yyyy-MM-dd')
+  );
+
+  console.log('Appuntamenti per oggi:', todaysAppointments);
+  console.log('Data selezionata:', format(selectedDate, 'yyyy-MM-dd'));
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -68,8 +75,6 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
             <div className="grid grid-cols-1 gap-2">
               {timeSlots.map(time => {
                 const appointment = getEmployeeAppointmentsForTimeSlot(employee.id, time);
-                const occupiedSlots = getOccupiedSlots(appointments, employee.id, format(selectedDate, 'yyyy-MM-dd'));
-                const isOccupied = isSlotOccupied(time, occupiedSlots);
                 const vacation = isVacationDay(employee.id, selectedDate);
 
                 return (
@@ -82,7 +87,7 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
                     onEditAppointment={onEditAppointment}
                     onDeleteAppointment={onDeleteAppointment}
                     isVacationDay={vacation}
-                    isOccupied={isOccupied}
+                    isOccupied={false}
                   />
                 );
               })}

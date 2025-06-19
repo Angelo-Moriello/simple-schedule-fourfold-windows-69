@@ -18,6 +18,7 @@ import AppointmentSchedulerControls from './AppointmentSchedulerControls';
 import EmployeeTimeSlotGrid from './EmployeeTimeSlotGrid';
 import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
+import { format } from 'date-fns';
 
 const AppointmentScheduler = () => {
   const navigate = useNavigate();
@@ -85,6 +86,27 @@ const AppointmentScheduler = () => {
 
     loadData();
   }, []);
+
+  // Ricarica i dati quando cambia la data selezionata
+  useEffect(() => {
+    const reloadDataForDate = async () => {
+      try {
+        console.log('Ricaricamento dati per la data:', format(selectedDate, 'yyyy-MM-dd'));
+        const [loadedEmployees, loadedAppointments] = await Promise.all([
+          loadEmployeesFromSupabase(),
+          loadAppointmentsFromSupabase()
+        ]);
+        
+        setEmployees(loadedEmployees);
+        setAppointments(loadedAppointments);
+        console.log('Dati ricaricati per la nuova data');
+      } catch (error) {
+        console.error('Errore nel ricaricamento dei dati:', error);
+      }
+    };
+
+    reloadDataForDate();
+  }, [selectedDate]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -248,8 +270,7 @@ const AppointmentScheduler = () => {
   };
 
   const handleNavigateToStatistics = () => {
-    // For now, we'll show a toast. Later this could navigate to a statistics page
-    toast.info('Funzionalità statistiche in sviluppo');
+    navigate('/statistics');
   };
 
   if (isLoading) {
@@ -263,6 +284,11 @@ const AppointmentScheduler = () => {
     );
   }
 
+  // Filtra gli appuntamenti per la data corrente per l'header
+  const todaysAppointments = appointments.filter(appointment => 
+    appointment.date === format(selectedDate, 'yyyy-MM-dd')
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
@@ -270,7 +296,7 @@ const AppointmentScheduler = () => {
         <AppointmentSchedulerHeader
           selectedDate={selectedDate}
           employees={employees}
-          appointments={appointments}
+          appointments={todaysAppointments}
         />
 
         <AppointmentSchedulerControls
