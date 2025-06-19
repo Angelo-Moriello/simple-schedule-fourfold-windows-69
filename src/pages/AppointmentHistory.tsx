@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,18 +25,30 @@ const AppointmentHistory = () => {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
-  // Carica i dati dal localStorage con la nuova utility
-  const appointments: Appointment[] = loadAppointments();
-  const employees: Employee[] = loadEmployees();
+  // Carica i dati dal localStorage con la nuova utility - aggiungiamo controlli di sicurezza
+  const appointments: Appointment[] = loadAppointments() || [];
+  const employees: Employee[] = loadEmployees() || [];
 
-  // Ottieni tutti i nomi clienti unici per l'omnibox
+  // Ottieni tutti i nomi clienti unici per l'omnibox - aggiungiamo controlli di sicurezza
   const uniqueClients = useMemo(() => {
-    const clients = new Set(appointments.map(app => app.client));
-    return Array.from(clients).filter(client => client.toLowerCase().includes(searchTerm.toLowerCase()));
+    if (!appointments || !Array.isArray(appointments)) {
+      return [];
+    }
+    const clients = new Set(appointments
+      .filter(app => app && app.client) // Filtriamo appuntamenti validi
+      .map(app => app.client)
+    );
+    return Array.from(clients).filter(client => 
+      client && client.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   }, [appointments, searchTerm]);
 
-  // Enhanced filtering with date filter
+  // Enhanced filtering with date filter - aggiungiamo controlli di sicurezza
   const filteredAppointments = useMemo(() => {
+    if (!appointments || !Array.isArray(appointments)) {
+      return [];
+    }
+
     let dateFilteredAppointments = appointments;
 
     // Apply date filter
@@ -75,6 +88,7 @@ const AppointmentHistory = () => {
       }
 
       dateFilteredAppointments = appointments.filter(appointment => {
+        if (!appointment || !appointment.date) return false;
         const appointmentDate = new Date(appointment.date);
         return isWithinInterval(appointmentDate, { start: startDate, end: endDate });
       });
@@ -83,23 +97,31 @@ const AppointmentHistory = () => {
     // Apply search filter
     return dateFilteredAppointments
       .filter(appointment => 
+        appointment && 
+        appointment.client && 
         appointment.client.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .sort((a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime());
+      .sort((a, b) => {
+        if (!a.date || !a.time || !b.date || !b.time) return 0;
+        return new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime();
+      });
   }, [appointments, searchTerm, dateFilter, customStartDate, customEndDate]);
 
   const getEmployeeName = (employeeId: number) => {
-    const employee = employees.find(emp => emp.id === employeeId);
+    if (!employees || !Array.isArray(employees)) return 'Dipendente non trovato';
+    const employee = employees.find(emp => emp && emp.id === employeeId);
     return employee ? employee.name : 'Dipendente non trovato';
   };
 
   const getEmployeeSpecialization = (employeeId: number) => {
-    const employee = employees.find(emp => emp.id === employeeId);
+    if (!employees || !Array.isArray(employees)) return '';
+    const employee = employees.find(emp => emp && emp.id === employeeId);
     return employee ? employee.specialization : '';
   };
 
   const formatDate = (dateStr: string) => {
     try {
+      if (!dateStr) return 'Data non valida';
       return format(new Date(dateStr), 'dd MMMM yyyy', { locale: it });
     } catch (error) {
       return dateStr;
@@ -190,7 +212,7 @@ const AppointmentHistory = () => {
             </div>
           </Card>
 
-          {/* Search Bar */}
+          {/* Search Bar - con controlli di sicurezza migliorati */}
           <div className="relative w-full">
             <Command className="rounded-lg border shadow-md bg-white">
               <CommandInput
@@ -201,7 +223,7 @@ const AppointmentHistory = () => {
                 onBlur={() => setTimeout(() => setShowSearch(false), 200)}
                 className="h-12 px-4 text-base"
               />
-              {showSearch && uniqueClients.length > 0 && (
+              {showSearch && uniqueClients && uniqueClients.length > 0 && (
                 <CommandList className="max-h-48 border-t">
                   <CommandGroup>
                     {uniqueClients.map((client) => (
@@ -243,7 +265,7 @@ const AppointmentHistory = () => {
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-blue-600 shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-gray-800 text-sm sm:text-base truncate">{appointment.client}</p>
+                          <p className="font-semibold text-gray-800 text-sm sm:text-base truncate">{appointment.client || 'Cliente sconosciuto'}</p>
                           <p className="text-xs sm:text-sm text-gray-600 truncate">
                             {getEmployeeName(appointment.employeeId)} ({getEmployeeSpecialization(appointment.employeeId)})
                           </p>
