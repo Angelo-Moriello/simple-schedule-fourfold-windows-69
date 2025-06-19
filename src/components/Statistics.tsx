@@ -4,10 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { ArrowLeft, TrendingUp, Users, Calendar, Printer, Filter } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Users, Calendar, Filter } from 'lucide-react';
 import { Appointment, Employee } from '@/types/appointment';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
 import { it } from 'date-fns/locale';
+import Header from './Header';
+import PrintOptions, { PrintOptions as PrintOptionsType } from './PrintOptions';
 
 interface StatisticsProps {
   appointments: Appointment[];
@@ -138,17 +140,25 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
     }
   };
 
-  const handlePrint = () => {
+  // Enhanced print function with chart support
+  const handlePrint = (options: PrintOptionsType) => {
+    // Create chart as SVG for printing
+    const chartSvg = options.includeChart ? generateChartSvg() : '';
+    
     const printContent = `
       <html>
         <head>
           <title>Statistiche Appuntamenti - ${formatPeriodLabel()}</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
-            h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+            .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+            .logo { height: 50px; width: 50px; object-fit: contain; }
+            h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; margin: 0; }
             h2 { color: #666; margin-top: 30px; }
             .summary { display: flex; gap: 20px; margin: 20px 0; flex-wrap: wrap; }
             .summary-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px; }
+            .chart-container { margin: 20px 0; text-align: center; }
+            .chart-container svg { max-width: 100%; height: auto; }
             .service-list { list-style: none; padding: 0; }
             .service-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
             .employee-section { margin: 20px 0; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
@@ -161,12 +171,17 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
           </style>
         </head>
         <body>
-          <h1>Statistiche Appuntamenti</h1>
+          <div class="header">
+            <img src="/lovable-uploads/e3330001-9a6b-4c26-a431-89d19870edfe.png" alt="Da Capo a Piedi" class="logo">
+            <h1>Statistiche Appuntamenti</h1>
+          </div>
+          
           <div class="filter-info">
             <p><strong>Periodo:</strong> ${formatPeriodLabel()}</p>
             <p><strong>Specializzazione:</strong> ${specializationFilter === 'all' ? 'Tutte' : specializationFilter}</p>
           </div>
           
+          ${options.includeSummary ? `
           <div class="summary">
             <div class="summary-card">
               <h3>Totale Appuntamenti</h3>
@@ -181,7 +196,28 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
               <p style="font-size: 24px; font-weight: bold;">${employeeStats.length}</p>
             </div>
           </div>
+          ` : ''}
 
+          ${options.includeChart ? `
+          <div class="chart-container">
+            <h2>Distribuzione Tipi di Servizio</h2>
+            ${chartSvg}
+          </div>
+          ` : ''}
+
+          ${options.includeServiceDetails ? `
+          <h2>Dettaglio Servizi</h2>
+          <ul class="service-list">
+            ${serviceStats.map(service => `
+              <li class="service-item">
+                <span>${service.name}</span>
+                <span><strong>${service.value}</strong> (${service.percentage}%)</span>
+              </li>
+            `).join('')}
+          </ul>
+          ` : ''}
+
+          ${options.includeEmployeeStats ? `
           <h2>Statistiche per Dipendente</h2>
           ${employeeStats.map(employee => `
             <div class="employee-section">
@@ -193,6 +229,7 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
                   <span class="service-tag">${service.serviceType}: ${service.count}</span>
                 `).join('')}
               </div>
+              ${options.includeClientDetails ? `
               <div class="client-list">
                 <h4>Dettaglio Clienti:</h4>
                 ${employee.clientDetails.slice(0, 10).map(client => `
@@ -203,8 +240,10 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
                 `).join('')}
                 ${employee.clientDetails.length > 10 ? `<p style="font-style: italic;">...e altri ${employee.clientDetails.length - 10} appuntamenti</p>` : ''}
               </div>
+              ` : ''}
             </div>
           `).join('')}
+          ` : ''}
         </body>
       </html>
     `;
@@ -218,6 +257,37 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
     }
   };
 
+  // Function to generate chart SVG for printing
+  const generateChartSvg = () => {
+    if (serviceStats.length === 0) return '<p>Nessun dato disponibile</p>';
+    
+    // Simple bar chart representation for print
+    const maxValue = Math.max(...serviceStats.map(s => s.value));
+    const chartHeight = 300;
+    const barWidth = 40;
+    const gap = 10;
+    const chartWidth = serviceStats.length * (barWidth + gap);
+    
+    return `
+      <svg width="${chartWidth}" height="${chartHeight + 50}" xmlns="http://www.w3.org/2000/svg">
+        ${serviceStats.map((service, index) => {
+          const barHeight = (service.value / maxValue) * chartHeight;
+          const x = index * (barWidth + gap);
+          const y = chartHeight - barHeight;
+          
+          return `
+            <rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" 
+                  fill="${colors[index % colors.length]}" stroke="#333" stroke-width="1"/>
+            <text x="${x + barWidth/2}" y="${chartHeight + 15}" text-anchor="middle" 
+                  font-size="10" transform="rotate(45, ${x + barWidth/2}, ${chartHeight + 15})">${service.name}</text>
+            <text x="${x + barWidth/2}" y="${y - 5}" text-anchor="middle" 
+                  font-size="12" font-weight="bold">${service.value}</text>
+          `;
+        }).join('')}
+      </svg>
+    `;
+  };
+
   const chartConfig = {
     serviceType: {
       label: "Tipo di Servizio",
@@ -227,7 +297,10 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 sm:mb-8">
+        <Header 
+          title="Statistiche Appuntamenti"
+          subtitle={`Periodo: ${formatPeriodLabel()} - ${specializationFilter === 'all' ? 'Tutte le specializzazioni' : specializationFilter}`}
+        >
           <Button
             variant="outline"
             onClick={onBack}
@@ -235,22 +308,8 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-              Statistiche Appuntamenti
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">
-              Periodo: {formatPeriodLabel()} - {specializationFilter === 'all' ? 'Tutte le specializzazioni' : specializationFilter}
-            </p>
-          </div>
-          <Button
-            onClick={handlePrint}
-            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 h-10 sm:h-12 px-4 sm:px-6"
-          >
-            <Printer className="h-4 w-4 mr-2" />
-            Stampa
-          </Button>
-        </div>
+          <PrintOptions onPrint={handlePrint} />
+        </Header>
 
         {/* Enhanced filters */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 sm:mb-8">

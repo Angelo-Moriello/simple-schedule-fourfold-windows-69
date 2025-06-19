@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -9,12 +8,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
-import { Appointment, Employee, ServiceCategory, serviceCategories } from '@/types/appointment';
+import { Appointment, Employee } from '@/types/appointment';
 import { getOccupiedSlots, isSlotOccupied } from '@/utils/timeSlotUtils';
+import { saveAppointments, loadAppointments, saveEmployees, loadEmployees } from '@/utils/dataStorage';
 import TimeSlot from './TimeSlot';
 import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
 import EmployeeNameEditor from './EmployeeNameEditor';
+import Header from './Header';
 import { toast } from 'sonner';
 import BackupManager from './BackupManager';
 
@@ -30,27 +31,36 @@ const AppointmentScheduler = () => {
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [showFullCalendar, setShowFullCalendar] = useState(false);
 
-  // Load data from localStorage on component mount
+  // Load data from localStorage on component mount with improved handling
   useEffect(() => {
-    const storedAppointments = localStorage.getItem('appointments');
-    if (storedAppointments) {
-      setAppointments(JSON.parse(storedAppointments));
-    }
+    const loadedAppointments = loadAppointments();
+    const loadedEmployees = loadEmployees();
+    
+    setAppointments(loadedAppointments);
+    setEmployees(loadedEmployees);
 
-    const storedEmployees = localStorage.getItem('employees');
-    if (storedEmployees) {
-      setEmployees(JSON.parse(storedEmployees));
-    }
+    // Listen for storage events to sync data across tabs
+    const handleStorageChange = () => {
+      setAppointments(loadAppointments());
+      setEmployees(loadEmployees());
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Save appointments to localStorage whenever appointments change
   useEffect(() => {
-    localStorage.setItem('appointments', JSON.stringify(appointments));
+    if (appointments.length > 0 || localStorage.getItem('appointments')) {
+      saveAppointments(appointments);
+    }
   }, [appointments]);
 
   // Save employees to localStorage whenever employees change
   useEffect(() => {
-    localStorage.setItem('employees', JSON.stringify(employees));
+    if (employees.length > 0 || localStorage.getItem('employees')) {
+      saveEmployees(employees);
+    }
   }, [employees]);
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -180,65 +190,54 @@ const AppointmentScheduler = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
-        {/* Header with enhanced controls */}
-        <div className="flex flex-col gap-4 mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                Calendario Appuntamenti
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">
-                {format(selectedDate, 'EEEE, dd MMMM yyyy', { locale: it })}
-              </p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-              <BackupManager />
-              <Button
-                onClick={() => navigate('/history')}
-                className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 h-10 sm:h-12 px-4 sm:px-6"
-              >
-                <Clock className="h-4 w-4 mr-2" />
-                Storico
-              </Button>
-              <Button 
-                onClick={() => setShowFullCalendar(true)}
-                variant="outline"
-                className="w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Vista Mese
-              </Button>
-            </div>
-          </div>
+        <Header 
+          title="Calendario Appuntamenti"
+          subtitle={format(selectedDate, 'EEEE, dd MMMM yyyy', { locale: it })}
+        >
+          <BackupManager />
+          <Button
+            onClick={() => navigate('/history')}
+            className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 h-10 sm:h-12 px-4 sm:px-6"
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            Storico
+          </Button>
+          <Button 
+            onClick={() => setShowFullCalendar(true)}
+            variant="outline"
+            className="w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6"
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Vista Mese
+          </Button>
+        </Header>
 
-          {/* Management buttons */}
-          <div className="flex items-center justify-between p-3 sm:p-4 bg-white rounded-lg shadow-md">
-            <div className="flex items-center gap-3">
-              <Popover open={showFullCalendar} onOpenChange={setShowFullCalendar}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="h-9 px-3">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    <span>Seleziona Data</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    captionLayout="dropdown"
-                    defaultMonth={selectedDate}
-                    selected={selectedDate}
-                    onSelect={handleDateSelect}
-                    className="rounded-md border-0"
-                    style={{ width: '100%' }}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <Button onClick={handleOpenEmployeeForm} className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-3">
-              Gestisci Dipendenti
-            </Button>
+        {/* Management buttons */}
+        <div className="flex items-center justify-between p-3 sm:p-4 bg-white rounded-lg shadow-md mb-6">
+          <div className="flex items-center gap-3">
+            <Popover open={showFullCalendar} onOpenChange={setShowFullCalendar}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="h-9 px-3">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  <span>Seleziona Data</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  captionLayout="dropdown"
+                  defaultMonth={selectedDate}
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  className="rounded-md border-0"
+                  style={{ width: '100%' }}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
+          <Button onClick={handleOpenEmployeeForm} className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-3">
+            Gestisci Dipendenti
+          </Button>
         </div>
 
         {/* Employee Time Slots - 4 columns on desktop */}

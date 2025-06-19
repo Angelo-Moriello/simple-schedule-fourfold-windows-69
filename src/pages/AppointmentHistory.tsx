@@ -9,7 +9,9 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInter
 import { it } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { Appointment, Employee } from '@/types/appointment';
+import { loadAppointments, loadEmployees } from '@/utils/dataStorage';
 import Statistics from '@/components/Statistics';
+import Header from '@/components/Header';
 
 type DateFilter = 'all' | 'today' | 'week' | 'month' | 'custom';
 
@@ -22,9 +24,9 @@ const AppointmentHistory = () => {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
-  // Carica i dati dal localStorage
-  const appointments: Appointment[] = JSON.parse(localStorage.getItem('appointments') || '[]');
-  const employees: Employee[] = JSON.parse(localStorage.getItem('employees') || '[]');
+  // Carica i dati dal localStorage con la nuova utility
+  const appointments: Appointment[] = loadAppointments();
+  const employees: Employee[] = loadEmployees();
 
   // Ottieni tutti i nomi clienti unici per l'omnibox
   const uniqueClients = useMemo(() => {
@@ -111,22 +113,19 @@ const AppointmentHistory = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="w-full max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 sm:mb-8">
+        <Header 
+          title="Storico Appuntamenti"
+          subtitle={`${filteredAppointments.length} appuntamenti trovati`}
+        >
           <Button
             variant="outline"
             onClick={() => navigate('/')}
             className="h-10 w-10 rounded-full shrink-0"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-              Storico Appuntamenti
-            </h1>
-            <p className="text-sm text-gray-600 mt-1">
-              {filteredAppointments.length} appuntamenti trovati
-            </p>
-          </div>
           <Button
             onClick={() => setShowStatistics(true)}
             className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 h-10 sm:h-12 px-4 sm:px-6"
@@ -134,7 +133,7 @@ const AppointmentHistory = () => {
             <BarChart3 className="h-4 w-4 mr-2" />
             Statistiche
           </Button>
-        </div>
+        </Header>
 
         {/* Enhanced filters */}
         <div className="space-y-4 mb-6">
