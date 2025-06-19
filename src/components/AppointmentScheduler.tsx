@@ -288,10 +288,10 @@ const AppointmentScheduler = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.employeeId || !formData.time || !formData.title || !formData.client || !formData.serviceType) {
+    if (!formData.employeeId || !formData.time || !formData.client || !formData.serviceType) {
       toast({
         title: "Errore",
-        description: "Compila tutti i campi obbligatori incluso il tipo di servizio.",
+        description: "Compila tutti i campi obbligatori (dipendente, orario, cliente e tipo di servizio).",
         variant: "destructive"
       });
       return;
@@ -316,7 +316,7 @@ const AppointmentScheduler = () => {
       employeeId: parseInt(formData.employeeId),
       date: dateKey,
       time: formData.time,
-      title: formData.title,
+      title: formData.title || `${formData.serviceType} - ${formData.client}`,
       client: formData.client,
       duration: parseInt(formData.duration),
       notes: formData.notes,

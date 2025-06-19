@@ -83,18 +83,18 @@ const AppointmentHistory = () => {
         </div>
 
         <div className="mb-6">
-          <div className="relative w-full max-w-md">
-            <Command className="rounded-lg border shadow-md">
+          <div className="relative w-full">
+            <Command className="rounded-lg border shadow-md bg-white">
               <CommandInput
                 placeholder="Cerca per nome cliente..."
                 value={searchTerm}
                 onValueChange={setSearchTerm}
                 onFocus={() => setShowSearch(true)}
                 onBlur={() => setTimeout(() => setShowSearch(false), 200)}
-                className="h-10 sm:h-12"
+                className="h-12 px-4 text-base"
               />
               {showSearch && uniqueClients.length > 0 && (
-                <CommandList className="max-h-48">
+                <CommandList className="max-h-48 border-t">
                   <CommandGroup>
                     {uniqueClients.map((client) => (
                       <CommandItem
@@ -103,13 +103,16 @@ const AppointmentHistory = () => {
                           setSearchTerm(client);
                           setShowSearch(false);
                         }}
+                        className="px-4 py-3 cursor-pointer hover:bg-gray-50"
                       >
-                        <User className="mr-2 h-4 w-4" />
-                        {client}
+                        <User className="mr-3 h-4 w-4 shrink-0" />
+                        <span className="text-base">{client}</span>
                       </CommandItem>
                     ))}
                   </CommandGroup>
-                  <CommandEmpty>Nessun cliente trovato</CommandEmpty>
+                  <CommandEmpty className="py-6 text-center text-sm text-gray-500">
+                    Nessun cliente trovato
+                  </CommandEmpty>
                 </CommandList>
               )}
             </Command>
@@ -158,7 +161,7 @@ const AppointmentHistory = () => {
                         <Briefcase className="h-4 w-4 text-purple-600 shrink-0" />
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{appointment.serviceType || 'Non specificato'}</p>
-                          <p className="text-xs sm:text-sm text-gray-600 truncate">{appointment.title}</p>
+                          <p className="text-xs sm:text-sm text-gray-600 truncate">{appointment.title || 'Senza titolo'}</p>
                         </div>
                       </div>
                     </div>

@@ -63,7 +63,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     const startDate = new Date(`${new Date().toISOString().split('T')[0]}T${formData.time}:00`);
     const endDate = new Date(startDate.getTime() + parseInt(formData.duration) * 60000);
     
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(formData.title)}&dates=${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent(`Cliente: ${formData.client}\nServizio: ${formData.serviceType}\nEmail: ${formData.email}\nTelefono: ${formData.phone}\nNote: ${formData.notes}`)}&location=${encodeURIComponent('Studio')}`;
+    const title = formData.title || `${formData.serviceType} - ${formData.client}`;
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent(`Cliente: ${formData.client}\nServizio: ${formData.serviceType}\nEmail: ${formData.email}\nTelefono: ${formData.phone}\nNote: ${formData.notes}`)}&location=${encodeURIComponent('Studio')}`;
     
     window.open(googleCalendarUrl, '_blank');
   };
@@ -82,7 +83,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="employee" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <User className="h-4 w-4" />
-                Dipendente
+                Dipendente <span className="text-red-500">*</span>
               </Label>
               <Select
                 value={formData.employeeId}
@@ -107,7 +108,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="time" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <Clock className="h-4 w-4" />
-                Orario
+                Orario <span className="text-red-500">*</span>
               </Label>
               <Select
                 value={formData.time}
@@ -131,7 +132,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="serviceType" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <Scissors className="h-4 w-4" />
-                Tipo di Servizio {selectedEmployee && `(${selectedEmployee.specialization})`}
+                Tipo di Servizio <span className="text-red-500">*</span> {selectedEmployee && `(${selectedEmployee.specialization})`}
               </Label>
               <Select
                 value={formData.serviceType}
@@ -154,7 +155,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="title" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <FileText className="h-4 w-4" />
-                Titolo Appuntamento
+                Titolo Appuntamento (opzionale)
               </Label>
               <Input
                 id="title"
@@ -170,7 +171,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="client" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <User className="h-4 w-4" />
-                Cliente
+                Cliente <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="client"
@@ -242,7 +243,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           <div className="space-y-2">
             <Label htmlFor="duration" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
               <Clock className="h-4 w-4" />
-              Durata (minuti)
+              Durata (minuti) <span className="text-red-500">*</span>
             </Label>
             <Select
               value={formData.duration}

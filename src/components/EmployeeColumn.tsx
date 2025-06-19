@@ -5,6 +5,7 @@ import { Appointment, Employee } from '@/types/appointment';
 import TimeSlot from './TimeSlot';
 import EmployeeNameEditor from './EmployeeNameEditor';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { getOccupiedSlots, isSlotOccupied } from '@/utils/timeSlotUtils';
 
 interface EmployeeColumnProps {
   employee: Employee;
@@ -35,6 +36,9 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
   
   // Check if current date is a vacation day for this employee
   const isVacationDay = employee.vacations?.includes(dateKey) || false;
+  
+  // Get occupied slots for this employee on this date
+  const occupiedSlots = getOccupiedSlots(appointments, employee.id, dateKey);
   
   // Mobile accordion view
   const mobileView = (
@@ -78,6 +82,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                   onEditAppointment={onEditAppointment}
                   onDeleteAppointment={onDeleteAppointment}
                   isVacationDay={isVacationDay}
+                  isOccupied={isSlotOccupied(time, occupiedSlots)}
                 />
               );
             })}
@@ -117,6 +122,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
               onEditAppointment={onEditAppointment}
               onDeleteAppointment={onDeleteAppointment}
               isVacationDay={isVacationDay}
+              isOccupied={isSlotOccupied(time, occupiedSlots)}
             />
           );
         })}

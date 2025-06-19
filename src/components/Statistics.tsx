@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { ArrowLeft, TrendingUp, Users, Calendar } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Users, Calendar, Printer } from 'lucide-react';
 import { Appointment, Employee } from '@/types/appointment';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -110,6 +110,79 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
     }
   };
 
+  const handlePrint = () => {
+    const printContent = `
+      <html>
+        <head>
+          <title>Statistiche Appuntamenti - ${formatPeriodLabel()}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+            h2 { color: #666; margin-top: 30px; }
+            .summary { display: flex; gap: 20px; margin: 20px 0; }
+            .summary-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; }
+            .service-list { list-style: none; padding: 0; }
+            .service-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
+            .employee-section { margin: 20px 0; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
+            .service-breakdown { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+            .service-tag { background: #f0f0f0; padding: 5px 10px; border-radius: 15px; font-size: 12px; }
+            @media print { body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <h1>Statistiche Appuntamenti</h1>
+          <p><strong>Periodo:</strong> ${formatPeriodLabel()}</p>
+          
+          <div class="summary">
+            <div class="summary-card">
+              <h3>Totale Appuntamenti</h3>
+              <p style="font-size: 24px; font-weight: bold;">${filteredAppointments.length}</p>
+            </div>
+            <div class="summary-card">
+              <h3>Clienti Unici</h3>
+              <p style="font-size: 24px; font-weight: bold;">${new Set(filteredAppointments.map(app => app.client)).size}</p>
+            </div>
+            <div class="summary-card">
+              <h3>Servizi Diversi</h3>
+              <p style="font-size: 24px; font-weight: bold;">${serviceStats.length}</p>
+            </div>
+          </div>
+
+          <h2>Distribuzione Servizi</h2>
+          <ul class="service-list">
+            ${serviceStats.map(service => `
+              <li class="service-item">
+                <span>${service.name}</span>
+                <span><strong>${service.value}</strong> (${service.percentage}%)</span>
+              </li>
+            `).join('')}
+          </ul>
+
+          <h2>Statistiche per Dipendente</h2>
+          ${employeeStats.map(employee => `
+            <div class="employee-section">
+              <h3>${employee.name} (${employee.specialization})</h3>
+              <p><strong>Totale appuntamenti:</strong> ${employee.totalAppointments}</p>
+              <div class="service-breakdown">
+                ${employee.serviceBreakdown.map(service => `
+                  <span class="service-tag">${service.serviceType}: ${service.count}</span>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+      printWindow.close();
+    }
+  };
+
   const chartConfig = {
     serviceType: {
       label: "Tipo di Servizio",
@@ -135,10 +208,17 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
               Periodo: {formatPeriodLabel()}
             </p>
           </div>
+          <Button
+            onClick={handlePrint}
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 h-10 sm:h-12 px-4 sm:px-6"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Stampa
+          </Button>
         </div>
 
         {/* Filtri temporali */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 sm:mb-8">
           <Select value={timeFilter} onValueChange={(value: TimeFilter) => setTimeFilter(value)}>
             <SelectTrigger className="h-10 sm:h-12">
               <SelectValue />
@@ -155,7 +235,7 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
             type="date"
             value={format(selectedDate, 'yyyy-MM-dd')}
             onChange={(e) => setSelectedDate(new Date(e.target.value))}
-            className="h-10 sm:h-12 px-3 border border-gray-300 rounded-md text-sm sm:text-base col-span-2 sm:col-span-1"
+            className="h-10 sm:h-12 px-3 border border-gray-300 rounded-md text-sm sm:text-base"
           />
         </div>
 
@@ -200,7 +280,7 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
             </CardHeader>
             <CardContent>
               {serviceStats.length > 0 ? (
-                <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px] sm:max-h-[300px]">
+                <div className="w-full h-[300px] sm:h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -209,7 +289,7 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
                         cy="50%"
                         labelLine={false}
                         label={({ name, percentage }) => `${name} (${percentage}%)`}
-                        outerRadius={60}
+                        outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
                       >
@@ -217,12 +297,27 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
                           <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                         ))}
                       </Pie>
-                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartTooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white p-3 border rounded-lg shadow-lg">
+                                <p className="font-medium">{data.name}</p>
+                                <p className="text-sm text-gray-600">
+                                  Appuntamenti: {data.value} ({data.percentage}%)
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
-                </ChartContainer>
+                </div>
               ) : (
-                <div className="flex items-center justify-center h-[200px] text-gray-500">
+                <div className="flex items-center justify-center h-[300px] text-gray-500">
                   Nessun dato disponibile per il periodo selezionato
                 </div>
               )}
@@ -235,7 +330,7 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
               <CardTitle className="text-base sm:text-lg">Dettaglio Servizi</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 max-h-[300px] overflow-y-auto">
+              <div className="space-y-3 max-h-[350px] overflow-y-auto">
                 {serviceStats.length > 0 ? serviceStats.map((service, index) => (
                   <div key={service.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 min-w-0 flex-1">

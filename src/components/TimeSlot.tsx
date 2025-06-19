@@ -13,6 +13,7 @@ interface TimeSlotProps {
   onEditAppointment: (appointment: Appointment) => void;
   onDeleteAppointment: (appointmentId: string) => void;
   isVacationDay?: boolean;
+  isOccupied?: boolean;
 }
 
 const TimeSlot: React.FC<TimeSlotProps> = ({
@@ -22,8 +23,11 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   onAddAppointment,
   onEditAppointment,
   onDeleteAppointment,
-  isVacationDay = false
+  isVacationDay = false,
+  isOccupied = false
 }) => {
+  const isDisabled = isVacationDay || (isOccupied && !appointment);
+  
   return (
     <div className="relative">
       <div className={`flex items-center text-xs font-medium mb-2 px-2 py-1 rounded ${
@@ -43,14 +47,16 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
         <Button
           variant="ghost"
           className={`w-full h-12 border-2 border-dashed transition-all duration-200 ${
-            isVacationDay 
+            isDisabled
               ? 'border-red-300 bg-red-50 text-red-400 cursor-not-allowed opacity-60' 
+              : isOccupied
+              ? 'border-orange-300 bg-orange-50 text-orange-400 cursor-not-allowed opacity-60'
               : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-gray-500 hover:text-gray-700'
           }`}
-          onClick={() => !isVacationDay && onAddAppointment(employee.id, time)}
-          disabled={isVacationDay}
+          onClick={() => !isDisabled && onAddAppointment(employee.id, time)}
+          disabled={isDisabled}
         >
-          {isVacationDay ? 'Ferie' : <Plus className="h-4 w-4" />}
+          {isVacationDay ? 'Ferie' : isOccupied ? 'Occupato' : <Plus className="h-4 w-4" />}
         </Button>
       )}
     </div>
