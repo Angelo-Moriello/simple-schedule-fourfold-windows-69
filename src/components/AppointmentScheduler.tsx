@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Appointment, Employee } from '@/types/appointment';
 import { 
@@ -20,6 +20,8 @@ import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
 
 const AppointmentScheduler = () => {
+  const navigate = useNavigate();
+  
   // Initialize states properly
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -240,6 +242,16 @@ const AppointmentScheduler = () => {
     }
   };
 
+  // Navigation handlers
+  const handleNavigateToHistory = () => {
+    navigate('/history');
+  };
+
+  const handleNavigateToStatistics = () => {
+    // For now, we'll show a toast. Later this could navigate to a statistics page
+    toast.info('Funzionalità statistiche in sviluppo');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
@@ -259,7 +271,6 @@ const AppointmentScheduler = () => {
           selectedDate={selectedDate}
           employees={employees}
           appointments={appointments}
-          onShowFullCalendar={() => setShowFullCalendar(true)}
         />
 
         <AppointmentSchedulerControls
@@ -270,6 +281,8 @@ const AppointmentScheduler = () => {
           onShowFullCalendar={setShowFullCalendar}
           onOpenEmployeeForm={handleOpenEmployeeForm}
           onUpdateEmployeeVacations={handleUpdateEmployeeVacations}
+          onNavigateToHistory={handleNavigateToHistory}
+          onNavigateToStatistics={handleNavigateToStatistics}
         />
 
         <EmployeeTimeSlotGrid
