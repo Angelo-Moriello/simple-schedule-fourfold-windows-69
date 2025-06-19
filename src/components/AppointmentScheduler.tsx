@@ -13,6 +13,7 @@ import { getOccupiedSlots, isSlotOccupied } from '@/utils/timeSlotUtils';
 import TimeSlot from './TimeSlot';
 import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
+import EmployeeNameEditor from './EmployeeNameEditor';
 import { toast } from 'sonner';
 import BackupManager from './BackupManager';
 
@@ -156,6 +157,59 @@ const AppointmentScheduler = () => {
     );
   };
 
+  const updateEmployeeName = (employeeId: number, newName: string) => {
+    const updatedEmployees = employees.map(employee =>
+      employee.id === employeeId ? { ...employee, name: newName } : employee
+    );
+    setEmployees(updatedEmployees);
+    toast.success('Nome dipendente aggiornato con successo!');
+  };
+
+  const handleOpenAppointmentForm = (employeeId: number, time: string) => {
+    setSelectedEmployeeId(employeeId);
+    setSelectedTime(time);
+    setIsAppointmentFormOpen(true);
+  };
+
+  const handleEditAppointment = (appointment: Appointment) => {
+    setAppointmentToEdit(appointment);
+    setIsAppointmentFormOpen(true);
+  };
+
+  const handleCloseAppointmentForm = () => {
+    setIsAppointmentFormOpen(false);
+    setAppointmentToEdit(null);
+  };
+
+  const handleOpenEmployeeForm = () => {
+    setIsEmployeeFormOpen(true);
+  };
+
+  const handleCloseEmployeeForm = () => {
+    setIsEmployeeFormOpen(false);
+  };
+
+  const isVacationDay = useCallback((employeeId: number, date: Date): boolean => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    if (!employee || !employee.vacations) {
+      return false;
+    }
+    const dateString = format(date, 'yyyy-MM-dd');
+    return employee.vacations.includes(dateString);
+  }, [employees]);
+
+  const getAppointmentsForDay = (date: Date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    return appointments.filter(appointment => appointment.date === dateString);
+  };
+
+  const getEmployeeAppointmentsForTimeSlot = (employeeId: number, time: string) => {
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    return appointments.find(
+      appointment => appointment.employeeId === employeeId && appointment.date === dateString && appointment.time === time
+    );
+  };
+
   const generateTimeSlots = () => {
     const slots = [];
     for (let i = 8; i <= 19; i++) {
@@ -231,14 +285,21 @@ const AppointmentScheduler = () => {
           </div>
         </div>
 
-        {/* Employee Time Slots */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Employee Time Slots - Modified for 4 columns on desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {employees.map(employee => (
             <Card key={employee.id} className="bg-white rounded-lg shadow-md overflow-hidden">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800">{employee.name}</h2>
-                  <Select onValueChange={(value) => {
+                <div className="flex flex-col gap-4 mb-4">
+                  {/* Employee name with inline editing */}
+                  <EmployeeNameEditor
+                    employee={employee}
+                    onUpdateName={updateEmployeeName}
+                  />
+                  
+                  {/* Specialization selector */}
+                  <Select 
+                    onValueChange={(value) => {
                       const updatedEmployees = employees.map(emp => {
                         if (emp.id === employee.id) {
                           return { ...emp, specialization: value as 'Parrucchiere' | 'Estetista' };
@@ -246,8 +307,10 @@ const AppointmentScheduler = () => {
                         return emp;
                       });
                       setEmployees(updatedEmployees);
-                    }} defaultValue={employee.specialization}>
-                    <SelectTrigger className="w-[180px]">
+                    }} 
+                    defaultValue={employee.specialization}
+                  >
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Seleziona Categoria" />
                     </SelectTrigger>
                     <SelectContent>
@@ -256,7 +319,9 @@ const AppointmentScheduler = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-4">
+
+                {/* Time slots grid - Responsive layout */}
+                <div className="grid grid-cols-1 gap-2">
                   {timeSlots.map(time => {
                     const appointment = getEmployeeAppointmentsForTimeSlot(employee.id, time);
                     const occupiedSlots = getOccupiedSlots(appointments, employee.id, format(selectedDate, 'yyyy-MM-dd'));
@@ -278,13 +343,6 @@ const AppointmentScheduler = () => {
                     );
                   })}
                 </div>
-                <Button
-                  variant="destructive"
-                  onClick={() => deleteEmployee(employee.id)}
-                  className="mt-4 w-full"
-                >
-                  Elimina Dipendente
-                </Button>
               </CardContent>
             </Card>
           ))}
