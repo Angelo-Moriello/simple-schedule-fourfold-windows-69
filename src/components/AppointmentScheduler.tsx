@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -23,7 +24,6 @@ import { format } from 'date-fns';
 const AppointmentScheduler = () => {
   const navigate = useNavigate();
   
-  // Initialize states properly
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -40,37 +40,28 @@ const AppointmentScheduler = () => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        console.log('Inizio caricamento dati da Supabase...');
         
         // Check if we need to migrate from localStorage
         const hasLocalData = localStorage.getItem('employees') || localStorage.getItem('appointments');
         if (hasLocalData) {
-          console.log('Dati localStorage trovati, avvio migrazione...');
           toast.info('Migrazione dati in corso...');
           const migrationSuccess = await migrateLocalStorageToSupabase();
           if (migrationSuccess) {
-            // Clear localStorage after successful migration
             localStorage.removeItem('employees');
             localStorage.removeItem('appointments');
             localStorage.removeItem('employeesTimestamp');
             localStorage.removeItem('appointmentsTimestamp');
-            console.log('Migrazione completata, localStorage pulito');
             toast.success('Dati migrati con successo su Supabase!');
           } else {
-            console.error('Migrazione fallita');
             toast.error('Errore durante la migrazione dei dati');
           }
         }
         
         // Load current data from Supabase
-        console.log('Caricamento dipendenti e appuntamenti da Supabase...');
         const [loadedEmployees, loadedAppointments] = await Promise.all([
           loadEmployeesFromSupabase(),
           loadAppointmentsFromSupabase()
         ]);
-        
-        console.log('Dipendenti caricati:', loadedEmployees);
-        console.log('Appuntamenti caricati:', loadedAppointments);
         
         setEmployees(loadedEmployees);
         setAppointments(loadedAppointments);
@@ -87,18 +78,14 @@ const AppointmentScheduler = () => {
     loadData();
   }, []);
 
-  // Ricarica i dati quando cambia la data selezionata
+  // Reload data when selected date changes
   useEffect(() => {
     const reloadDataForDate = async () => {
       try {
-        console.log('Ricaricamento dati per la data:', format(selectedDate, 'yyyy-MM-dd'));
         const [loadedEmployees, loadedAppointments] = await Promise.all([
           loadEmployeesFromSupabase(),
           loadAppointmentsFromSupabase()
         ]);
-        
-        console.log('Dati ricaricati - Dipendenti:', loadedEmployees.length);
-        console.log('Dati ricaricati - Appuntamenti:', loadedAppointments.length);
         
         setEmployees(loadedEmployees);
         setAppointments(loadedAppointments);
@@ -112,7 +99,6 @@ const AppointmentScheduler = () => {
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
-      console.log('Data selezionata cambiata a:', format(date, 'yyyy-MM-dd'));
       setSelectedDate(date);
     }
     setShowFullCalendar(false);
@@ -120,7 +106,6 @@ const AppointmentScheduler = () => {
 
   const addAppointment = async (newAppointment: Appointment) => {
     try {
-      console.log('Aggiunta nuovo appuntamento:', newAppointment);
       await addAppointmentToSupabase(newAppointment);
       setAppointments(prev => [...prev, newAppointment]);
       setIsAppointmentFormOpen(false);
@@ -133,7 +118,6 @@ const AppointmentScheduler = () => {
 
   const updateAppointment = async (updatedAppointment: Appointment) => {
     try {
-      console.log('Aggiornamento appuntamento:', updatedAppointment);
       await updateAppointmentInSupabase(updatedAppointment);
       setAppointments(prev => prev.map(appointment =>
         appointment.id === updatedAppointment.id ? updatedAppointment : appointment
@@ -149,7 +133,6 @@ const AppointmentScheduler = () => {
 
   const deleteAppointment = async (appointmentId: string) => {
     try {
-      console.log('Eliminazione appuntamento:', appointmentId);
       await deleteAppointmentFromSupabase(appointmentId);
       setAppointments(prev => prev.filter(appointment => appointment.id !== appointmentId));
       toast.success('Appuntamento eliminato con successo!');
@@ -161,7 +144,6 @@ const AppointmentScheduler = () => {
 
   const addEmployee = async (newEmployee: Employee) => {
     try {
-      console.log('Aggiunta nuovo dipendente:', newEmployee);
       await addEmployeeToSupabase(newEmployee);
       setEmployees(prev => [...prev, newEmployee]);
       setIsEmployeeFormOpen(false);
@@ -174,7 +156,6 @@ const AppointmentScheduler = () => {
 
   const updateEmployee = async (updatedEmployee: Employee) => {
     try {
-      console.log('Aggiornamento dipendente:', updatedEmployee);
       await updateEmployeeInSupabase(updatedEmployee);
       setEmployees(prev => prev.map(employee =>
         employee.id === updatedEmployee.id ? updatedEmployee : employee
@@ -189,7 +170,6 @@ const AppointmentScheduler = () => {
 
   const deleteEmployee = async (employeeId: number) => {
     try {
-      console.log('Eliminazione dipendente:', employeeId);
       // Remove employee's appointments first
       const employeeAppointments = appointments.filter(appointment => appointment.employeeId === employeeId);
       for (const appointment of employeeAppointments) {
@@ -234,7 +214,6 @@ const AppointmentScheduler = () => {
 
   const updateEmployeeName = async (employeeId: number, newName: string) => {
     try {
-      console.log('Aggiornamento nome dipendente:', employeeId, newName);
       const employee = employees.find(emp => emp.id === employeeId);
       if (employee) {
         const updatedEmployee = { ...employee, name: newName };
@@ -267,7 +246,6 @@ const AppointmentScheduler = () => {
     }
   };
 
-  // Navigation handlers
   const handleNavigateToHistory = () => {
     navigate('/history');
   };
@@ -286,15 +264,6 @@ const AppointmentScheduler = () => {
       </div>
     );
   }
-
-  // Filtra gli appuntamenti per la data corrente per l'header
-  const todaysAppointments = appointments.filter(appointment => 
-    appointment.date === format(selectedDate, 'yyyy-MM-dd')
-  );
-
-  console.log('AppointmentScheduler - Total appointments:', appointments.length);
-  console.log('AppointmentScheduler - Today\'s appointments:', todaysAppointments.length);
-  console.log('AppointmentScheduler - Selected date:', format(selectedDate, 'yyyy-MM-dd'));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">

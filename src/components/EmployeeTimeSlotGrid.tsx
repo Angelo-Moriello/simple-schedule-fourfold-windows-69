@@ -1,5 +1,5 @@
 
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Employee, Appointment } from '@/types/appointment';
@@ -47,22 +47,12 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
 
   const getEmployeeAppointmentsForTimeSlot = useCallback((employeeId: number, time: string) => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
-    const appointment = appointments.find(
-      appointment => appointment.employeeId === employeeId && appointment.date === dateString && appointment.time === time
+    return appointments.find(
+      appointment => appointment.employeeId === employeeId && 
+                    appointment.date === dateString && 
+                    appointment.time === time
     );
-    
-    console.log(`TimeSlot Debug - Employee ${employeeId}, Time ${time}, Date ${dateString}:`, appointment);
-    return appointment;
   }, [appointments, selectedDate]);
-
-  // Filtra gli appuntamenti per la data selezionata
-  const todaysAppointments = appointments.filter(appointment => 
-    appointment.date === format(selectedDate, 'yyyy-MM-dd')
-  );
-
-  console.log('Grid - All appointments:', appointments);
-  console.log('Grid - Selected date:', format(selectedDate, 'yyyy-MM-dd'));
-  console.log('Grid - Today\'s appointments:', todaysAppointments);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
