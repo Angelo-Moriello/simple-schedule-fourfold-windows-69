@@ -1,11 +1,10 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from 'lucide-react';
+import { Clock, TrendingUp, Plane, Settings, Users } from 'lucide-react';
 import VacationManager from './VacationManager';
 import ServiceCategoryManager from './ServiceCategoryManager';
+import DateNavigator from './DateNavigator';
 import { Employee } from '@/types/appointment';
 
 interface AppointmentSchedulerControlsProps {
@@ -16,6 +15,8 @@ interface AppointmentSchedulerControlsProps {
   onShowFullCalendar: (show: boolean) => void;
   onOpenEmployeeForm: () => void;
   onUpdateEmployeeVacations: (employeeId: number, vacations: string[]) => void;
+  onNavigateToHistory: () => void;
+  onNavigateToStatistics: () => void;
 }
 
 const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> = ({
@@ -25,39 +26,57 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
   onDateSelect,
   onShowFullCalendar,
   onOpenEmployeeForm,
-  onUpdateEmployeeVacations
+  onUpdateEmployeeVacations,
+  onNavigateToHistory,
+  onNavigateToStatistics
 }) => {
   return (
-    <div className="flex items-center justify-between p-3 sm:p-4 bg-white rounded-lg shadow-md mb-6">
-      <div className="flex items-center gap-3">
-        <Popover open={showFullCalendar} onOpenChange={onShowFullCalendar}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="h-9 px-3">
-              <Calendar className="mr-2 h-4 w-4" />
-              <span>Seleziona Data</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <CalendarComponent
-              mode="single"
-              captionLayout="dropdown"
-              defaultMonth={selectedDate}
-              selected={selectedDate}
-              onSelect={onDateSelect}
-              className="rounded-md border-0"
-              style={{ width: '100%' }}
-            />
-          </PopoverContent>
-        </Popover>
+    <div className="flex flex-col gap-4 p-4 bg-white rounded-lg shadow-md mb-6">
+      {/* Prima riga: Navigazione data */}
+      <div className="flex items-center justify-center">
+        <DateNavigator
+          selectedDate={selectedDate}
+          showFullCalendar={showFullCalendar}
+          onDateSelect={onDateSelect}
+          onShowFullCalendar={onShowFullCalendar}
+        />
+      </div>
+      
+      {/* Seconda riga: Tutti i pulsanti con stile uniforme */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <VacationManager 
           employees={employees}
           onUpdateEmployeeVacations={onUpdateEmployeeVacations}
         />
+        
+        <Button 
+          variant="outline" 
+          className="h-10 px-3 gap-2 text-sm"
+          onClick={onNavigateToHistory}
+        >
+          <Clock className="h-4 w-4" />
+          Storico
+        </Button>
+        
         <ServiceCategoryManager />
+        
+        <Button 
+          variant="outline" 
+          className="h-10 px-3 gap-2 text-sm"
+          onClick={onNavigateToStatistics}
+        >
+          <TrendingUp className="h-4 w-4" />
+          Statistiche
+        </Button>
+        
+        <Button 
+          onClick={onOpenEmployeeForm} 
+          className="h-10 px-3 gap-2 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Users className="h-4 w-4" />
+          Gestisci Dipendenti
+        </Button>
       </div>
-      <Button onClick={onOpenEmployeeForm} className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-3">
-        Gestisci Dipendenti
-      </Button>
     </div>
   );
 };

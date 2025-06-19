@@ -26,6 +26,7 @@ interface PrintOptions {
   services: boolean;
   employees: boolean;
   clientDetails: boolean;
+  serviceDistribution: boolean;
 }
 
 const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
@@ -36,7 +37,8 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
     summary: true,
     services: true,
     employees: true,
-    clientDetails: false
+    clientDetails: false,
+    serviceDistribution: true
   });
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
@@ -175,6 +177,7 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
             .client-item { background: #f9f9f9; padding: 8px; border-radius: 4px; font-size: 0.85em; }
             .service-breakdown { display: flex; gap: 15px; flex-wrap: wrap; margin: 10px 0; }
             .service-chip { background: #e3f2fd; padding: 5px 10px; border-radius: 4px; font-size: 0.85em; }
+            .chart-placeholder { background: #f5f5f5; padding: 20px; text-align: center; border-radius: 8px; margin: 15px 0; }
             @media print { 
               body { margin: 0; } 
               .employee-section { page-break-inside: avoid; }
@@ -207,6 +210,24 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
             <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">${serviceStats.length}</p>
           </div>
         </div>
+      `;
+    }
+
+    if (printOptions.serviceDistribution && serviceStats.length > 0) {
+      printContent += `
+        <h2>Distribuzione Tipi di Servizio</h2>
+        <div class="chart-placeholder">
+          <p><strong>Grafico Distribuzione Servizi</strong></p>
+          <p>I servizi più richiesti nel periodo:</p>
+        </div>
+        <ul class="service-list">
+          ${serviceStats.slice(0, 5).map(service => `
+            <li class="service-item">
+              <span><strong>${service.name}</strong></span>
+              <span>${service.value} appuntamenti (${service.percentage}%)</span>
+            </li>
+          `).join('')}
+        </ul>
       `;
     }
 
@@ -317,6 +338,14 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
                     onCheckedChange={(checked) => setPrintOptions(prev => ({ ...prev, summary: checked as boolean }))}
                   />
                   <label htmlFor="summary" className="text-sm font-medium">Riepilogo Generale</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="serviceDistribution"
+                    checked={printOptions.serviceDistribution}
+                    onCheckedChange={(checked) => setPrintOptions(prev => ({ ...prev, serviceDistribution: checked as boolean }))}
+                  />
+                  <label htmlFor="serviceDistribution" className="text-sm font-medium">Distribuzione Tipi di Servizio</label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 

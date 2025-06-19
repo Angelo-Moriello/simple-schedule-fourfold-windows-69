@@ -80,7 +80,7 @@ const VacationManager: React.FC<VacationManagerProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="h-10 px-3 gap-2 text-sm">
           <Plane className="h-4 w-4" />
           Gestisci Ferie
         </Button>
