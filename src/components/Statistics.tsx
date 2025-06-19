@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ArrowLeft, TrendingUp, Users, Calendar, Filter, Printer } from 'lucide-react';
@@ -19,10 +21,24 @@ interface StatisticsProps {
 type TimeFilter = 'day' | 'week' | 'month' | 'year';
 type SpecializationFilter = 'all' | 'Parrucchiere' | 'Estetista';
 
+interface PrintOptions {
+  summary: boolean;
+  services: boolean;
+  employees: boolean;
+  clientDetails: boolean;
+}
+
 const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [specializationFilter, setSpecializationFilter] = useState<SpecializationFilter>('all');
+  const [printOptions, setPrintOptions] = useState<PrintOptions>({
+    summary: true,
+    services: true,
+    employees: true,
+    clientDetails: false
+  });
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
   const serviceTypes = ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli', 'Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo'];
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d084d0', '#87ceeb', '#dda0dd', '#98fb98', '#f0e68c', '#ffa07a'];
@@ -139,49 +155,114 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
     }
   };
 
-  // Simplified print function
+  // Enhanced print function with selectable options
   const handlePrint = () => {
-    const printContent = `
+    let printContent = `
       <html>
         <head>
           <title>Statistiche Appuntamenti - ${formatPeriodLabel()}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
+            body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; }
             h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
             h2 { color: #666; margin-top: 30px; }
+            h3 { color: #777; margin-top: 20px; }
             .summary { display: flex; gap: 20px; margin: 20px 0; flex-wrap: wrap; }
             .summary-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px; }
             .service-list { list-style: none; padding: 0; }
             .service-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
-            .employee-section { margin: 20px 0; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
-            @media print { body { margin: 0; } }
+            .employee-section { margin: 20px 0; border: 1px solid #ddd; padding: 15px; border-radius: 8px; page-break-inside: avoid; }
+            .client-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
+            .client-item { background: #f9f9f9; padding: 8px; border-radius: 4px; font-size: 0.85em; }
+            .service-breakdown { display: flex; gap: 15px; flex-wrap: wrap; margin: 10px 0; }
+            .service-chip { background: #e3f2fd; padding: 5px 10px; border-radius: 4px; font-size: 0.85em; }
+            @media print { 
+              body { margin: 0; } 
+              .employee-section { page-break-inside: avoid; }
+            }
           </style>
         </head>
         <body>
           <h1>Statistiche Appuntamenti - ${formatPeriodLabel()}</h1>
-          <div class="summary">
-            <div class="summary-card">
-              <h3>Totale Appuntamenti</h3>
-              <p style="font-size: 24px; font-weight: bold;">${filteredAppointments.length}</p>
-            </div>
-            <div class="summary-card">
-              <h3>Clienti Unici</h3>
-              <p style="font-size: 24px; font-weight: bold;">${new Set(filteredAppointments.map(app => app.client)).size}</p>
-            </div>
-            <div class="summary-card">
-              <h3>Dipendenti Attivi</h3>
-              <p style="font-size: 24px; font-weight: bold;">${employeeStats.length}</p>
-            </div>
+          <p><strong>Filtro:</strong> ${specializationFilter === 'all' ? 'Tutte le specializzazioni' : specializationFilter}</p>
+    `;
+
+    if (printOptions.summary) {
+      printContent += `
+        <h2>Riepilogo Generale</h2>
+        <div class="summary">
+          <div class="summary-card">
+            <h3>Totale Appuntamenti</h3>
+            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">${filteredAppointments.length}</p>
           </div>
-          <h2>Dettaglio Servizi</h2>
-          <ul class="service-list">
-            ${serviceStats.map(service => `
-              <li class="service-item">
-                <span>${service.name}</span>
-                <span><strong>${service.value}</strong> (${service.percentage}%)</span>
-              </li>
-            `).join('')}
-          </ul>
+          <div class="summary-card">
+            <h3>Clienti Unici</h3>
+            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">${new Set(filteredAppointments.map(app => app.client)).size}</p>
+          </div>
+          <div class="summary-card">
+            <h3>Dipendenti Attivi</h3>
+            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">${employeeStats.length}</p>
+          </div>
+          <div class="summary-card">
+            <h3>Servizi Diversi</h3>
+            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">${serviceStats.length}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    if (printOptions.services && serviceStats.length > 0) {
+      printContent += `
+        <h2>Dettaglio Servizi</h2>
+        <ul class="service-list">
+          ${serviceStats.map(service => `
+            <li class="service-item">
+              <span><strong>${service.name}</strong></span>
+              <span>${service.value} appuntamenti (${service.percentage}%)</span>
+            </li>
+          `).join('')}
+        </ul>
+      `;
+    }
+
+    if (printOptions.employees && employeeStats.length > 0) {
+      printContent += `<h2>Statistiche per Dipendente</h2>`;
+      
+      employeeStats.forEach(employee => {
+        printContent += `
+          <div class="employee-section">
+            <h3>${employee.name} - ${employee.specialization}</h3>
+            <p><strong>Appuntamenti totali:</strong> ${employee.totalAppointments} | <strong>Clienti unici:</strong> ${employee.uniqueClients}</p>
+            
+            ${employee.serviceBreakdown.length > 0 ? `
+              <h4>Servizi erogati:</h4>
+              <div class="service-breakdown">
+                ${employee.serviceBreakdown.map(service => `
+                  <div class="service-chip">
+                    <strong>${service.serviceType}:</strong> ${service.count}
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+            
+            ${printOptions.clientDetails && employee.clientDetails.length > 0 ? `
+              <h4>Dettaglio Clienti (ultimi ${Math.min(employee.clientDetails.length, 12)}):</h4>
+              <div class="client-grid">
+                ${employee.clientDetails.slice(0, 12).map(client => `
+                  <div class="client-item">
+                    <strong>${client.client}</strong><br>
+                    ${format(new Date(client.date), 'dd/MM/yyyy', { locale: it })} alle ${client.time}<br>
+                    <em>${client.serviceType} (${client.duration} min)</em>
+                  </div>
+                `).join('')}
+              </div>
+              ${employee.clientDetails.length > 12 ? `<p><em>...e altri ${employee.clientDetails.length - 12} appuntamenti</em></p>` : ''}
+            ` : ''}
+          </div>
+        `;
+      });
+    }
+
+    printContent += `
         </body>
       </html>
     `;
@@ -193,6 +274,8 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
       printWindow.print();
       printWindow.close();
     }
+    
+    setIsPrintDialogOpen(false);
   };
 
   const chartConfig = {
@@ -215,10 +298,61 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <Button onClick={handlePrint} variant="outline" className="w-full sm:w-auto h-10 px-4">
-            <Printer className="h-4 w-4 mr-2" />
-            Stampa
-          </Button>
+          <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-auto h-10 px-4">
+                <Printer className="h-4 w-4 mr-2" />
+                Stampa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Opzioni di Stampa</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="summary"
+                    checked={printOptions.summary}
+                    onCheckedChange={(checked) => setPrintOptions(prev => ({ ...prev, summary: checked as boolean }))}
+                  />
+                  <label htmlFor="summary" className="text-sm font-medium">Riepilogo Generale</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="services"
+                    checked={printOptions.services}
+                    onCheckedChange={(checked) => setPrintOptions(prev => ({ ...prev, services: checked as boolean }))}
+                  />
+                  <label htmlFor="services" className="text-sm font-medium">Dettaglio Servizi</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="employees"
+                    checked={printOptions.employees}
+                    onCheckedChange={(checked) => setPrintOptions(prev => ({ ...prev, employees: checked as boolean }))}
+                  />
+                  <label htmlFor="employees" className="text-sm font-medium">Statistiche Dipendenti</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="clientDetails"
+                    checked={printOptions.clientDetails}
+                    onCheckedChange={(checked) => setPrintOptions(prev => ({ ...prev, clientDetails: checked as boolean }))}
+                  />
+                  <label htmlFor="clientDetails" className="text-sm font-medium">Dettaglio Clienti</label>
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button onClick={handlePrint} className="flex-1">
+                    Stampa Selezionate
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsPrintDialogOpen(false)}>
+                    Annulla
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </SimpleHeader>
 
         {/* Enhanced filters */}

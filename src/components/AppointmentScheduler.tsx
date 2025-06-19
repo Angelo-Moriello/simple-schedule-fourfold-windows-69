@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -26,6 +25,7 @@ import TimeSlot from './TimeSlot';
 import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
 import EmployeeNameEditor from './EmployeeNameEditor';
+import VacationManager from './VacationManager';
 import { toast } from 'sonner';
 
 const AppointmentScheduler = () => {
@@ -250,6 +250,23 @@ const AppointmentScheduler = () => {
     }
   };
 
+  const handleUpdateEmployeeVacations = async (employeeId: number, vacations: string[]) => {
+    try {
+      const employee = employees.find(emp => emp.id === employeeId);
+      if (employee) {
+        const updatedEmployee = { ...employee, vacations };
+        await updateEmployeeInSupabase(updatedEmployee);
+        setEmployees(prev => prev.map(emp =>
+          emp.id === employeeId ? updatedEmployee : emp
+        ));
+        toast.success('Ferie aggiornate con successo!');
+      }
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento delle ferie:', error);
+      toast.error('Errore nell\'aggiornamento delle ferie');
+    }
+  };
+
   const generateTimeSlots = () => {
     const slots = [];
     for (let i = 8; i <= 19; i++) {
@@ -340,6 +357,10 @@ const AppointmentScheduler = () => {
                 />
               </PopoverContent>
             </Popover>
+            <VacationManager 
+              employees={employees}
+              onUpdateEmployeeVacations={handleUpdateEmployeeVacations}
+            />
           </div>
           <Button onClick={handleOpenEmployeeForm} className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-3">
             Gestisci Dipendenti
