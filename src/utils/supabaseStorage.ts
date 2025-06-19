@@ -5,12 +5,18 @@ import { Appointment, Employee } from '@/types/appointment';
 // Employee operations
 export const saveEmployeesToSupabase = async (employees: Employee[]) => {
   try {
+    console.log('Salvataggio dipendenti su Supabase:', employees);
+    
     // First, clear existing employees
-    await supabase.from('employees').delete().neq('id', 0);
+    const { error: deleteError } = await supabase.from('employees').delete().neq('id', 0);
+    if (deleteError) {
+      console.error('Errore nella cancellazione dipendenti esistenti:', deleteError);
+      throw deleteError;
+    }
     
     // Insert new employees
     if (employees.length > 0) {
-      const { error } = await supabase.from('employees').insert(
+      const { error: insertError } = await supabase.from('employees').insert(
         employees.map(emp => ({
           id: emp.id,
           name: emp.name,
@@ -19,8 +25,12 @@ export const saveEmployeesToSupabase = async (employees: Employee[]) => {
           vacations: emp.vacations || []
         }))
       );
-      if (error) throw error;
+      if (insertError) {
+        console.error('Errore nell\'inserimento dipendenti:', insertError);
+        throw insertError;
+      }
     }
+    console.log('Dipendenti salvati con successo');
   } catch (error) {
     console.error('Errore nel salvare i dipendenti su Supabase:', error);
     throw error;
@@ -29,20 +39,27 @@ export const saveEmployeesToSupabase = async (employees: Employee[]) => {
 
 export const loadEmployeesFromSupabase = async (): Promise<Employee[]> => {
   try {
+    console.log('Caricamento dipendenti da Supabase...');
     const { data, error } = await supabase
       .from('employees')
       .select('*')
       .order('id');
     
-    if (error) throw error;
+    if (error) {
+      console.error('Errore nel caricamento dipendenti:', error);
+      throw error;
+    }
     
-    return data?.map(emp => ({
+    const employees = data?.map(emp => ({
       id: emp.id,
       name: emp.name,
       color: emp.color,
       specialization: emp.specialization as 'Parrucchiere' | 'Estetista',
       vacations: emp.vacations || []
     })) || [];
+    
+    console.log('Dipendenti caricati:', employees);
+    return employees;
   } catch (error) {
     console.error('Errore nel caricare i dipendenti da Supabase:', error);
     return [];
@@ -51,6 +68,7 @@ export const loadEmployeesFromSupabase = async (): Promise<Employee[]> => {
 
 export const addEmployeeToSupabase = async (employee: Employee) => {
   try {
+    console.log('Aggiunta dipendente a Supabase:', employee);
     const { error } = await supabase.from('employees').insert({
       id: employee.id,
       name: employee.name,
@@ -58,7 +76,11 @@ export const addEmployeeToSupabase = async (employee: Employee) => {
       specialization: employee.specialization,
       vacations: employee.vacations || []
     });
-    if (error) throw error;
+    if (error) {
+      console.error('Errore SQL nell\'aggiunta dipendente:', error);
+      throw error;
+    }
+    console.log('Dipendente aggiunto con successo');
   } catch (error) {
     console.error('Errore nell\'aggiungere dipendente su Supabase:', error);
     throw error;
@@ -67,6 +89,7 @@ export const addEmployeeToSupabase = async (employee: Employee) => {
 
 export const updateEmployeeInSupabase = async (employee: Employee) => {
   try {
+    console.log('Aggiornamento dipendente su Supabase:', employee);
     const { error } = await supabase
       .from('employees')
       .update({
@@ -76,7 +99,11 @@ export const updateEmployeeInSupabase = async (employee: Employee) => {
         vacations: employee.vacations || []
       })
       .eq('id', employee.id);
-    if (error) throw error;
+    if (error) {
+      console.error('Errore SQL nell\'aggiornamento dipendente:', error);
+      throw error;
+    }
+    console.log('Dipendente aggiornato con successo');
   } catch (error) {
     console.error('Errore nell\'aggiornare dipendente su Supabase:', error);
     throw error;
@@ -85,11 +112,16 @@ export const updateEmployeeInSupabase = async (employee: Employee) => {
 
 export const deleteEmployeeFromSupabase = async (employeeId: number) => {
   try {
+    console.log('Eliminazione dipendente da Supabase:', employeeId);
     const { error } = await supabase
       .from('employees')
       .delete()
       .eq('id', employeeId);
-    if (error) throw error;
+    if (error) {
+      console.error('Errore SQL nell\'eliminazione dipendente:', error);
+      throw error;
+    }
+    console.log('Dipendente eliminato con successo');
   } catch (error) {
     console.error('Errore nell\'eliminare dipendente da Supabase:', error);
     throw error;
@@ -99,12 +131,18 @@ export const deleteEmployeeFromSupabase = async (employeeId: number) => {
 // Appointment operations
 export const saveAppointmentsToSupabase = async (appointments: Appointment[]) => {
   try {
+    console.log('Salvataggio appuntamenti su Supabase:', appointments);
+    
     // First, clear existing appointments
-    await supabase.from('appointments').delete().neq('id', '');
+    const { error: deleteError } = await supabase.from('appointments').delete().neq('id', '');
+    if (deleteError) {
+      console.error('Errore nella cancellazione appuntamenti esistenti:', deleteError);
+      throw deleteError;
+    }
     
     // Insert new appointments
     if (appointments.length > 0) {
-      const { error } = await supabase.from('appointments').insert(
+      const { error: insertError } = await supabase.from('appointments').insert(
         appointments.map(app => ({
           id: app.id,
           employee_id: app.employeeId,
@@ -120,8 +158,12 @@ export const saveAppointmentsToSupabase = async (appointments: Appointment[]) =>
           service_type: app.serviceType
         }))
       );
-      if (error) throw error;
+      if (insertError) {
+        console.error('Errore nell\'inserimento appuntamenti:', insertError);
+        throw insertError;
+      }
     }
+    console.log('Appuntamenti salvati con successo');
   } catch (error) {
     console.error('Errore nel salvare gli appuntamenti su Supabase:', error);
     throw error;
@@ -130,14 +172,18 @@ export const saveAppointmentsToSupabase = async (appointments: Appointment[]) =>
 
 export const loadAppointmentsFromSupabase = async (): Promise<Appointment[]> => {
   try {
+    console.log('Caricamento appuntamenti da Supabase...');
     const { data, error } = await supabase
       .from('appointments')
       .select('*')
       .order('date', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Errore nel caricamento appuntamenti:', error);
+      throw error;
+    }
     
-    return data?.map(app => ({
+    const appointments = data?.map(app => ({
       id: app.id,
       employeeId: app.employee_id,
       date: app.date,
@@ -151,6 +197,9 @@ export const loadAppointmentsFromSupabase = async (): Promise<Appointment[]> => 
       color: app.color,
       serviceType: app.service_type
     })) || [];
+    
+    console.log('Appuntamenti caricati:', appointments);
+    return appointments;
   } catch (error) {
     console.error('Errore nel caricare gli appuntamenti da Supabase:', error);
     return [];
@@ -159,6 +208,7 @@ export const loadAppointmentsFromSupabase = async (): Promise<Appointment[]> => 
 
 export const addAppointmentToSupabase = async (appointment: Appointment) => {
   try {
+    console.log('Aggiunta appuntamento a Supabase:', appointment);
     const { error } = await supabase.from('appointments').insert({
       id: appointment.id,
       employee_id: appointment.employeeId,
@@ -173,7 +223,11 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       color: appointment.color,
       service_type: appointment.serviceType
     });
-    if (error) throw error;
+    if (error) {
+      console.error('Errore SQL nell\'aggiunta appuntamento:', error);
+      throw error;
+    }
+    console.log('Appuntamento aggiunto con successo');
   } catch (error) {
     console.error('Errore nell\'aggiungere appuntamento su Supabase:', error);
     throw error;
@@ -182,6 +236,7 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
 
 export const updateAppointmentInSupabase = async (appointment: Appointment) => {
   try {
+    console.log('Aggiornamento appuntamento su Supabase:', appointment);
     const { error } = await supabase
       .from('appointments')
       .update({
@@ -198,7 +253,11 @@ export const updateAppointmentInSupabase = async (appointment: Appointment) => {
         service_type: appointment.serviceType
       })
       .eq('id', appointment.id);
-    if (error) throw error;
+    if (error) {
+      console.error('Errore SQL nell\'aggiornamento appuntamento:', error);
+      throw error;
+    }
+    console.log('Appuntamento aggiornato con successo');
   } catch (error) {
     console.error('Errore nell\'aggiornare appuntamento su Supabase:', error);
     throw error;
@@ -207,11 +266,16 @@ export const updateAppointmentInSupabase = async (appointment: Appointment) => {
 
 export const deleteAppointmentFromSupabase = async (appointmentId: string) => {
   try {
+    console.log('Eliminazione appuntamento da Supabase:', appointmentId);
     const { error } = await supabase
       .from('appointments')
       .delete()
       .eq('id', appointmentId);
-    if (error) throw error;
+    if (error) {
+      console.error('Errore SQL nell\'eliminazione appuntamento:', error);
+      throw error;
+    }
+    console.log('Appuntamento eliminato con successo');
   } catch (error) {
     console.error('Errore nell\'eliminare appuntamento da Supabase:', error);
     throw error;
@@ -221,12 +285,15 @@ export const deleteAppointmentFromSupabase = async (appointmentId: string) => {
 // Migration utility to transfer localStorage data to Supabase
 export const migrateLocalStorageToSupabase = async () => {
   try {
+    console.log('Inizio migrazione da localStorage a Supabase...');
+    
     // Load data from localStorage
     const storedEmployees = localStorage.getItem('employees');
     const storedAppointments = localStorage.getItem('appointments');
     
     if (storedEmployees) {
       const employees = JSON.parse(storedEmployees);
+      console.log('Dipendenti da migrare:', employees);
       if (employees.length > 0) {
         await saveEmployeesToSupabase(employees);
         console.log('Dipendenti migrati con successo');
@@ -235,12 +302,14 @@ export const migrateLocalStorageToSupabase = async () => {
     
     if (storedAppointments) {
       const appointments = JSON.parse(storedAppointments);
+      console.log('Appuntamenti da migrare:', appointments);
       if (appointments.length > 0) {
         await saveAppointmentsToSupabase(appointments);
         console.log('Appuntamenti migrati con successo');
       }
     }
     
+    console.log('Migrazione completata con successo');
     return true;
   } catch (error) {
     console.error('Errore nella migrazione:', error);
