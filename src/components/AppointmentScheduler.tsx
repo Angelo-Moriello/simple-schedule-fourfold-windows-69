@@ -97,9 +97,11 @@ const AppointmentScheduler = () => {
           loadAppointmentsFromSupabase()
         ]);
         
+        console.log('Dati ricaricati - Dipendenti:', loadedEmployees.length);
+        console.log('Dati ricaricati - Appuntamenti:', loadedAppointments.length);
+        
         setEmployees(loadedEmployees);
         setAppointments(loadedAppointments);
-        console.log('Dati ricaricati per la nuova data');
       } catch (error) {
         console.error('Errore nel ricaricamento dei dati:', error);
       }
@@ -110,6 +112,7 @@ const AppointmentScheduler = () => {
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
+      console.log('Data selezionata cambiata a:', format(date, 'yyyy-MM-dd'));
       setSelectedDate(date);
     }
     setShowFullCalendar(false);
@@ -289,6 +292,10 @@ const AppointmentScheduler = () => {
     appointment.date === format(selectedDate, 'yyyy-MM-dd')
   );
 
+  console.log('AppointmentScheduler - Total appointments:', appointments.length);
+  console.log('AppointmentScheduler - Today\'s appointments:', todaysAppointments.length);
+  console.log('AppointmentScheduler - Selected date:', format(selectedDate, 'yyyy-MM-dd'));
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
@@ -296,7 +303,7 @@ const AppointmentScheduler = () => {
         <AppointmentSchedulerHeader
           selectedDate={selectedDate}
           employees={employees}
-          appointments={todaysAppointments}
+          appointments={appointments}
         />
 
         <AppointmentSchedulerControls
