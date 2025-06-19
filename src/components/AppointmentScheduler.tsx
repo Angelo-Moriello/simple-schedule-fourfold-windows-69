@@ -1,94 +1,43 @@
-import React, { useState, useEffect } from 'react';
-import { format, addDays, subDays } from 'date-fns';
-import { Appointment, Employee, serviceCategories as defaultServiceCategories, ServiceCategory } from '@/types/appointment';
-import { toast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Calendar, Clock } from 'lucide-react';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { History } from 'lucide-react';
-import FullCalendar from './FullCalendar';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useNavigate } from 'react-router-dom';
+import { Appointment, Employee, ServiceCategory, serviceCategories } from '@/types/appointment';
+import { getOccupiedSlots, isSlotOccupied } from '@/utils/timeSlotUtils';
+import TimeSlot from './TimeSlot';
 import AppointmentForm from './AppointmentForm';
-import EmployeeColumn from './EmployeeColumn';
-import DateNavigation from './DateNavigation';
-import EmployeeManager from './EmployeeManager';
-import VacationManager from './VacationManager';
-import ServiceManager from './ServiceManager';
-
-const defaultEmployees: Employee[] = [
-  { id: 1, name: 'Marco Rossi', color: 'bg-blue-100 border-blue-300', vacations: [], specialization: 'Parrucchiere' },
-  { id: 2, name: 'Anna Verdi', color: 'bg-green-100 border-green-300', vacations: [], specialization: 'Estetista' },
-  { id: 3, name: 'Luca Bianchi', color: 'bg-yellow-100 border-yellow-300', vacations: [], specialization: 'Parrucchiere' },
-  { id: 4, name: 'Sara Neri', color: 'bg-purple-100 border-purple-300', vacations: [], specialization: 'Estetista' }
-];
-
-const employeeColors = [
-  'bg-blue-100 border-blue-300',
-  'bg-green-100 border-green-300',
-  'bg-yellow-100 border-yellow-300',
-  'bg-purple-100 border-purple-300',
-  'bg-pink-100 border-pink-300',
-  'bg-indigo-100 border-indigo-300',
-  'bg-orange-100 border-orange-300',
-  'bg-teal-100 border-teal-300'
-];
-
-const timeSlots = [
-  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-  '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
-  '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'
-];
+import EmployeeForm from './EmployeeForm';
+import { toast } from 'sonner';
+import BackupManager from './BackupManager';
 
 const AppointmentScheduler = () => {
   const navigate = useNavigate();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>(defaultEmployees);
-  const [serviceCategories, setServiceCategories] = useState<Record<'Parrucchiere' | 'Estetista', ServiceCategory>>(defaultServiceCategories);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
-  const [formData, setFormData] = useState({
-    employeeId: '',
-    time: '',
-    title: '',
-    client: '',
-    duration: '30',
-    notes: '',
-    email: '',
-    phone: '',
-    color: 'bg-blue-100 border-blue-300 text-blue-800',
-    serviceType: ''
-  });
-
-  const dateKey = format(currentDate, 'yyyy-MM-dd');
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
+  const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
+  const [showFullCalendar, setShowFullCalendar] = useState(false);
 
   // Load data from localStorage on component mount
   useEffect(() => {
-    const savedAppointments = localStorage.getItem('appointments');
-    const savedEmployees = localStorage.getItem('employees');
-    const savedServiceCategories = localStorage.getItem('serviceCategories');
-    
-    if (savedAppointments) {
-      try {
-        setAppointments(JSON.parse(savedAppointments));
-      } catch (error) {
-        console.error('Error loading appointments from localStorage:', error);
-      }
-    }
-    
-    if (savedEmployees) {
-      try {
-        setEmployees(JSON.parse(savedEmployees));
-      } catch (error) {
-        console.error('Error loading employees from localStorage:', error);
-      }
+    const storedAppointments = localStorage.getItem('appointments');
+    if (storedAppointments) {
+      setAppointments(JSON.parse(storedAppointments));
     }
 
-    if (savedServiceCategories) {
-      try {
-        setServiceCategories(JSON.parse(savedServiceCategories));
-      } catch (error) {
-        console.error('Error loading service categories from localStorage:', error);
-      }
+    const storedEmployees = localStorage.getItem('employees');
+    if (storedEmployees) {
+      setEmployees(JSON.parse(storedEmployees));
     }
   }, []);
 
@@ -102,336 +51,267 @@ const AppointmentScheduler = () => {
     localStorage.setItem('employees', JSON.stringify(employees));
   }, [employees]);
 
-  // Save service categories to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('serviceCategories', JSON.stringify(serviceCategories));
-  }, [serviceCategories]);
-
-  const handlePrevDay = () => {
-    setCurrentDate(prev => subDays(prev, 1));
-  };
-
-  const handleNextDay = () => {
-    setCurrentDate(prev => addDays(prev, 1));
-  };
-
-  const handleToday = () => {
-    setCurrentDate(new Date());
-  };
-
-  const resetForm = () => {
-    setFormData({
-      employeeId: '',
-      time: '',
-      title: '',
-      client: '',
-      duration: '30',
-      notes: '',
-      email: '',
-      phone: '',
-      color: 'bg-blue-100 border-blue-300 text-blue-800',
-      serviceType: ''
-    });
-    setEditingAppointment(null);
-  };
-
-  const handleFormDataChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleAddEmployee = (name: string, specialization: 'Parrucchiere' | 'Estetista') => {
-    const newId = Math.max(...employees.map(e => e.id), 0) + 1;
-    const colorIndex = employees.length % employeeColors.length;
-    const newEmployee: Employee = {
-      id: newId,
-      name,
-      color: employeeColors[colorIndex],
-      vacations: [],
-      specialization
-    };
-    setEmployees(prev => [...prev, newEmployee]);
-    toast({
-      title: "Dipendente aggiunto",
-      description: `${name} (${specialization}) è stato aggiunto con successo.`,
-    });
-  };
-
-  const handleRemoveEmployee = (employeeId: number) => {
-    if (employees.length <= 1) {
-      toast({
-        title: "Errore",
-        description: "Deve esserci almeno un dipendente.",
-        variant: "destructive"
-      });
-      return;
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
     }
-    
-    setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
-    setAppointments(prev => prev.filter(apt => apt.employeeId !== employeeId));
-    toast({
-      title: "Dipendente rimosso",
-      description: "Il dipendente e tutti i suoi appuntamenti sono stati rimossi.",
-    });
+    setShowFullCalendar(false);
   };
 
-  const handleUpdateServices = (updatedCategories: Record<'Parrucchiere' | 'Estetista', ServiceCategory>) => {
-    setServiceCategories(updatedCategories);
-    toast({
-      title: "Servizi aggiornati",
-      description: "Le categorie di servizi sono state aggiornate con successo.",
-    });
+  const addAppointment = (newAppointment: Appointment) => {
+    setAppointments([...appointments, newAppointment]);
+    setIsAppointmentFormOpen(false);
+    toast.success('Appuntamento aggiunto con successo!');
   };
 
-  const handleBackupData = () => {
-    const data = {
-      appointments,
-      employees,
-      serviceCategories,
-      exportDate: new Date().toISOString(),
-      version: '1.0'
-    };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `agenda-backup-${format(new Date(), 'yyyy-MM-dd-HH-mm')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Backup creato",
-      description: "I dati sono stati salvati con successo.",
-    });
+  const updateAppointment = (updatedAppointment: Appointment) => {
+    const updatedAppointments = appointments.map(appointment =>
+      appointment.id === updatedAppointment.id ? updatedAppointment : appointment
+    );
+    setAppointments(updatedAppointments);
+    setAppointmentToEdit(null);
+    setIsAppointmentFormOpen(false);
+    toast.success('Appuntamento modificato con successo!');
   };
 
-  const handleRestoreData = (data: any) => {
-    try {
-      if (data.appointments && data.employees) {
-        setAppointments(data.appointments);
-        setEmployees(data.employees);
-        if (data.serviceCategories) {
-          setServiceCategories(data.serviceCategories);
-        }
-        toast({
-          title: "Backup ripristinato",
-          description: "I dati sono stati ripristinati con successo.",
-        });
-      } else {
-        throw new Error('Formato file non valido');
-      }
-    } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Impossibile ripristinare il backup. Verifica il formato del file.",
-        variant: "destructive"
-      });
-    }
+  const deleteAppointment = (appointmentId: string) => {
+    const updatedAppointments = appointments.filter(appointment => appointment.id !== appointmentId);
+    setAppointments(updatedAppointments);
+    toast.success('Appuntamento eliminato con successo!');
   };
 
-  const handleAddAppointment = (employeeId: number, time: string) => {
-    setFormData(prev => ({
-      ...prev,
-      employeeId: employeeId.toString(),
-      time
-    }));
-    setIsDialogOpen(true);
+  const addEmployee = (newEmployee: Employee) => {
+    setEmployees([...employees, newEmployee]);
+    setIsEmployeeFormOpen(false);
+    toast.success('Dipendente aggiunto con successo!');
+  };
+
+   const updateEmployee = (updatedEmployee: Employee) => {
+    const updatedEmployees = employees.map(employee =>
+      employee.id === updatedEmployee.id ? updatedEmployee : employee
+    );
+    setEmployees(updatedEmployees);
+    setIsEmployeeFormOpen(false);
+    toast.success('Dipendente modificato con successo!');
+  };
+
+  const deleteEmployee = (employeeId: number) => {
+    // Remove employee's appointments first
+    const updatedAppointments = appointments.filter(appointment => appointment.employeeId !== employeeId);
+    setAppointments(updatedAppointments);
+
+    // Then remove the employee
+    const updatedEmployees = employees.filter(employee => employee.id !== employeeId);
+    setEmployees(updatedEmployees);
+    toast.success('Dipendente eliminato con successo!');
+  };
+
+  const getEmployeeName = (employeeId: number) => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    return employee ? employee.name : 'Dipendente non trovato';
+  };
+
+  const handleOpenAppointmentForm = (employeeId: number, time: string) => {
+    setSelectedEmployeeId(employeeId);
+    setSelectedTime(time);
+    setIsAppointmentFormOpen(true);
   };
 
   const handleEditAppointment = (appointment: Appointment) => {
-    setEditingAppointment(appointment);
-    setFormData({
-      employeeId: appointment.employeeId.toString(),
-      time: appointment.time,
-      title: appointment.title,
-      client: appointment.client,
-      duration: appointment.duration.toString(),
-      notes: appointment.notes || '',
-      email: appointment.email || '',
-      phone: appointment.phone || '',
-      color: appointment.color,
-      serviceType: appointment.serviceType || ''
-    });
-    setIsDialogOpen(true);
+    setAppointmentToEdit(appointment);
+    setIsAppointmentFormOpen(true);
   };
 
-  const handleDeleteAppointment = (appointmentId: string) => {
-    setAppointments(prev => prev.filter(apt => apt.id !== appointmentId));
-    toast({
-      title: "Appuntamento eliminato",
-      description: "L'appuntamento è stato rimosso con successo.",
-    });
+  const handleCloseAppointmentForm = () => {
+    setIsAppointmentFormOpen(false);
+    setAppointmentToEdit(null);
   };
 
-  const handleUpdateEmployeeName = (employeeId: number, newName: string) => {
-    setEmployees(prev => prev.map(emp => 
-      emp.id === employeeId ? { ...emp, name: newName } : emp
-    ));
-    toast({
-      title: "Nome dipendente aggiornato",
-      description: `Il nome è stato cambiato in "${newName}".`,
-    });
+  const handleOpenEmployeeForm = () => {
+    setIsEmployeeFormOpen(true);
   };
 
-  const handleUpdateEmployeeVacations = (employeeId: number, vacations: string[]) => {
-    setEmployees(prev => prev.map(emp => 
-      emp.id === employeeId ? { ...emp, vacations } : emp
-    ));
-    toast({
-      title: "Ferie aggiornate",
-      description: "Le ferie del dipendente sono state aggiornate con successo.",
-    });
+  const handleCloseEmployeeForm = () => {
+    setIsEmployeeFormOpen(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.employeeId || !formData.time || !formData.client || !formData.serviceType) {
-      toast({
-        title: "Errore",
-        description: "Compila tutti i campi obbligatori (dipendente, orario, cliente e tipo di servizio).",
-        variant: "destructive"
-      });
-      return;
+  const isVacationDay = useCallback((employeeId: number, date: Date): boolean => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    if (!employee || !employee.vacations) {
+      return false;
     }
+    const dateString = format(date, 'yyyy-MM-dd');
+    return employee.vacations.includes(dateString);
+  }, [employees]);
 
-    // Verifica compatibilità servizio-specializzazione
-    const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
-    if (selectedEmployee) {
-      const allowedServices = serviceCategories[selectedEmployee.specialization]?.services || [];
-      if (!allowedServices.includes(formData.serviceType)) {
-        toast({
-          title: "Errore",
-          description: `${selectedEmployee.name} (${selectedEmployee.specialization}) non può eseguire questo servizio.`,
-          variant: "destructive"
-        });
-        return;
-      }
+  const getAppointmentsForDay = (date: Date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    return appointments.filter(appointment => appointment.date === dateString);
+  };
+
+  const getEmployeeAppointmentsForTimeSlot = (employeeId: number, time: string) => {
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    return appointments.find(
+      appointment => appointment.employeeId === employeeId && appointment.date === dateString && appointment.time === time
+    );
+  };
+
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let i = 8; i <= 19; i++) {
+      slots.push(`${String(i).padStart(2, '0')}:00`);
+      slots.push(`${String(i).padStart(2, '0')}:30`);
     }
-
-    const newAppointment: Appointment = {
-      id: editingAppointment?.id || Date.now().toString(),
-      employeeId: parseInt(formData.employeeId),
-      date: dateKey,
-      time: formData.time,
-      title: formData.title || `${formData.serviceType} - ${formData.client}`,
-      client: formData.client,
-      duration: parseInt(formData.duration),
-      notes: formData.notes,
-      email: formData.email,
-      phone: formData.phone,
-      color: formData.color,
-      serviceType: formData.serviceType
-    };
-
-    if (editingAppointment) {
-      setAppointments(prev => prev.map(apt => 
-        apt.id === editingAppointment.id ? newAppointment : apt
-      ));
-      toast({
-        title: "Appuntamento modificato",
-        description: "L'appuntamento è stato aggiornato con successo.",
-      });
-    } else {
-      setAppointments(prev => [...prev, newAppointment]);
-      toast({
-        title: "Appuntamento aggiunto",
-        description: "Il nuovo appuntamento è stato creato con successo.",
-      });
-    }
-
-    setIsDialogOpen(false);
-    resetForm();
+    return slots;
   };
 
-  const handleCalendarDateSelect = (date: Date) => {
-    setCurrentDate(date);
-  };
-
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    resetForm();
-  };
+  const timeSlots = generateTimeSlots();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-        {/* Header responsive */}
-        <div className="flex flex-col space-y-4 mb-6 sm:mb-8">
-          <DateNavigation
-            currentDate={currentDate}
-            onPrevDay={handlePrevDay}
-            onNextDay={handleNextDay}
-            onToday={handleToday}
-            onOpenCalendar={() => setIsCalendarOpen(true)}
-          />
-          
-          {/* Buttons row - responsive */}
-          <div className="flex flex-col gap-3 sm:gap-4">
-            <Button
-              onClick={() => navigate('/history')}
-              className="w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6 text-sm sm:text-base rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
-            >
-              <History className="h-4 w-4 mr-2" />
-              Storico Appuntamenti
-            </Button>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <EmployeeManager
-                employees={employees}
-                onAddEmployee={handleAddEmployee}
-                onRemoveEmployee={handleRemoveEmployee}
-                onBackupData={handleBackupData}
-                onRestoreData={handleRestoreData}
-              />
-              <VacationManager
-                employees={employees}
-                onUpdateEmployeeVacations={handleUpdateEmployeeVacations}
-              />
-              <ServiceManager
-                serviceCategories={serviceCategories}
-                onUpdateServices={handleUpdateServices}
-              />
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
+        {/* Header with enhanced controls */}
+        <div className="flex flex-col gap-4 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                Calendario Appuntamenti
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
+                {format(selectedDate, 'EEEE, dd MMMM yyyy', { locale: it })}
+              </p>
             </div>
+            
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+              <BackupManager />
+              <Button
+                onClick={() => navigate('/history')}
+                className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 h-10 sm:h-12 px-4 sm:px-6"
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Storico
+              </Button>
+              <Button 
+                onClick={() => setShowFullCalendar(true)}
+                variant="outline"
+                className="w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Vista Mese
+              </Button>
+            </div>
+          </div>
+
+          {/* Management buttons */}
+          <div className="flex items-center justify-between p-3 sm:p-4 bg-white rounded-lg shadow-md">
+            <div className="flex items-center gap-3">
+              <Popover open={showFullCalendar} onOpenChange={setShowFullCalendar}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="h-9 px-3">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <span>Seleziona Data</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    captionLayout="dropdown"
+                    from={new Date('1900-01-01')}
+                    to={new Date('2100-01-01')}
+                    defaultMonth={selectedDate}
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    className="rounded-md border-0"
+                    style={{ width: '100%' }}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Button onClick={handleOpenEmployeeForm} className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-3">
+              Gestisci Dipendenti
+            </Button>
           </div>
         </div>
 
-        {/* Grid responsive */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        {/* Employee Time Slots */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {employees.map(employee => (
-            <EmployeeColumn
-              key={employee.id}
-              employee={employee}
-              appointments={appointments}
-              timeSlots={timeSlots}
-              dateKey={dateKey}
-              onAddAppointment={handleAddAppointment}
-              onEditAppointment={handleEditAppointment}
-              onDeleteAppointment={handleDeleteAppointment}
-              onUpdateEmployeeName={handleUpdateEmployeeName}
-            />
+            <Card key={employee.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800">{employee.name}</h2>
+                  <Select onValueChange={(value) => {
+                      const updatedEmployees = employees.map(emp => {
+                        if (emp.id === employee.id) {
+                          return { ...emp, specialization: value as 'Parrucchiere' | 'Estetista' };
+                        }
+                        return emp;
+                      });
+                      setEmployees(updatedEmployees);
+                    }} defaultValue={employee.specialization}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Seleziona Categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Parrucchiere">Parrucchiere</SelectItem>
+                      <SelectItem value="Estetista">Estetista</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-4">
+                  {timeSlots.map(time => {
+                    const appointment = getEmployeeAppointmentsForTimeSlot(employee.id, time);
+                    const occupiedSlots = getOccupiedSlots(appointments, employee.id, format(selectedDate, 'yyyy-MM-dd'));
+                    const isOccupied = isSlotOccupied(time, occupiedSlots);
+                    const vacation = isVacationDay(employee.id, selectedDate);
+
+                    return (
+                      <TimeSlot
+                        key={`${employee.id}-${time}`}
+                        time={time}
+                        appointment={appointment}
+                        employee={employee}
+                        onAddAppointment={handleOpenAppointmentForm}
+                        onEditAppointment={handleEditAppointment}
+                        onDeleteAppointment={deleteAppointment}
+                        isVacationDay={vacation}
+                        isOccupied={isOccupied}
+                      />
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteEmployee(employee.id)}
+                  className="mt-4 w-full"
+                >
+                  Elimina Dipendente
+                </Button>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
+        {/* Appointment Form Modal */}
         <AppointmentForm
-          isOpen={isDialogOpen}
-          onClose={handleCloseDialog}
-          onSubmit={handleSubmit}
-          editingAppointment={editingAppointment}
-          formData={formData}
-          onFormDataChange={handleFormDataChange}
+          isOpen={isAppointmentFormOpen}
+          onClose={handleCloseAppointmentForm}
+          addAppointment={addAppointment}
+          updateAppointment={updateAppointment}
+          employeeId={selectedEmployeeId}
+          time={selectedTime}
+          date={selectedDate}
+          appointmentToEdit={appointmentToEdit}
           employees={employees}
-          timeSlots={timeSlots}
-          serviceCategories={serviceCategories}
         />
 
-        <FullCalendar
-          isOpen={isCalendarOpen}
-          onClose={() => setIsCalendarOpen(false)}
-          appointments={appointments}
+        {/* Employee Form Modal */}
+        <EmployeeForm
+          isOpen={isEmployeeFormOpen}
+          onClose={handleCloseEmployeeForm}
+          addEmployee={addEmployee}
+          updateEmployee={updateEmployee}
           employees={employees}
-          onDateSelect={handleCalendarDateSelect}
         />
       </div>
     </div>

@@ -1,20 +1,26 @@
-
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { User, Briefcase, ArrowLeft, BarChart3, Calendar, Clock, Mail, Phone } from 'lucide-react';
-import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { User, Briefcase, ArrowLeft, BarChart3, Calendar, Clock, Mail, Phone, CalendarDays } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { Appointment, Employee } from '@/types/appointment';
 import Statistics from '@/components/Statistics';
+
+type DateFilter = 'all' | 'today' | 'week' | 'month' | 'custom';
 
 const AppointmentHistory = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showStatistics, setShowStatistics] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   // Carica i dati dal localStorage
   const appointments: Appointment[] = JSON.parse(localStorage.getItem('appointments') || '[]');
@@ -26,14 +32,59 @@ const AppointmentHistory = () => {
     return Array.from(clients).filter(client => client.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [appointments, searchTerm]);
 
-  // Filtra e ordina gli appuntamenti
+  // Enhanced filtering with date filter
   const filteredAppointments = useMemo(() => {
-    return appointments
+    let dateFilteredAppointments = appointments;
+
+    // Apply date filter
+    if (dateFilter !== 'all') {
+      const today = new Date();
+      let startDate: Date;
+      let endDate: Date;
+
+      switch (dateFilter) {
+        case 'today':
+          startDate = new Date(today);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(today);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'week':
+          startDate = startOfWeek(today, { weekStartsOn: 1 });
+          endDate = endOfWeek(today, { weekStartsOn: 1 });
+          break;
+        case 'month':
+          startDate = startOfMonth(today);
+          endDate = endOfMonth(today);
+          break;
+        case 'custom':
+          if (customStartDate && customEndDate) {
+            startDate = new Date(customStartDate);
+            endDate = new Date(customEndDate);
+            endDate.setHours(23, 59, 59, 999);
+          } else {
+            startDate = new Date(0);
+            endDate = new Date();
+          }
+          break;
+        default:
+          startDate = new Date(0);
+          endDate = new Date();
+      }
+
+      dateFilteredAppointments = appointments.filter(appointment => {
+        const appointmentDate = new Date(appointment.date);
+        return isWithinInterval(appointmentDate, { start: startDate, end: endDate });
+      });
+    }
+
+    // Apply search filter
+    return dateFilteredAppointments
       .filter(appointment => 
         appointment.client.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime());
-  }, [appointments, searchTerm]);
+  }, [appointments, searchTerm, dateFilter, customStartDate, customEndDate]);
 
   const getEmployeeName = (employeeId: number) => {
     const employee = employees.find(emp => emp.id === employeeId);
@@ -72,6 +123,9 @@ const AppointmentHistory = () => {
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
               Storico Appuntamenti
             </h1>
+            <p className="text-sm text-gray-600 mt-1">
+              {filteredAppointments.length} appuntamenti trovati
+            </p>
           </div>
           <Button
             onClick={() => setShowStatistics(true)}
@@ -82,7 +136,62 @@ const AppointmentHistory = () => {
           </Button>
         </div>
 
-        <div className="mb-6">
+        {/* Enhanced filters */}
+        <div className="space-y-4 mb-6">
+          {/* Date Filter */}
+          <Card className="p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="date-filter" className="text-sm font-medium mb-2 block">
+                  Filtra per periodo
+                </Label>
+                <Select value={dateFilter} onValueChange={(value: DateFilter) => setDateFilter(value)}>
+                  <SelectTrigger id="date-filter" className="h-10">
+                    <CalendarDays className="h-4 w-4 mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutti gli appuntamenti</SelectItem>
+                    <SelectItem value="today">Oggi</SelectItem>
+                    <SelectItem value="week">Questa settimana</SelectItem>
+                    <SelectItem value="month">Questo mese</SelectItem>
+                    <SelectItem value="custom">Periodo personalizzato</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {dateFilter === 'custom' && (
+                <>
+                  <div>
+                    <Label htmlFor="start-date" className="text-sm font-medium mb-2 block">
+                      Data inizio
+                    </Label>
+                    <input
+                      id="start-date"
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="h-10 w-full px-3 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="end-date" className="text-sm font-medium mb-2 block">
+                      Data fine
+                    </Label>
+                    <input
+                      id="end-date"
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="h-10 w-full px-3 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
+
+          {/* Search Bar */}
           <div className="relative w-full">
             <Command className="rounded-lg border shadow-md bg-white">
               <CommandInput

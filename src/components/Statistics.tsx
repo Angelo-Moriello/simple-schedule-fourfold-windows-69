@@ -1,11 +1,10 @@
-
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { ArrowLeft, TrendingUp, Users, Calendar, Printer } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Users, Calendar, Printer, Filter } from 'lucide-react';
 import { Appointment, Employee } from '@/types/appointment';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -17,15 +16,28 @@ interface StatisticsProps {
 }
 
 type TimeFilter = 'day' | 'week' | 'month' | 'year';
+type SpecializationFilter = 'all' | 'Parrucchiere' | 'Estetista';
 
 const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [specializationFilter, setSpecializationFilter] = useState<SpecializationFilter>('all');
 
   const serviceTypes = ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli', 'Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo'];
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d084d0', '#87ceeb', '#dda0dd', '#98fb98', '#f0e68c', '#ffa07a'];
 
-  // Filtra appuntamenti in base al periodo selezionato
+  // Filter employees based on specialization
+  const filteredEmployees = useMemo(() => {
+    if (specializationFilter === 'all') return employees;
+    return employees.filter(emp => emp.specialization === specializationFilter);
+  }, [employees, specializationFilter]);
+
+  // Get employee IDs for filtering appointments
+  const filteredEmployeeIds = useMemo(() => {
+    return filteredEmployees.map(emp => emp.id);
+  }, [filteredEmployees]);
+
+  // Filter appointments by time period and specialization
   const filteredAppointments = useMemo(() => {
     let startDate: Date;
     let endDate: Date;
@@ -53,11 +65,14 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
         return appointments;
     }
 
-    return appointments.filter(appointment => {
-      const appointmentDate = new Date(appointment.date);
-      return isWithinInterval(appointmentDate, { start: startDate, end: endDate });
-    });
-  }, [appointments, timeFilter, selectedDate]);
+    return appointments
+      .filter(appointment => {
+        const appointmentDate = new Date(appointment.date);
+        const isInTimeRange = isWithinInterval(appointmentDate, { start: startDate, end: endDate });
+        const isInSpecialization = filteredEmployeeIds.includes(appointment.employeeId);
+        return isInTimeRange && isInSpecialization;
+      });
+  }, [appointments, timeFilter, selectedDate, filteredEmployeeIds]);
 
   // Statistiche per tipo di servizio
   const serviceStats = useMemo(() => {
@@ -74,24 +89,37 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
     return stats;
   }, [filteredAppointments]);
 
-  // Statistiche per dipendente
+  // Enhanced employee statistics with client information
   const employeeStats = useMemo(() => {
-    return employees.map(employee => {
+    return filteredEmployees.map(employee => {
       const employeeAppointments = filteredAppointments.filter(app => app.employeeId === employee.id);
       const serviceBreakdown = serviceTypes.map(serviceType => ({
         serviceType,
         count: employeeAppointments.filter(app => app.serviceType === serviceType).length
       })).filter(item => item.count > 0);
 
+      // Get client details for this employee
+      const clientDetails = employeeAppointments.map(app => ({
+        client: app.client,
+        date: app.date,
+        time: app.time,
+        serviceType: app.serviceType,
+        duration: app.duration
+      })).sort((a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime());
+
+      const uniqueClients = new Set(employeeAppointments.map(app => app.client)).size;
+
       return {
         id: employee.id,
         name: employee.name,
         specialization: employee.specialization,
         totalAppointments: employeeAppointments.length,
-        serviceBreakdown
+        uniqueClients,
+        serviceBreakdown,
+        clientDetails
       };
     }).filter(emp => emp.totalAppointments > 0);
-  }, [filteredAppointments, employees]);
+  }, [filteredAppointments, filteredEmployees]);
 
   const formatPeriodLabel = () => {
     switch (timeFilter) {
@@ -119,19 +147,25 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
             body { font-family: Arial, sans-serif; margin: 20px; }
             h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
             h2 { color: #666; margin-top: 30px; }
-            .summary { display: flex; gap: 20px; margin: 20px 0; }
-            .summary-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; }
+            .summary { display: flex; gap: 20px; margin: 20px 0; flex-wrap: wrap; }
+            .summary-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px; }
             .service-list { list-style: none; padding: 0; }
             .service-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
             .employee-section { margin: 20px 0; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
             .service-breakdown { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
             .service-tag { background: #f0f0f0; padding: 5px 10px; border-radius: 15px; font-size: 12px; }
+            .client-list { margin-top: 15px; }
+            .client-item { background: #f8f9fa; padding: 8px; margin: 5px 0; border-radius: 4px; font-size: 12px; }
+            .filter-info { background: #e3f2fd; padding: 10px; border-radius: 8px; margin: 15px 0; }
             @media print { body { margin: 0; } }
           </style>
         </head>
         <body>
           <h1>Statistiche Appuntamenti</h1>
-          <p><strong>Periodo:</strong> ${formatPeriodLabel()}</p>
+          <div class="filter-info">
+            <p><strong>Periodo:</strong> ${formatPeriodLabel()}</p>
+            <p><strong>Specializzazione:</strong> ${specializationFilter === 'all' ? 'Tutte' : specializationFilter}</p>
+          </div>
           
           <div class="summary">
             <div class="summary-card">
@@ -143,30 +177,31 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
               <p style="font-size: 24px; font-weight: bold;">${new Set(filteredAppointments.map(app => app.client)).size}</p>
             </div>
             <div class="summary-card">
-              <h3>Servizi Diversi</h3>
-              <p style="font-size: 24px; font-weight: bold;">${serviceStats.length}</p>
+              <h3>Dipendenti Attivi</h3>
+              <p style="font-size: 24px; font-weight: bold;">${employeeStats.length}</p>
             </div>
           </div>
-
-          <h2>Distribuzione Servizi</h2>
-          <ul class="service-list">
-            ${serviceStats.map(service => `
-              <li class="service-item">
-                <span>${service.name}</span>
-                <span><strong>${service.value}</strong> (${service.percentage}%)</span>
-              </li>
-            `).join('')}
-          </ul>
 
           <h2>Statistiche per Dipendente</h2>
           ${employeeStats.map(employee => `
             <div class="employee-section">
               <h3>${employee.name} (${employee.specialization})</h3>
               <p><strong>Totale appuntamenti:</strong> ${employee.totalAppointments}</p>
+              <p><strong>Clienti unici:</strong> ${employee.uniqueClients}</p>
               <div class="service-breakdown">
                 ${employee.serviceBreakdown.map(service => `
                   <span class="service-tag">${service.serviceType}: ${service.count}</span>
                 `).join('')}
+              </div>
+              <div class="client-list">
+                <h4>Dettaglio Clienti:</h4>
+                ${employee.clientDetails.slice(0, 10).map(client => `
+                  <div class="client-item">
+                    <strong>${client.client}</strong> - ${format(new Date(client.date), 'dd/MM/yyyy', { locale: it })} alle ${client.time} 
+                    (${client.serviceType}, ${client.duration} min)
+                  </div>
+                `).join('')}
+                ${employee.clientDetails.length > 10 ? `<p style="font-style: italic;">...e altri ${employee.clientDetails.length - 10} appuntamenti</p>` : ''}
               </div>
             </div>
           `).join('')}
@@ -205,7 +240,7 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
               Statistiche Appuntamenti
             </h1>
             <p className="text-sm sm:text-base text-gray-600 mt-1">
-              Periodo: {formatPeriodLabel()}
+              Periodo: {formatPeriodLabel()} - {specializationFilter === 'all' ? 'Tutte le specializzazioni' : specializationFilter}
             </p>
           </div>
           <Button
@@ -217,8 +252,8 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
           </Button>
         </div>
 
-        {/* Filtri temporali */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 sm:mb-8">
+        {/* Enhanced filters */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 sm:mb-8">
           <Select value={timeFilter} onValueChange={(value: TimeFilter) => setTimeFilter(value)}>
             <SelectTrigger className="h-10 sm:h-12">
               <SelectValue />
@@ -237,10 +272,22 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
             onChange={(e) => setSelectedDate(new Date(e.target.value))}
             className="h-10 sm:h-12 px-3 border border-gray-300 rounded-md text-sm sm:text-base"
           />
+
+          <Select value={specializationFilter} onValueChange={(value: SpecializationFilter) => setSpecializationFilter(value)}>
+            <SelectTrigger className="h-10 sm:h-12">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutte le specializzazioni</SelectItem>
+              <SelectItem value="Parrucchiere">Solo Parrucchiere</SelectItem>
+              <SelectItem value="Estetista">Solo Estetista</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Riepilogo generale */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        {/* Summary cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Totale Appuntamenti</CardTitle>
@@ -263,6 +310,15 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Dipendenti Attivi</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl sm:text-2xl font-bold">{employeeStats.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Servizi Diversi</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -272,90 +328,88 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
-          {/* Grafico circolare dei servizi */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Distribuzione Tipi di Servizio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {serviceStats.length > 0 ? (
-                <div className="w-full h-[300px] sm:h-[350px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={serviceStats}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percentage }) => `${name} (${percentage}%)`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {serviceStats.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip 
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            return (
-                              <div className="bg-white p-3 border rounded-lg shadow-lg">
-                                <p className="font-medium">{data.name}</p>
-                                <p className="text-sm text-gray-600">
-                                  Appuntamenti: {data.value} ({data.percentage}%)
-                                </p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+        {/* Grafico circolare dei servizi */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base sm:text-lg">Distribuzione Tipi di Servizio</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {serviceStats.length > 0 ? (
+              <div className="w-full h-[300px] sm:h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={serviceStats}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percentage }) => `${name} (${percentage}%)`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {serviceStats.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-white p-3 border rounded-lg shadow-lg">
+                              <p className="font-medium">{data.name}</p>
+                              <p className="text-sm text-gray-600">
+                                Appuntamenti: {data.value} ({data.percentage}%)
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-gray-500">
+                Nessun dato disponibile per il periodo selezionato
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Tabella dettagliata dei servizi */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base sm:text-lg">Dettaglio Servizi</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-[350px] overflow-y-auto">
+              {serviceStats.length > 0 ? serviceStats.map((service, index) => (
+                <div key={service.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div 
+                      className="w-4 h-4 rounded-full shrink-0" 
+                      style={{ backgroundColor: colors[index % colors.length] }}
+                    />
+                    <span className="font-medium text-sm sm:text-base truncate">{service.name}</span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="font-bold text-base sm:text-lg">{service.value}</div>
+                    <div className="text-xs sm:text-sm text-gray-600">{service.percentage}%</div>
+                  </div>
                 </div>
-              ) : (
-                <div className="flex items-center justify-center h-[300px] text-gray-500">
-                  Nessun dato disponibile per il periodo selezionato
+              )) : (
+                <div className="text-center text-gray-500 py-8">
+                  Nessun servizio nel periodo selezionato
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Tabella dettagliata dei servizi */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Dettaglio Servizi</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 max-h-[350px] overflow-y-auto">
-                {serviceStats.length > 0 ? serviceStats.map((service, index) => (
-                  <div key={service.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div 
-                        className="w-4 h-4 rounded-full shrink-0" 
-                        style={{ backgroundColor: colors[index % colors.length] }}
-                      />
-                      <span className="font-medium text-sm sm:text-base truncate">{service.name}</span>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="font-bold text-base sm:text-lg">{service.value}</div>
-                      <div className="text-xs sm:text-sm text-gray-600">{service.percentage}%</div>
-                    </div>
-                  </div>
-                )) : (
-                  <div className="text-center text-gray-500 py-8">
-                    Nessun servizio nel periodo selezionato
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Statistiche per dipendente */}
+        {/* Enhanced employee statistics with client details */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base sm:text-lg">Statistiche per Dipendente</CardTitle>
@@ -369,17 +423,46 @@ const Statistics = ({ appointments, employees, onBack }: StatisticsProps) => {
                       <h3 className="text-base sm:text-lg font-semibold truncate">{employee.name}</h3>
                       <p className="text-sm text-gray-600">{employee.specialization}</p>
                     </div>
-                    <span className="text-xs sm:text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded shrink-0 self-start sm:self-center">
-                      {employee.totalAppointments} appuntamenti
-                    </span>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <span className="text-xs sm:text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded shrink-0 text-center">
+                        {employee.totalAppointments} appuntamenti
+                      </span>
+                      <span className="text-xs sm:text-sm bg-green-100 text-green-800 px-2 py-1 rounded shrink-0 text-center">
+                        {employee.uniqueClients} clienti unici
+                      </span>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                     {employee.serviceBreakdown.map((service) => (
                       <div key={service.serviceType} className="bg-gray-50 p-3 rounded text-center">
                         <div className="font-medium text-xs sm:text-sm truncate">{service.serviceType}</div>
                         <div className="text-lg sm:text-xl font-bold text-blue-600">{service.count}</div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Client details section */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold text-sm mb-3">Ultimi Clienti:</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                      {employee.clientDetails.slice(0, 8).map((client, index) => (
+                        <div key={index} className="bg-gray-50 p-2 rounded-lg text-xs">
+                          <div className="font-medium text-gray-800 truncate">{client.client}</div>
+                          <div className="text-gray-600">
+                            {format(new Date(client.date), 'dd/MM', { locale: it })} alle {client.time}
+                          </div>
+                          <div className="text-gray-500">
+                            {client.serviceType} ({client.duration} min)
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {employee.clientDetails.length > 8 && (
+                      <p className="text-xs text-gray-500 mt-2 text-center">
+                        ...e altri {employee.clientDetails.length - 8} appuntamenti
+                      </p>
+                    )}
                   </div>
                 </div>
               )) : (
