@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -15,9 +16,7 @@ import TimeSlot from './TimeSlot';
 import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
 import EmployeeNameEditor from './EmployeeNameEditor';
-import Header from './Header';
 import { toast } from 'sonner';
-import BackupManager from './BackupManager';
 
 const AppointmentScheduler = () => {
   const navigate = useNavigate();
@@ -31,7 +30,7 @@ const AppointmentScheduler = () => {
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [showFullCalendar, setShowFullCalendar] = useState(false);
 
-  // Load data from localStorage on component mount with improved handling
+  // Load data from localStorage on component mount
   useEffect(() => {
     const loadedAppointments = loadAppointments();
     const loadedEmployees = loadEmployees();
@@ -118,11 +117,6 @@ const AppointmentScheduler = () => {
     toast.success('Dipendente eliminato con successo!');
   };
 
-  const getEmployeeName = (employeeId: number) => {
-    const employee = employees.find(emp => emp.id === employeeId);
-    return employee ? employee.name : 'Dipendente non trovato';
-  };
-
   const handleOpenAppointmentForm = (employeeId: number, time: string) => {
     setSelectedEmployeeId(employeeId);
     setSelectedTime(time);
@@ -156,11 +150,6 @@ const AppointmentScheduler = () => {
     return employee.vacations.includes(dateString);
   }, [employees]);
 
-  const getAppointmentsForDay = (date: Date) => {
-    const dateString = format(date, 'yyyy-MM-dd');
-    return appointments.filter(appointment => appointment.date === dateString);
-  };
-
   const getEmployeeAppointmentsForTimeSlot = (employeeId: number, time: string) => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     return appointments.find(
@@ -190,27 +179,45 @@ const AppointmentScheduler = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
-        <Header 
-          title="Calendario Appuntamenti"
-          subtitle={format(selectedDate, 'EEEE, dd MMMM yyyy', { locale: it })}
-        >
-          <BackupManager />
-          <Button
-            onClick={() => navigate('/history')}
-            className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 h-10 sm:h-12 px-4 sm:px-6"
-          >
-            <Clock className="h-4 w-4 mr-2" />
-            Storico
-          </Button>
-          <Button 
-            onClick={() => setShowFullCalendar(true)}
-            variant="outline"
-            className="w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6"
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            Vista Mese
-          </Button>
-        </Header>
+        
+        {/* Header */}
+        <div className="flex flex-col gap-4 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <img 
+                src="/lovable-uploads/e3330001-9a6b-4c26-a431-89d19870edfe.png" 
+                alt="Da Capo a Piedi - Estetica & Parrucchieri" 
+                className="h-12 w-12 sm:h-16 sm:w-16 object-contain rounded-lg shadow-sm"
+              />
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                  Calendario Appuntamenti
+                </h1>
+                <p className="text-sm sm:text-base text-gray-600 mt-1">
+                  {format(selectedDate, 'EEEE, dd MMMM yyyy', { locale: it })}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+              <Button
+                onClick={() => navigate('/history')}
+                className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 h-10 sm:h-12 px-4 sm:px-6"
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Storico
+              </Button>
+              <Button 
+                onClick={() => setShowFullCalendar(true)}
+                variant="outline"
+                className="w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Vista Mese
+              </Button>
+            </div>
+          </div>
+        </div>
 
         {/* Management buttons */}
         <div className="flex items-center justify-between p-3 sm:p-4 bg-white rounded-lg shadow-md mb-6">
@@ -240,7 +247,7 @@ const AppointmentScheduler = () => {
           </Button>
         </div>
 
-        {/* Employee Time Slots - 4 columns on desktop */}
+        {/* Employee Time Slots */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {employees.map(employee => (
             <Card key={employee.id} className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -275,7 +282,7 @@ const AppointmentScheduler = () => {
                   </Select>
                 </div>
 
-                {/* Time slots grid - Responsive layout */}
+                {/* Time slots grid */}
                 <div className="grid grid-cols-1 gap-2">
                   {timeSlots.map(time => {
                     const appointment = getEmployeeAppointmentsForTimeSlot(employee.id, time);
