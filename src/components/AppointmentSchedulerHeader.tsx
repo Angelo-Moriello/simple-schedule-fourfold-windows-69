@@ -1,15 +1,12 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Employee, Appointment } from '@/types/appointment';
-
 interface AppointmentSchedulerHeaderProps {
   selectedDate: Date;
   employees: Employee[];
   appointments: Appointment[];
 }
-
 const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
   selectedDate,
   employees,
@@ -19,9 +16,15 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
   const logoSettings = React.useMemo(() => {
     try {
       const stored = localStorage.getItem('logoSettings');
-      return stored ? JSON.parse(stored) : { size: 80, position: 'center' };
+      return stored ? JSON.parse(stored) : {
+        size: 80,
+        position: 'center'
+      };
     } catch {
-      return { size: 80, position: 'center' };
+      return {
+        size: 80,
+        position: 'center'
+      };
     }
   }, []);
 
@@ -32,35 +35,32 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
 
   // Formatta la data con maiuscola
   const formatDateWithCapital = (date: Date) => {
-    const formatted = format(date, 'EEEE, dd MMMM yyyy', { locale: it });
+    const formatted = format(date, 'EEEE, dd MMMM yyyy', {
+      locale: it
+    });
     return capitalizeFirst(formatted);
   };
-
   const getJustifyClass = () => {
     switch (logoSettings.position) {
-      case 'left': return 'justify-start';
-      case 'right': return 'justify-end';
-      default: return 'justify-center';
+      case 'left':
+        return 'justify-start';
+      case 'right':
+        return 'justify-end';
+      default:
+        return 'justify-center';
     }
   };
-
-  return (
-    <div className="flex flex-col items-center gap-6 mb-8 bg-white rounded-lg shadow-md p-6">
+  return <div className="flex flex-col items-center gap-6 mb-8 bg-white rounded-lg shadow-md p-6">
       <div className={`flex items-center gap-6 w-full ${getJustifyClass()}`}>
-        <img 
-          src="/lovable-uploads/e3330001-9a6b-4c26-a431-89d19870edfe.png" 
-          alt="Da Capo a Piedi - Estetica & Parrucchieri" 
-          className="object-contain rounded-lg shadow-sm"
-          style={{ 
-            height: `${logoSettings.size}px`, 
-            width: `${logoSettings.size}px` 
-          }}
-        />
+        <img src="/lovable-uploads/e3330001-9a6b-4c26-a431-89d19870edfe.png" alt="Da Capo a Piedi - Estetica & Parrucchieri" className="object-contain rounded-lg shadow-sm" style={{
+        height: `${logoSettings.size}px`,
+        width: `${logoSettings.size}px`
+      }} />
         <div className="text-center">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2 lg:text-5xl">
             Calendario Appuntamenti
           </h1>
-          <p className="text-lg sm:text-xl text-gray-700 font-medium">
+          <p className="text-lg text-gray-700 font-bold sm:text-3xl">
             {formatDateWithCapital(selectedDate)}
           </p>
         </div>
@@ -76,8 +76,6 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
           <span>{appointments.length} appuntamenti totali</span>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AppointmentSchedulerHeader;
