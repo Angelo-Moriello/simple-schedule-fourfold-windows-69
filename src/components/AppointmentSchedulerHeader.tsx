@@ -57,9 +57,7 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
         width: `${logoSettings.size}px`
       }} />
         <div className="text-center">
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2 lg:text-5xl">
-            Calendario Appuntamenti
-          </h1>
+          <h1 className="text-2xl sm:text-3xl bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2 font-semibold lg:text-3xl">CALENDARIO APPUNTAMENTI</h1>
           <p className="text-lg text-gray-700 font-bold sm:text-3xl">
             {formatDateWithCapital(selectedDate)}
           </p>
