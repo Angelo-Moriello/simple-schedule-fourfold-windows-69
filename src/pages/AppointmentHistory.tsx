@@ -1,18 +1,19 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { User, Briefcase, ArrowLeft, BarChart3, Calendar, Clock, Mail, Phone, CalendarDays } from 'lucide-react';
+import { User, Briefcase, ArrowLeft, BarChart3, Calendar, Clock, Mail, Phone, CalendarDays, Scissors } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { Appointment, Employee } from '@/types/appointment';
-import { loadAppointments, loadEmployees } from '@/utils/dataStorage';
+import { loadAppointmentsFromSupabase, loadEmployeesFromSupabase } from '@/utils/supabaseStorage';
 import Statistics from '@/components/Statistics';
 import SimpleHeader from '@/components/SimpleHeader';
+import { toast } from 'sonner';
 
 type DateFilter = 'all' | 'today' | 'week' | 'month' | 'custom';
 
@@ -24,109 +25,190 @@ const AppointmentHistory = () => {
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Carica i dati dal localStorage con la nuova utility - aggiungiamo controlli di sicurezza
-  const appointments: Appointment[] = loadAppointments() || [];
-  const employees: Employee[] = loadEmployees() || [];
+  // Carica i dati da Supabase
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
 
-  // Ottieni tutti i nomi clienti unici per l'omnibox - aggiungiamo controlli di sicurezza
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        console.log('Caricamento dati storico da Supabase...');
+        
+        const [loadedAppointments, loadedEmployees] = await Promise.all([
+          loadAppointmentsFromSupabase(),
+          loadEmployeesFromSupabase()
+        ]);
+        
+        console.log('Storico - Appuntamenti caricati:', loadedAppointments);
+        console.log('Storico - Dipendenti caricati:', loadedEmployees);
+        
+        setAppointments(loadedAppointments || []);
+        setEmployees(loadedEmployees || []);
+        
+      } catch (error) {
+        console.error('Errore nel caricamento storico:', error);
+        toast.error('Errore nel caricamento dello storico');
+        setAppointments([]);
+        setEmployees([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Ottieni tutti i nomi clienti unici per l'omnibox con controlli di sicurezza
   const uniqueClients = useMemo(() => {
-    if (!appointments || !Array.isArray(appointments)) {
+    if (!appointments || !Array.isArray(appointments) || appointments.length === 0) {
       return [];
     }
-    const clients = new Set(appointments
-      .filter(app => app && app.client) // Filtriamo appuntamenti validi
-      .map(app => app.client)
-    );
-    return Array.from(clients).filter(client => 
-      client && client.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    
+    try {
+      const clients = new Set(appointments
+        .filter(app => app && app.client && typeof app.client === 'string') // Filtriamo appuntamenti validi
+        .map(app => app.client)
+      );
+      return Array.from(clients).filter(client => 
+        client && typeof client === 'string' && client.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    } catch (error) {
+      console.error('Errore nella generazione dei clienti unici:', error);
+      return [];
+    }
   }, [appointments, searchTerm]);
 
-  // Enhanced filtering with date filter - aggiungiamo controlli di sicurezza
+  // Enhanced filtering with date filter con controlli di sicurezza
   const filteredAppointments = useMemo(() => {
-    if (!appointments || !Array.isArray(appointments)) {
+    if (!appointments || !Array.isArray(appointments) || appointments.length === 0) {
       return [];
     }
 
-    let dateFilteredAppointments = appointments;
+    try {
+      let dateFilteredAppointments = [...appointments];
 
-    // Apply date filter
-    if (dateFilter !== 'all') {
-      const today = new Date();
-      let startDate: Date;
-      let endDate: Date;
+      // Apply date filter
+      if (dateFilter !== 'all') {
+        const today = new Date();
+        let startDate: Date;
+        let endDate: Date;
 
-      switch (dateFilter) {
-        case 'today':
-          startDate = new Date(today);
-          startDate.setHours(0, 0, 0, 0);
-          endDate = new Date(today);
-          endDate.setHours(23, 59, 59, 999);
-          break;
-        case 'week':
-          startDate = startOfWeek(today, { weekStartsOn: 1 });
-          endDate = endOfWeek(today, { weekStartsOn: 1 });
-          break;
-        case 'month':
-          startDate = startOfMonth(today);
-          endDate = endOfMonth(today);
-          break;
-        case 'custom':
-          if (customStartDate && customEndDate) {
-            startDate = new Date(customStartDate);
-            endDate = new Date(customEndDate);
+        switch (dateFilter) {
+          case 'today':
+            startDate = new Date(today);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(today);
             endDate.setHours(23, 59, 59, 999);
-          } else {
+            break;
+          case 'week':
+            startDate = startOfWeek(today, { weekStartsOn: 1 });
+            endDate = endOfWeek(today, { weekStartsOn: 1 });
+            break;
+          case 'month':
+            startDate = startOfMonth(today);
+            endDate = endOfMonth(today);
+            break;
+          case 'custom':
+            if (customStartDate && customEndDate) {
+              startDate = new Date(customStartDate);
+              endDate = new Date(customEndDate);
+              endDate.setHours(23, 59, 59, 999);
+            } else {
+              startDate = new Date(0);
+              endDate = new Date();
+            }
+            break;
+          default:
             startDate = new Date(0);
             endDate = new Date();
+        }
+
+        dateFilteredAppointments = appointments.filter(appointment => {
+          if (!appointment || !appointment.date) return false;
+          try {
+            const appointmentDate = new Date(appointment.date);
+            return isWithinInterval(appointmentDate, { start: startDate, end: endDate });
+          } catch (error) {
+            console.error('Errore nel parsing della data:', appointment.date, error);
+            return false;
           }
-          break;
-        default:
-          startDate = new Date(0);
-          endDate = new Date();
+        });
       }
 
-      dateFilteredAppointments = appointments.filter(appointment => {
-        if (!appointment || !appointment.date) return false;
-        const appointmentDate = new Date(appointment.date);
-        return isWithinInterval(appointmentDate, { start: startDate, end: endDate });
-      });
+      // Apply search filter
+      return dateFilteredAppointments
+        .filter(appointment => 
+          appointment && 
+          appointment.client && 
+          typeof appointment.client === 'string' &&
+          appointment.client.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => {
+          try {
+            if (!a.date || !a.time || !b.date || !b.time) return 0;
+            const dateA = new Date(a.date + ' ' + a.time);
+            const dateB = new Date(b.date + ' ' + b.time);
+            return dateB.getTime() - dateA.getTime();
+          } catch (error) {
+            console.error('Errore nel sorting degli appuntamenti:', error);
+            return 0;
+          }
+        });
+    } catch (error) {
+      console.error('Errore nel filtro degli appuntamenti:', error);
+      return [];
     }
-
-    // Apply search filter
-    return dateFilteredAppointments
-      .filter(appointment => 
-        appointment && 
-        appointment.client && 
-        appointment.client.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .sort((a, b) => {
-        if (!a.date || !a.time || !b.date || !b.time) return 0;
-        return new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime();
-      });
   }, [appointments, searchTerm, dateFilter, customStartDate, customEndDate]);
 
   const getEmployeeName = (employeeId: number) => {
-    if (!employees || !Array.isArray(employees)) return 'Dipendente non trovato';
-    const employee = employees.find(emp => emp && emp.id === employeeId);
-    return employee ? employee.name : 'Dipendente non trovato';
+    if (!employees || !Array.isArray(employees) || employees.length === 0) {
+      return 'Dipendente non trovato';
+    }
+    try {
+      const employee = employees.find(emp => emp && emp.id === employeeId);
+      return employee ? employee.name : 'Dipendente non trovato';
+    } catch (error) {
+      console.error('Errore nel trovare il dipendente:', error);
+      return 'Dipendente non trovato';
+    }
   };
 
   const getEmployeeSpecialization = (employeeId: number) => {
-    if (!employees || !Array.isArray(employees)) return '';
-    const employee = employees.find(emp => emp && emp.id === employeeId);
-    return employee ? employee.specialization : '';
+    if (!employees || !Array.isArray(employees) || employees.length === 0) {
+      return '';
+    }
+    try {
+      const employee = employees.find(emp => emp && emp.id === employeeId);
+      return employee ? employee.specialization : '';
+    } catch (error) {
+      console.error('Errore nel trovare la specializzazione:', error);
+      return '';
+    }
   };
 
   const formatDate = (dateStr: string) => {
     try {
-      if (!dateStr) return 'Data non valida';
+      if (!dateStr || typeof dateStr !== 'string') return 'Data non valida';
       return format(new Date(dateStr), 'dd MMMM yyyy', { locale: it });
     } catch (error) {
-      return dateStr;
+      console.error('Errore nel formatting della data:', dateStr, error);
+      return dateStr || 'Data non valida';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Caricamento storico da Supabase...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (showStatistics) {
     return <Statistics appointments={appointments} employees={employees} onBack={() => setShowStatistics(false)} />;
@@ -288,7 +370,7 @@ const AppointmentHistory = () => {
 
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Briefcase className="h-4 w-4 text-purple-600 shrink-0" />
+                        <Scissors className="h-4 w-4 text-purple-600 shrink-0" />
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{appointment.serviceType || 'Non specificato'}</p>
                           <p className="text-xs sm:text-sm text-gray-600 truncate">{appointment.title || 'Senza titolo'}</p>

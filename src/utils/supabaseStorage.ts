@@ -199,7 +199,7 @@ export const loadAppointmentsFromSupabase = async (): Promise<Appointment[]> => 
       employeeId: app.employee_id,
       date: app.date,
       time: app.time,
-      title: app.title,
+      title: app.title || '',
       client: app.client,
       duration: app.duration,
       notes: app.notes || '',
@@ -229,12 +229,12 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       employee_id: appointment.employeeId,
       date: appointment.date,
       time: appointment.time,
-      title: appointment.title,
+      title: appointment.title || '',
       client: appointment.client,
       duration: appointment.duration,
-      notes: appointment.notes,
-      email: appointment.email,
-      phone: appointment.phone,
+      notes: appointment.notes || '',
+      email: appointment.email || '',
+      phone: appointment.phone || '',
       color: appointment.color,
       service_type: appointment.serviceType
     });
@@ -258,12 +258,12 @@ export const updateAppointmentInSupabase = async (appointment: Appointment) => {
         employee_id: appointment.employeeId,
         date: appointment.date,
         time: appointment.time,
-        title: appointment.title,
+        title: appointment.title || '',
         client: appointment.client,
         duration: appointment.duration,
-        notes: appointment.notes,
-        email: appointment.email,
-        phone: appointment.phone,
+        notes: appointment.notes || '',
+        email: appointment.email || '',
+        phone: appointment.phone || '',
         color: appointment.color,
         service_type: appointment.serviceType
       })
@@ -334,5 +334,21 @@ export const migrateLocalStorageToSupabase = async () => {
   } catch (error) {
     console.error('Errore nella migrazione:', error);
     return false;
+  }
+};
+
+// Force refresh data from Supabase
+export const refreshDataFromSupabase = async () => {
+  try {
+    console.log('Aggiornamento forzato dei dati da Supabase...');
+    const [employees, appointments] = await Promise.all([
+      loadEmployeesFromSupabase(),
+      loadAppointmentsFromSupabase()
+    ]);
+    
+    return { employees, appointments };
+  } catch (error) {
+    console.error('Errore nell\'aggiornamento dei dati:', error);
+    throw error;
   }
 };
