@@ -9,7 +9,95 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          client: string
+          color: string
+          created_at: string | null
+          date: string
+          duration: number
+          email: string | null
+          employee_id: number
+          id: string
+          notes: string | null
+          phone: string | null
+          service_type: string
+          time: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          client: string
+          color: string
+          created_at?: string | null
+          date: string
+          duration?: number
+          email?: string | null
+          employee_id: number
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          service_type: string
+          time: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          client?: string
+          color?: string
+          created_at?: string | null
+          date?: string
+          duration?: number
+          email?: string | null
+          employee_id?: number
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          service_type?: string
+          time?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employees: {
+        Row: {
+          color: string
+          created_at: string | null
+          id: number
+          name: string
+          specialization: string
+          updated_at: string | null
+          vacations: string[] | null
+        }
+        Insert: {
+          color: string
+          created_at?: string | null
+          id?: number
+          name: string
+          specialization: string
+          updated_at?: string | null
+          vacations?: string[] | null
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          id?: number
+          name?: string
+          specialization?: string
+          updated_at?: string | null
+          vacations?: string[] | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

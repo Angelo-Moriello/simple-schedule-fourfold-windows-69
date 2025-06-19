@@ -11,7 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useNavigate } from 'react-router-dom';
 import { Appointment, Employee } from '@/types/appointment';
 import { getOccupiedSlots, isSlotOccupied } from '@/utils/timeSlotUtils';
-import { saveAppointments, loadAppointments, saveEmployees, loadEmployees } from '@/utils/dataStorage';
+import { 
+  loadEmployeesFromSupabase, 
+  loadAppointmentsFromSupabase,
+  addEmployeeToSupabase,
+  updateEmployeeInSupabase,
+  deleteEmployeeFromSupabase,
+  addAppointmentToSupabase,
+  updateAppointmentInSupabase,
+  deleteAppointmentFromSupabase,
+  migrateLocalStorageToSupabase
+} from '@/utils/supabaseStorage';
 import TimeSlot from './TimeSlot';
 import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
@@ -29,38 +39,47 @@ const AppointmentScheduler = () => {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [showFullCalendar, setShowFullCalendar] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load data from localStorage on component mount
+  // Load data from Supabase on component mount
   useEffect(() => {
-    const loadedAppointments = loadAppointments();
-    const loadedEmployees = loadEmployees();
-    
-    setAppointments(loadedAppointments);
-    setEmployees(loadedEmployees);
-
-    // Listen for storage events to sync data across tabs
-    const handleStorageChange = () => {
-      setAppointments(loadAppointments());
-      setEmployees(loadEmployees());
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Check if we need to migrate from localStorage
+        const hasLocalData = localStorage.getItem('employees') || localStorage.getItem('appointments');
+        if (hasLocalData) {
+          toast.info('Migrazione dati in corso...');
+          const migrationSuccess = await migrateLocalStorageToSupabase();
+          if (migrationSuccess) {
+            // Clear localStorage after successful migration
+            localStorage.removeItem('employees');
+            localStorage.removeItem('appointments');
+            localStorage.removeItem('employeesTimestamp');
+            localStorage.removeItem('appointmentsTimestamp');
+            toast.success('Dati migrati con successo su Supabase!');
+          }
+        }
+        
+        // Load current data from Supabase
+        const [loadedEmployees, loadedAppointments] = await Promise.all([
+          loadEmployeesFromSupabase(),
+          loadAppointmentsFromSupabase()
+        ]);
+        
+        setEmployees(loadedEmployees);
+        setAppointments(loadedAppointments);
+      } catch (error) {
+        console.error('Errore nel caricamento dei dati:', error);
+        toast.error('Errore nel caricamento dei dati');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    loadData();
   }, []);
-
-  // Save appointments to localStorage whenever appointments change
-  useEffect(() => {
-    if (appointments.length > 0 || localStorage.getItem('appointments')) {
-      saveAppointments(appointments);
-    }
-  }, [appointments]);
-
-  // Save employees to localStorage whenever employees change
-  useEffect(() => {
-    if (employees.length > 0 || localStorage.getItem('employees')) {
-      saveEmployees(employees);
-    }
-  }, [employees]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -69,52 +88,88 @@ const AppointmentScheduler = () => {
     setShowFullCalendar(false);
   };
 
-  const addAppointment = (newAppointment: Appointment) => {
-    setAppointments([...appointments, newAppointment]);
-    setIsAppointmentFormOpen(false);
-    toast.success('Appuntamento aggiunto con successo!');
+  const addAppointment = async (newAppointment: Appointment) => {
+    try {
+      await addAppointmentToSupabase(newAppointment);
+      setAppointments([...appointments, newAppointment]);
+      setIsAppointmentFormOpen(false);
+      toast.success('Appuntamento aggiunto con successo!');
+    } catch (error) {
+      toast.error('Errore nell\'aggiungere l\'appuntamento');
+    }
   };
 
-  const updateAppointment = (updatedAppointment: Appointment) => {
-    const updatedAppointments = appointments.map(appointment =>
-      appointment.id === updatedAppointment.id ? updatedAppointment : appointment
-    );
-    setAppointments(updatedAppointments);
-    setAppointmentToEdit(null);
-    setIsAppointmentFormOpen(false);
-    toast.success('Appuntamento modificato con successo!');
+  const updateAppointment = async (updatedAppointment: Appointment) => {
+    try {
+      await updateAppointmentInSupabase(updatedAppointment);
+      const updatedAppointments = appointments.map(appointment =>
+        appointment.id === updatedAppointment.id ? updatedAppointment : appointment
+      );
+      setAppointments(updatedAppointments);
+      setAppointmentToEdit(null);
+      setIsAppointmentFormOpen(false);
+      toast.success('Appuntamento modificato con successo!');
+    } catch (error) {
+      toast.error('Errore nella modifica dell\'appuntamento');
+    }
   };
 
-  const deleteAppointment = (appointmentId: string) => {
-    const updatedAppointments = appointments.filter(appointment => appointment.id !== appointmentId);
-    setAppointments(updatedAppointments);
-    toast.success('Appuntamento eliminato con successo!');
+  const deleteAppointment = async (appointmentId: string) => {
+    try {
+      await deleteAppointmentFromSupabase(appointmentId);
+      const updatedAppointments = appointments.filter(appointment => appointment.id !== appointmentId);
+      setAppointments(updatedAppointments);
+      toast.success('Appuntamento eliminato con successo!');
+    } catch (error) {
+      toast.error('Errore nell\'eliminazione dell\'appuntamento');
+    }
   };
 
-  const addEmployee = (newEmployee: Employee) => {
-    setEmployees([...employees, newEmployee]);
-    setIsEmployeeFormOpen(false);
-    toast.success('Dipendente aggiunto con successo!');
+  const addEmployee = async (newEmployee: Employee) => {
+    try {
+      await addEmployeeToSupabase(newEmployee);
+      setEmployees([...employees, newEmployee]);
+      setIsEmployeeFormOpen(false);
+      toast.success('Dipendente aggiunto con successo!');
+    } catch (error) {
+      toast.error('Errore nell\'aggiungere il dipendente');
+    }
   };
 
-   const updateEmployee = (updatedEmployee: Employee) => {
-    const updatedEmployees = employees.map(employee =>
-      employee.id === updatedEmployee.id ? updatedEmployee : employee
-    );
-    setEmployees(updatedEmployees);
-    setIsEmployeeFormOpen(false);
-    toast.success('Dipendente modificato con successo!');
+  const updateEmployee = async (updatedEmployee: Employee) => {
+    try {
+      await updateEmployeeInSupabase(updatedEmployee);
+      const updatedEmployees = employees.map(employee =>
+        employee.id === updatedEmployee.id ? updatedEmployee : employee
+      );
+      setEmployees(updatedEmployees);
+      setIsEmployeeFormOpen(false);
+      toast.success('Dipendente modificato con successo!');
+    } catch (error) {
+      toast.error('Errore nella modifica del dipendente');
+    }
   };
 
-  const deleteEmployee = (employeeId: number) => {
-    // Remove employee's appointments first
-    const updatedAppointments = appointments.filter(appointment => appointment.employeeId !== employeeId);
-    setAppointments(updatedAppointments);
-
-    // Then remove the employee
-    const updatedEmployees = employees.filter(employee => employee.id !== employeeId);
-    setEmployees(updatedEmployees);
-    toast.success('Dipendente eliminato con successo!');
+  const deleteEmployee = async (employeeId: number) => {
+    try {
+      // Remove employee's appointments first
+      const employeeAppointments = appointments.filter(appointment => appointment.employeeId === employeeId);
+      for (const appointment of employeeAppointments) {
+        await deleteAppointmentFromSupabase(appointment.id);
+      }
+      
+      // Then remove the employee
+      await deleteEmployeeFromSupabase(employeeId);
+      
+      const updatedAppointments = appointments.filter(appointment => appointment.employeeId !== employeeId);
+      const updatedEmployees = employees.filter(employee => employee.id !== employeeId);
+      
+      setAppointments(updatedAppointments);
+      setEmployees(updatedEmployees);
+      toast.success('Dipendente eliminato con successo!');
+    } catch (error) {
+      toast.error('Errore nell\'eliminazione del dipendente');
+    }
   };
 
   const handleOpenAppointmentForm = (employeeId: number, time: string) => {
@@ -157,12 +212,21 @@ const AppointmentScheduler = () => {
     );
   };
 
-  const updateEmployeeName = (employeeId: number, newName: string) => {
-    const updatedEmployees = employees.map(employee =>
-      employee.id === employeeId ? { ...employee, name: newName } : employee
-    );
-    setEmployees(updatedEmployees);
-    toast.success('Nome dipendente aggiornato con successo!');
+  const updateEmployeeName = async (employeeId: number, newName: string) => {
+    try {
+      const employee = employees.find(emp => emp.id === employeeId);
+      if (employee) {
+        const updatedEmployee = { ...employee, name: newName };
+        await updateEmployeeInSupabase(updatedEmployee);
+        const updatedEmployees = employees.map(emp =>
+          emp.id === employeeId ? updatedEmployee : emp
+        );
+        setEmployees(updatedEmployees);
+        toast.success('Nome dipendente aggiornato con successo!');
+      }
+    } catch (error) {
+      toast.error('Errore nell\'aggiornamento del nome');
+    }
   };
 
   const generateTimeSlots = () => {
@@ -175,6 +239,17 @@ const AppointmentScheduler = () => {
   };
 
   const timeSlots = generateTimeSlots();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Caricamento dati...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -262,13 +337,8 @@ const AppointmentScheduler = () => {
                   {/* Specialization selector */}
                   <Select 
                     onValueChange={(value) => {
-                      const updatedEmployees = employees.map(emp => {
-                        if (emp.id === employee.id) {
-                          return { ...emp, specialization: value as 'Parrucchiere' | 'Estetista' };
-                        }
-                        return emp;
-                      });
-                      setEmployees(updatedEmployees);
+                      const updatedEmployee = { ...employee, specialization: value as 'Parrucchiere' | 'Estetista' };
+                      updateEmployee(updatedEmployee);
                     }} 
                     defaultValue={employee.specialization}
                   >
