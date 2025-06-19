@@ -1,15 +1,12 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Employee, Appointment } from '@/types/appointment';
-
 interface AppointmentSchedulerHeaderProps {
   selectedDate: Date;
   employees: Employee[];
   appointments: Appointment[];
 }
-
 const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
   selectedDate,
   employees,
@@ -27,18 +24,11 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
     });
     return capitalizeFirst(formatted);
   };
-
   console.log('Header - appointments received:', appointments);
   console.log('Header - appointments count:', appointments.length);
-
-  return (
-    <div className="flex flex-col items-center gap-6 mb-8 bg-white rounded-lg shadow-md p-6">
+  return <div className="flex flex-col items-center gap-6 mb-8 bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center gap-6 w-full justify-center">
-        <img 
-          src="/lovable-uploads/e3330001-9a6b-4c26-a431-89d19870edfe.png" 
-          alt="Da Capo a Piedi - Estetica & Parrucchieri" 
-          className="object-contain rounded-lg shadow-sm h-20 w-20"
-        />
+        <img src="/lovable-uploads/e3330001-9a6b-4c26-a431-89d19870edfe.png" alt="Da Capo a Piedi - Estetica & Parrucchieri" className="rounded-lg shadow-sm h-20 w-40 object-cover" />
         <div className="text-center">
           <h1 className="text-2xl sm:text-3xl bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2 font-semibold lg:text-4xl">
             Calendario Appuntamenti
@@ -59,8 +49,6 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
           <span>{appointments.length} appuntamenti totali</span>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AppointmentSchedulerHeader;
