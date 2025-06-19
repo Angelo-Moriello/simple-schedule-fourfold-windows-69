@@ -55,8 +55,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   employees
 }) => {
   const [formData, setFormData] = useState({
-    employeeId: employeeId?.toString() || '',
-    time: time || '',
+    employeeId: '',
+    time: '',
     title: '',
     client: '',
     duration: '30',
@@ -67,6 +67,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     serviceType: ''
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const timeSlots = generateTimeSlots();
 
   // Load stored services from localStorage
@@ -122,49 +123,105 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     ? serviceCategories[selectedEmployee.specialization]
     : [];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.employeeId || !formData.time || !formData.client || !formData.serviceType || !formData.duration) {
-      toast.error('Compilare tutti i campi obbligatori');
+    // Prevent double submission
+    if (isSubmitting) {
       return;
     }
 
-    const appointmentData: Appointment = {
-      id: appointmentToEdit?.id || Date.now().toString(),
-      employeeId: parseInt(formData.employeeId),
-      date: format(date, 'yyyy-MM-dd'),
-      time: formData.time,
-      title: formData.title,
-      client: formData.client,
-      duration: parseInt(formData.duration),
-      notes: formData.notes,
-      email: formData.email,
-      phone: formData.phone,
-      color: formData.color,
-      serviceType: formData.serviceType
-    };
+    console.log('Form submission started', formData);
+    
+    // Enhanced validation with better error messages
+    if (!formData.employeeId) {
+      toast.error('Seleziona un dipendente');
+      return;
+    }
+    
+    if (!formData.time) {
+      toast.error('Seleziona un orario');
+      return;
+    }
+    
+    if (!formData.client || formData.client.trim() === '') {
+      toast.error('Inserisci il nome del cliente');
+      return;
+    }
+    
+    if (!formData.serviceType) {
+      toast.error('Seleziona il tipo di servizio');
+      return;
+    }
+    
+    if (!formData.duration) {
+      toast.error('Seleziona la durata');
+      return;
+    }
 
-    if (appointmentToEdit && updateAppointment) {
-      updateAppointment(appointmentData);
-    } else if (addAppointment) {
-      addAppointment(appointmentData);
+    setIsSubmitting(true);
+
+    try {
+      const appointmentData: Appointment = {
+        id: appointmentToEdit?.id || Date.now().toString(),
+        employeeId: parseInt(formData.employeeId),
+        date: format(date, 'yyyy-MM-dd'),
+        time: formData.time,
+        title: formData.title.trim(),
+        client: formData.client.trim(),
+        duration: parseInt(formData.duration),
+        notes: formData.notes.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        color: formData.color,
+        serviceType: formData.serviceType
+      };
+
+      console.log('Appointment data to be saved:', appointmentData);
+
+      if (appointmentToEdit && updateAppointment) {
+        await updateAppointment(appointmentData);
+        toast.success('Appuntamento modificato con successo!');
+      } else if (addAppointment) {
+        await addAppointment(appointmentData);
+        toast.success('Appuntamento creato con successo!');
+      }
+
+      // Close form after successful submission
+      onClose();
+    } catch (error) {
+      console.error('Error saving appointment:', error);
+      toast.error('Errore nel salvare l\'appuntamento. Riprova.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleGoogleCalendarSync = () => {
-    const startDate = new Date(`${format(date, 'yyyy-MM-dd')}T${formData.time}:00`);
-    const endDate = new Date(startDate.getTime() + parseInt(formData.duration) * 60000);
-    
-    const title = formData.title || `${formData.serviceType} - ${formData.client}`;
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent(`Cliente: ${formData.client}\nServizio: ${formData.serviceType}\nEmail: ${formData.email}\nTelefono: ${formData.phone}\nNote: ${formData.notes}`)}&location=${encodeURIComponent('Studio')}`;
-    
-    window.open(googleCalendarUrl, '_blank');
+    try {
+      const startDate = new Date(`${format(date, 'yyyy-MM-dd')}T${formData.time}:00`);
+      const endDate = new Date(startDate.getTime() + parseInt(formData.duration) * 60000);
+      
+      const title = formData.title || `${formData.serviceType} - ${formData.client}`;
+      const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent(`Cliente: ${formData.client}\nServizio: ${formData.serviceType}\nEmail: ${formData.email}\nTelefono: ${formData.phone}\nNote: ${formData.notes}`)}&location=${encodeURIComponent('Studio')}`;
+      
+      window.open(googleCalendarUrl, '_blank');
+    } catch (error) {
+      console.error('Error generating Google Calendar link:', error);
+      toast.error('Errore nella generazione del link calendario');
+    }
+  };
+
+  // Close form handler
+  const handleClose = () => {
+    if (!isSubmitting) {
+      onClose();
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-2xl sm:rounded-3xl">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-2xl sm:rounded-3xl">
         <DialogHeader className="pb-4 sm:pb-6">
           <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             {appointmentToEdit ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
@@ -184,7 +241,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   setFormData({ ...formData, employeeId: value, serviceType: '' });
                 }}
               >
-                <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+                <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                   <SelectValue placeholder="Seleziona dipendente" />
                 </SelectTrigger>
                 <SelectContent>
@@ -206,7 +263,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.time}
                 onValueChange={(value) => setFormData({ ...formData, time: value })}
               >
-                <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+                <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                   <SelectValue placeholder="Seleziona orario" />
                 </SelectTrigger>
                 <SelectContent>
@@ -231,7 +288,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 onValueChange={(value) => setFormData({ ...formData, serviceType: value })}
                 disabled={!selectedEmployee}
               >
-                <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+                <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                   <SelectValue placeholder={selectedEmployee ? "Seleziona servizio" : "Prima seleziona dipendente"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -254,7 +311,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Es. Consulenza, Riunione..."
-                className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+                className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
               />
             </div>
           </div>
@@ -270,7 +327,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.client}
                 onChange={(e) => setFormData({ ...formData, client: e.target.value })}
                 placeholder="Nome del cliente"
-                className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+                className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+                required
               />
             </div>
             
@@ -283,7 +341,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.color}
                 onValueChange={(value) => setFormData({ ...formData, color: value })}
               >
-                <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+                <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                   <SelectValue placeholder="Seleziona colore" />
                 </SelectTrigger>
                 <SelectContent>
@@ -312,7 +370,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="email@esempio.com"
-                className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+                className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
               />
             </div>
             
@@ -327,7 +385,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="+39 123 456 7890"
-                className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+                className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
               />
             </div>
           </div>
@@ -341,7 +399,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               value={formData.duration}
               onValueChange={(value) => setFormData({ ...formData, duration: value })}
             >
-              <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+              <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -375,7 +433,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               type="button"
               variant="outline"
               onClick={handleGoogleCalendarSync}
-              className="w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg"
+              className="w-full sm:w-auto h-12 px-4 sm:px-6 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg"
+              disabled={isSubmitting}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Aggiungi a Google Calendar
@@ -385,16 +444,18 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               <Button
                 type="button"
                 variant="outline"
-                onClick={onClose}
-                className="w-full sm:w-auto h-10 sm:h-12 px-6 sm:px-8 rounded-xl border-gray-300 hover:bg-gray-50 transition-all duration-200"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto h-12 px-6 sm:px-8 rounded-xl border-gray-300 hover:bg-gray-50 transition-all duration-200"
               >
                 Annulla
               </Button>
               <Button 
                 type="submit"
-                className="w-full sm:w-auto h-10 sm:h-12 px-6 sm:px-8 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto h-12 px-6 sm:px-8 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {appointmentToEdit ? 'Salva Modifiche' : 'Crea Appuntamento'}
+                {isSubmitting ? 'Salvataggio...' : (appointmentToEdit ? 'Salva Modifiche' : 'Crea Appuntamento')}
               </Button>
             </div>
           </div>
