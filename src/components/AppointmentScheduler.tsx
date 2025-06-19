@@ -216,8 +216,6 @@ const AppointmentScheduler = () => {
                   <CalendarComponent
                     mode="single"
                     captionLayout="dropdown"
-                    from={new Date('1900-01-01')}
-                    to={new Date('2100-01-01')}
                     defaultMonth={selectedDate}
                     selected={selectedDate}
                     onSelect={handleDateSelect}

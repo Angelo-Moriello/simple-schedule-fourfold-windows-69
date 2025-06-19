@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -8,28 +8,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Appointment, Employee, ServiceCategory } from '@/types/appointment';
 import { Calendar, Clock, User, Mail, Phone, Palette, FileText, ExternalLink, Scissors } from 'lucide-react';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface AppointmentFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (e: React.FormEvent) => void;
-  editingAppointment: Appointment | null;
-  formData: {
-    employeeId: string;
-    time: string;
-    title: string;
-    client: string;
-    duration: string;
-    notes: string;
-    email: string;
-    phone: string;
-    color: string;
-    serviceType: string;
-  };
-  onFormDataChange: (field: string, value: string) => void;
+  addAppointment?: (appointment: Appointment) => void;
+  updateAppointment?: (appointment: Appointment) => void;
+  employeeId: number | null;
+  time: string | null;
+  date: Date;
+  appointmentToEdit: Appointment | null;
   employees: Employee[];
-  timeSlots: string[];
-  serviceCategories: Record<'Parrucchiere' | 'Estetista', ServiceCategory>;
 }
 
 const appointmentColors = [
@@ -43,24 +34,126 @@ const appointmentColors = [
   { label: 'Grigio', value: 'bg-gray-100 border-gray-300 text-gray-800' }
 ];
 
+const generateTimeSlots = () => {
+  const slots = [];
+  for (let i = 8; i <= 19; i++) {
+    slots.push(`${String(i).padStart(2, '0')}:00`);
+    slots.push(`${String(i).padStart(2, '0')}:30`);
+  }
+  return slots;
+};
+
 const AppointmentForm: React.FC<AppointmentFormProps> = ({
   isOpen,
   onClose,
-  onSubmit,
-  editingAppointment,
-  formData,
-  onFormDataChange,
-  employees,
-  timeSlots,
-  serviceCategories
+  addAppointment,
+  updateAppointment,
+  employeeId,
+  time,
+  date,
+  appointmentToEdit,
+  employees
 }) => {
+  const [formData, setFormData] = useState({
+    employeeId: employeeId?.toString() || '',
+    time: time || '',
+    title: '',
+    client: '',
+    duration: '30',
+    notes: '',
+    email: '',
+    phone: '',
+    color: appointmentColors[0].value,
+    serviceType: ''
+  });
+
+  const timeSlots = generateTimeSlots();
+
+  // Load stored services from localStorage
+  const getStoredServices = () => {
+    try {
+      const stored = localStorage.getItem('services');
+      return stored ? JSON.parse(stored) : {
+        Parrucchiere: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli'],
+        Estetista: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+      };
+    } catch {
+      return {
+        Parrucchiere: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli'],
+        Estetista: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+      };
+    }
+  };
+
+  const serviceCategories = getStoredServices();
+
+  useEffect(() => {
+    if (appointmentToEdit) {
+      setFormData({
+        employeeId: appointmentToEdit.employeeId.toString(),
+        time: appointmentToEdit.time,
+        title: appointmentToEdit.title || '',
+        client: appointmentToEdit.client,
+        duration: appointmentToEdit.duration.toString(),
+        notes: appointmentToEdit.notes || '',
+        email: appointmentToEdit.email || '',
+        phone: appointmentToEdit.phone || '',
+        color: appointmentToEdit.color,
+        serviceType: appointmentToEdit.serviceType
+      });
+    } else {
+      setFormData({
+        employeeId: employeeId?.toString() || '',
+        time: time || '',
+        title: '',
+        client: '',
+        duration: '30',
+        notes: '',
+        email: '',
+        phone: '',
+        color: appointmentColors[0].value,
+        serviceType: ''
+      });
+    }
+  }, [appointmentToEdit, employeeId, time, isOpen]);
+
   const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
   const availableServices = selectedEmployee && serviceCategories[selectedEmployee.specialization] 
-    ? serviceCategories[selectedEmployee.specialization].services 
+    ? serviceCategories[selectedEmployee.specialization]
     : [];
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.employeeId || !formData.time || !formData.client || !formData.serviceType || !formData.duration) {
+      toast.error('Compilare tutti i campi obbligatori');
+      return;
+    }
+
+    const appointmentData: Appointment = {
+      id: appointmentToEdit?.id || Date.now().toString(),
+      employeeId: parseInt(formData.employeeId),
+      date: format(date, 'yyyy-MM-dd'),
+      time: formData.time,
+      title: formData.title,
+      client: formData.client,
+      duration: parseInt(formData.duration),
+      notes: formData.notes,
+      email: formData.email,
+      phone: formData.phone,
+      color: formData.color,
+      serviceType: formData.serviceType
+    };
+
+    if (appointmentToEdit && updateAppointment) {
+      updateAppointment(appointmentData);
+    } else if (addAppointment) {
+      addAppointment(appointmentData);
+    }
+  };
+
   const handleGoogleCalendarSync = () => {
-    const startDate = new Date(`${new Date().toISOString().split('T')[0]}T${formData.time}:00`);
+    const startDate = new Date(`${format(date, 'yyyy-MM-dd')}T${formData.time}:00`);
     const endDate = new Date(startDate.getTime() + parseInt(formData.duration) * 60000);
     
     const title = formData.title || `${formData.serviceType} - ${formData.client}`;
@@ -74,11 +167,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-2xl sm:rounded-3xl">
         <DialogHeader className="pb-4 sm:pb-6">
           <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            {editingAppointment ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
+            {appointmentToEdit ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <Label htmlFor="employee" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -88,8 +181,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               <Select
                 value={formData.employeeId}
                 onValueChange={(value) => {
-                  onFormDataChange('employeeId', value);
-                  onFormDataChange('serviceType', ''); // Reset service when changing employee
+                  setFormData({ ...formData, employeeId: value, serviceType: '' });
                 }}
               >
                 <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
@@ -112,7 +204,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               </Label>
               <Select
                 value={formData.time}
-                onValueChange={(value) => onFormDataChange('time', value)}
+                onValueChange={(value) => setFormData({ ...formData, time: value })}
               >
                 <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                   <SelectValue placeholder="Seleziona orario" />
@@ -136,7 +228,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               </Label>
               <Select
                 value={formData.serviceType}
-                onValueChange={(value) => onFormDataChange('serviceType', value)}
+                onValueChange={(value) => setFormData({ ...formData, serviceType: value })}
                 disabled={!selectedEmployee}
               >
                 <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
@@ -160,7 +252,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => onFormDataChange('title', e.target.value)}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Es. Consulenza, Riunione..."
                 className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
               />
@@ -176,7 +268,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               <Input
                 id="client"
                 value={formData.client}
-                onChange={(e) => onFormDataChange('client', e.target.value)}
+                onChange={(e) => setFormData({ ...formData, client: e.target.value })}
                 placeholder="Nome del cliente"
                 className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
               />
@@ -189,7 +281,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               </Label>
               <Select
                 value={formData.color}
-                onValueChange={(value) => onFormDataChange('color', value)}
+                onValueChange={(value) => setFormData({ ...formData, color: value })}
               >
                 <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                   <SelectValue placeholder="Seleziona colore" />
@@ -218,7 +310,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => onFormDataChange('email', e.target.value)}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="email@esempio.com"
                 className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
               />
@@ -233,7 +325,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 id="phone"
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => onFormDataChange('phone', e.target.value)}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="+39 123 456 7890"
                 className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
               />
@@ -247,7 +339,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </Label>
             <Select
               value={formData.duration}
-              onValueChange={(value) => onFormDataChange('duration', value)}
+              onValueChange={(value) => setFormData({ ...formData, duration: value })}
             >
               <SelectTrigger className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
                 <SelectValue />
@@ -271,7 +363,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             <Textarea
               id="notes"
               value={formData.notes}
-              onChange={(e) => onFormDataChange('notes', e.target.value)}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Note aggiuntive..."
               rows={3}
               className="rounded-xl border-gray-200 focus:border-blue-500 transition-colors resize-none"
@@ -302,7 +394,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 type="submit"
                 className="w-full sm:w-auto h-10 sm:h-12 px-6 sm:px-8 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
               >
-                {editingAppointment ? 'Salva Modifiche' : 'Crea Appuntamento'}
+                {appointmentToEdit ? 'Salva Modifiche' : 'Crea Appuntamento'}
               </Button>
             </div>
           </div>
