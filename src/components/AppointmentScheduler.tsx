@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -165,51 +166,6 @@ const AppointmentScheduler = () => {
     toast.success('Nome dipendente aggiornato con successo!');
   };
 
-  const handleOpenAppointmentForm = (employeeId: number, time: string) => {
-    setSelectedEmployeeId(employeeId);
-    setSelectedTime(time);
-    setIsAppointmentFormOpen(true);
-  };
-
-  const handleEditAppointment = (appointment: Appointment) => {
-    setAppointmentToEdit(appointment);
-    setIsAppointmentFormOpen(true);
-  };
-
-  const handleCloseAppointmentForm = () => {
-    setIsAppointmentFormOpen(false);
-    setAppointmentToEdit(null);
-  };
-
-  const handleOpenEmployeeForm = () => {
-    setIsEmployeeFormOpen(true);
-  };
-
-  const handleCloseEmployeeForm = () => {
-    setIsEmployeeFormOpen(false);
-  };
-
-  const isVacationDay = useCallback((employeeId: number, date: Date): boolean => {
-    const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee || !employee.vacations) {
-      return false;
-    }
-    const dateString = format(date, 'yyyy-MM-dd');
-    return employee.vacations.includes(dateString);
-  }, [employees]);
-
-  const getAppointmentsForDay = (date: Date) => {
-    const dateString = format(date, 'yyyy-MM-dd');
-    return appointments.filter(appointment => appointment.date === dateString);
-  };
-
-  const getEmployeeAppointmentsForTimeSlot = (employeeId: number, time: string) => {
-    const dateString = format(selectedDate, 'yyyy-MM-dd');
-    return appointments.find(
-      appointment => appointment.employeeId === employeeId && appointment.date === dateString && appointment.time === time
-    );
-  };
-
   const generateTimeSlots = () => {
     const slots = [];
     for (let i = 8; i <= 19; i++) {
@@ -285,7 +241,7 @@ const AppointmentScheduler = () => {
           </div>
         </div>
 
-        {/* Employee Time Slots - Modified for 4 columns on desktop */}
+        {/* Employee Time Slots - 4 columns on desktop */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {employees.map(employee => (
             <Card key={employee.id} className="bg-white rounded-lg shadow-md overflow-hidden">
