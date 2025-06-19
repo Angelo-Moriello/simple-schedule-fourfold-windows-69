@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -30,17 +29,7 @@ import { toast } from 'sonner';
 
 const AppointmentScheduler = () => {
   const navigate = useNavigate();
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
-  const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
-  const [showFullCalendar, setShowFullCalendar] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
+  
   // Load data from Supabase on component mount
   useEffect(() => {
     const loadData = async () => {
@@ -80,6 +69,17 @@ const AppointmentScheduler = () => {
 
     loadData();
   }, []);
+
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
+  const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
+  const [showFullCalendar, setShowFullCalendar] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
