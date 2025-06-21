@@ -48,38 +48,79 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
   const getEmployeeAppointmentsForTimeSlot = useCallback((employeeId: number, time: string) => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     
-    console.log('Ricerca appuntamento per:', { 
-      employeeId, 
-      time, 
-      dateString, 
+    console.log('DEBUG - Ricerca appuntamento:', {
+      employeeId,
+      time,
+      dateString,
       totalAppointments: appointments.length,
-      appointmentsForDate: appointments.filter(apt => apt.date === dateString).length
+      appointments: appointments.map(apt => ({
+        id: apt.id,
+        employeeId: apt.employeeId,
+        date: apt.date,
+        time: apt.time,
+        client: apt.client
+      }))
     });
     
-    const foundAppointment = appointments.find(
-      appointment => {
-        const matches = appointment.employeeId === employeeId && 
-                      appointment.date === dateString && 
-                      appointment.time === time;
-        
-        if (matches) {
-          console.log('Appuntamento trovato:', appointment);
-        }
-        
-        return matches;
-      }
-    );
+    // Filtriamo prima per data e dipendente
+    const appointmentsForDateAndEmployee = appointments.filter(apt => {
+      const dateMatch = apt.date === dateString;
+      const employeeMatch = apt.employeeId === employeeId;
+      
+      console.log('DEBUG - Filtro per data e dipendente:', {
+        appointmentId: apt.id,
+        aptDate: apt.date,
+        aptEmployeeId: apt.employeeId,
+        dateMatch,
+        employeeMatch,
+        dateString,
+        employeeId
+      });
+      
+      return dateMatch && employeeMatch;
+    });
+    
+    console.log('DEBUG - Appuntamenti filtrati per data e dipendente:', appointmentsForDateAndEmployee);
+    
+    // Poi filtriamo per orario
+    const foundAppointment = appointmentsForDateAndEmployee.find(apt => {
+      // Normalizziamo l'orario per il confronto
+      const aptTime = String(apt.time).substring(0, 5); // Prende solo HH:MM
+      const slotTime = time;
+      
+      console.log('DEBUG - Confronto orari:', {
+        appointmentId: apt.id,
+        aptTime,
+        slotTime,
+        originalAptTime: apt.time,
+        match: aptTime === slotTime
+      });
+      
+      return aptTime === slotTime;
+    });
+    
+    if (foundAppointment) {
+      console.log('DEBUG - Appuntamento trovato:', foundAppointment);
+    } else {
+      console.log('DEBUG - Nessun appuntamento trovato per:', { employeeId, time, dateString });
+    }
     
     return foundAppointment;
   }, [appointments, selectedDate]);
 
   // Debug effect per monitorare i props
   React.useEffect(() => {
-    console.log('EmployeeTimeSlotGrid props aggiornate:', {
+    console.log('DEBUG - EmployeeTimeSlotGrid props aggiornate:', {
       employeesCount: employees.length,
       appointmentsCount: appointments.length,
       selectedDate: format(selectedDate, 'yyyy-MM-dd'),
-      appointments: appointments
+      appointments: appointments.map(apt => ({
+        id: apt.id,
+        employeeId: apt.employeeId,
+        date: apt.date,
+        time: apt.time,
+        client: apt.client
+      }))
     });
   }, [employees, appointments, selectedDate]);
 

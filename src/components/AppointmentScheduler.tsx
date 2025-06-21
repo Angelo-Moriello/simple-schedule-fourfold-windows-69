@@ -62,9 +62,16 @@ const AppointmentScheduler = () => {
           loadAppointmentsFromSupabase()
         ]);
         
-        console.log('Dati caricati all\'avvio:', { 
+        console.log('DEBUG - Initial data load:', { 
           employees: loadedEmployees.length, 
-          appointments: loadedAppointments.length 
+          appointments: loadedAppointments.length,
+          appointmentDetails: loadedAppointments.map(apt => ({
+            id: apt.id,
+            employeeId: apt.employeeId,
+            date: apt.date,
+            time: apt.time,
+            client: apt.client
+          }))
         });
         
         setEmployees(loadedEmployees);
@@ -84,7 +91,7 @@ const AppointmentScheduler = () => {
 
   // Setup realtime subscriptions
   useEffect(() => {
-    console.log('Configurazione realtime subscriptions...');
+    console.log('DEBUG - Configurazione realtime subscriptions...');
     
     const appointmentsChannel = supabase
       .channel('appointments-changes')
@@ -96,14 +103,14 @@ const AppointmentScheduler = () => {
           table: 'appointments'
         },
         (payload) => {
-          console.log('Realtime appointment change:', payload);
+          console.log('DEBUG - Realtime appointment change:', payload);
           
           if (payload.eventType === 'INSERT') {
             const newAppointment: Appointment = {
               id: payload.new.id,
               employeeId: payload.new.employee_id,
               date: payload.new.date,
-              time: payload.new.time.toString(), // Assicuriamoci che sia una stringa
+              time: payload.new.time,
               title: payload.new.title || '',
               client: payload.new.client,
               duration: payload.new.duration,
@@ -114,16 +121,16 @@ const AppointmentScheduler = () => {
               serviceType: payload.new.service_type
             };
             
-            console.log('Nuovo appuntamento da realtime:', newAppointment);
+            console.log('DEBUG - Nuovo appuntamento da realtime:', newAppointment);
             
             setAppointments(prev => {
-              // Controllo duplicati più robusto
+              // Controllo se l'appuntamento esiste già
               const exists = prev.some(apt => apt.id === newAppointment.id);
-              console.log('Appuntamento già esistente?', exists);
+              console.log('DEBUG - Appuntamento già esistente?', exists);
               
               if (!exists) {
                 const updated = [...prev, newAppointment];
-                console.log('Appuntamenti aggiornati:', updated.length);
+                console.log('DEBUG - Appuntamenti dopo INSERT:', updated.length);
                 return updated;
               }
               return prev;
@@ -133,7 +140,7 @@ const AppointmentScheduler = () => {
               id: payload.new.id,
               employeeId: payload.new.employee_id,
               date: payload.new.date,
-              time: payload.new.time.toString(), // Assicuriamoci che sia una stringa
+              time: payload.new.time,
               title: payload.new.title || '',
               client: payload.new.client,
               duration: payload.new.duration,
@@ -144,28 +151,28 @@ const AppointmentScheduler = () => {
               serviceType: payload.new.service_type
             };
             
-            console.log('Appuntamento aggiornato da realtime:', updatedAppointment);
+            console.log('DEBUG - Appuntamento aggiornato da realtime:', updatedAppointment);
             
             setAppointments(prev => {
               const updated = prev.map(apt =>
                 apt.id === updatedAppointment.id ? updatedAppointment : apt
               );
-              console.log('Appuntamenti dopo aggiornamento:', updated.length);
+              console.log('DEBUG - Appuntamenti dopo UPDATE:', updated.length);
               return updated;
             });
           } else if (payload.eventType === 'DELETE') {
-            console.log('Appuntamento eliminato da realtime:', payload.old.id);
+            console.log('DEBUG - Appuntamento eliminato da realtime:', payload.old.id);
             
             setAppointments(prev => {
               const updated = prev.filter(apt => apt.id !== payload.old.id);
-              console.log('Appuntamenti dopo eliminazione:', updated.length);
+              console.log('DEBUG - Appuntamenti dopo DELETE:', updated.length);
               return updated;
             });
           }
         }
       )
       .subscribe((status) => {
-        console.log('Stato subscription appuntamenti:', status);
+        console.log('DEBUG - Stato subscription appuntamenti:', status);
       });
 
     const employeesChannel = supabase
@@ -178,7 +185,7 @@ const AppointmentScheduler = () => {
           table: 'employees'
         },
         (payload) => {
-          console.log('Realtime employee change:', payload);
+          console.log('DEBUG - Realtime employee change:', payload);
           
           if (payload.eventType === 'INSERT') {
             const newEmployee: Employee = {
@@ -214,23 +221,31 @@ const AppointmentScheduler = () => {
         }
       )
       .subscribe((status) => {
-        console.log('Stato subscription dipendenti:', status);
+        console.log('DEBUG - Stato subscription dipendenti:', status);
       });
 
     return () => {
       console.log('Pulizia subscriptions...');
       supabase.removeChannel(appointmentsChannel);
-      supabase.removeChannel(employeesChannel);
     };
   }, []);
 
   // Debug effect per monitorare i cambiamenti di stato
   useEffect(() => {
-    console.log('Stato appuntamenti cambiato:', appointments.length, appointments);
+    console.log('DEBUG - Stato appuntamenti cambiato:', {
+      count: appointments.length,
+      appointments: appointments.map(apt => ({
+        id: apt.id,
+        employeeId: apt.employeeId,
+        date: apt.date,
+        time: apt.time,
+        client: apt.client
+      }))
+    });
   }, [appointments]);
 
   useEffect(() => {
-    console.log('Stato dipendenti cambiato:', employees.length, employees);
+    console.log('DEBUG - Stato dipendenti cambiato:', employees.length, employees);
   }, [employees]);
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -242,9 +257,8 @@ const AppointmentScheduler = () => {
 
   const addAppointment = async (newAppointment: Appointment) => {
     try {
-      console.log('Aggiunta appuntamento:', newAppointment);
+      console.log('DEBUG - Aggiunta appuntamento:', newAppointment);
       await addAppointmentToSupabase(newAppointment);
-      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       setIsAppointmentFormOpen(false);
       toast.success('Appuntamento aggiunto con successo!');
     } catch (error) {
@@ -255,9 +269,8 @@ const AppointmentScheduler = () => {
 
   const updateAppointment = async (updatedAppointment: Appointment) => {
     try {
-      console.log('Aggiornamento appuntamento:', updatedAppointment);
+      console.log('DEBUG - Aggiornamento appuntamento:', updatedAppointment);
       await updateAppointmentInSupabase(updatedAppointment);
-      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       setAppointmentToEdit(null);
       setIsAppointmentFormOpen(false);
       toast.success('Appuntamento modificato con successo!');
@@ -269,9 +282,8 @@ const AppointmentScheduler = () => {
 
   const deleteAppointment = async (appointmentId: string) => {
     try {
-      console.log('Eliminazione appuntamento:', appointmentId);
+      console.log('DEBUG - Eliminazione appuntamento:', appointmentId);
       await deleteAppointmentFromSupabase(appointmentId);
-      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       toast.success('Appuntamento eliminato con successo!');
     } catch (error) {
       console.error('Errore nell\'eliminazione dell\'appuntamento:', error);
@@ -282,7 +294,6 @@ const AppointmentScheduler = () => {
   const addEmployee = async (newEmployee: Employee) => {
     try {
       await addEmployeeToSupabase(newEmployee);
-      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       setIsEmployeeFormOpen(false);
       toast.success('Dipendente aggiunto con successo!');
     } catch (error) {
@@ -294,7 +305,6 @@ const AppointmentScheduler = () => {
   const updateEmployee = async (updatedEmployee: Employee) => {
     try {
       await updateEmployeeInSupabase(updatedEmployee);
-      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       setIsEmployeeFormOpen(false);
       toast.success('Dipendente modificato con successo!');
     } catch (error) {
@@ -305,16 +315,13 @@ const AppointmentScheduler = () => {
 
   const deleteEmployee = async (employeeId: number) => {
     try {
-      // Remove employee's appointments first
       const employeeAppointments = appointments.filter(appointment => appointment.employeeId === employeeId);
       for (const appointment of employeeAppointments) {
         await deleteAppointmentFromSupabase(appointment.id);
       }
       
-      // Then remove the employee
       await deleteEmployeeFromSupabase(employeeId);
       
-      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       toast.success('Dipendente eliminato con successo!');
     } catch (error) {
       console.error('Errore nell\'eliminazione del dipendente:', error);
@@ -323,14 +330,14 @@ const AppointmentScheduler = () => {
   };
 
   const handleOpenAppointmentForm = (employeeId: number, time: string) => {
-    console.log('Apertura form appuntamento:', { employeeId, time });
+    console.log('DEBUG - Apertura form appuntamento:', { employeeId, time });
     setSelectedEmployeeId(employeeId);
     setSelectedTime(time);
     setIsAppointmentFormOpen(true);
   };
 
   const handleEditAppointment = (appointment: Appointment) => {
-    console.log('Modifica appuntamento:', appointment);
+    console.log('DEBUG - Modifica appuntamento:', appointment);
     setAppointmentToEdit(appointment);
     setIsAppointmentFormOpen(true);
   };
@@ -354,7 +361,6 @@ const AppointmentScheduler = () => {
       if (employee) {
         const updatedEmployee = { ...employee, name: newName };
         await updateEmployeeInSupabase(updatedEmployee);
-        // Non aggiornare lo stato qui - sarà aggiornato dal realtime
         toast.success('Nome dipendente aggiornato con successo!');
       }
     } catch (error) {
@@ -369,7 +375,6 @@ const AppointmentScheduler = () => {
       if (employee) {
         const updatedEmployee = { ...employee, vacations };
         await updateEmployeeInSupabase(updatedEmployee);
-        // Non aggiornare lo stato qui - sarà aggiornato dal realtime
         toast.success('Ferie aggiornate con successo!');
       }
     } catch (error) {
