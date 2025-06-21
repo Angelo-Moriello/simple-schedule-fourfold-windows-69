@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -19,7 +20,6 @@ import AppointmentSchedulerControls from './AppointmentSchedulerControls';
 import EmployeeTimeSlotGrid from './EmployeeTimeSlotGrid';
 import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
-import { format } from 'date-fns';
 
 const AppointmentScheduler = () => {
   const navigate = useNavigate();
@@ -194,25 +194,6 @@ const AppointmentScheduler = () => {
     };
   }, []);
 
-  // Reload data when selected date changes
-  useEffect(() => {
-    const reloadDataForDate = async () => {
-      try {
-        const [loadedEmployees, loadedAppointments] = await Promise.all([
-          loadEmployeesFromSupabase(),
-          loadAppointmentsFromSupabase()
-        ]);
-        
-        setEmployees(loadedEmployees);
-        setAppointments(loadedAppointments);
-      } catch (error) {
-        console.error('Errore nel ricaricamento dei dati:', error);
-      }
-    };
-
-    reloadDataForDate();
-  }, [selectedDate]);
-
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
@@ -223,7 +204,7 @@ const AppointmentScheduler = () => {
   const addAppointment = async (newAppointment: Appointment) => {
     try {
       await addAppointmentToSupabase(newAppointment);
-      setAppointments(prev => [...prev, newAppointment]);
+      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       setIsAppointmentFormOpen(false);
       toast.success('Appuntamento aggiunto con successo!');
     } catch (error) {
@@ -235,9 +216,7 @@ const AppointmentScheduler = () => {
   const updateAppointment = async (updatedAppointment: Appointment) => {
     try {
       await updateAppointmentInSupabase(updatedAppointment);
-      setAppointments(prev => prev.map(appointment =>
-        appointment.id === updatedAppointment.id ? updatedAppointment : appointment
-      ));
+      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       setAppointmentToEdit(null);
       setIsAppointmentFormOpen(false);
       toast.success('Appuntamento modificato con successo!');
@@ -250,7 +229,7 @@ const AppointmentScheduler = () => {
   const deleteAppointment = async (appointmentId: string) => {
     try {
       await deleteAppointmentFromSupabase(appointmentId);
-      setAppointments(prev => prev.filter(appointment => appointment.id !== appointmentId));
+      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       toast.success('Appuntamento eliminato con successo!');
     } catch (error) {
       console.error('Errore nell\'eliminazione dell\'appuntamento:', error);
@@ -261,7 +240,7 @@ const AppointmentScheduler = () => {
   const addEmployee = async (newEmployee: Employee) => {
     try {
       await addEmployeeToSupabase(newEmployee);
-      setEmployees(prev => [...prev, newEmployee]);
+      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       setIsEmployeeFormOpen(false);
       toast.success('Dipendente aggiunto con successo!');
     } catch (error) {
@@ -273,9 +252,7 @@ const AppointmentScheduler = () => {
   const updateEmployee = async (updatedEmployee: Employee) => {
     try {
       await updateEmployeeInSupabase(updatedEmployee);
-      setEmployees(prev => prev.map(employee =>
-        employee.id === updatedEmployee.id ? updatedEmployee : employee
-      ));
+      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       setIsEmployeeFormOpen(false);
       toast.success('Dipendente modificato con successo!');
     } catch (error) {
@@ -295,8 +272,7 @@ const AppointmentScheduler = () => {
       // Then remove the employee
       await deleteEmployeeFromSupabase(employeeId);
       
-      setAppointments(prev => prev.filter(appointment => appointment.employeeId !== employeeId));
-      setEmployees(prev => prev.filter(employee => employee.id !== employeeId));
+      // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       toast.success('Dipendente eliminato con successo!');
     } catch (error) {
       console.error('Errore nell\'eliminazione del dipendente:', error);
@@ -334,9 +310,7 @@ const AppointmentScheduler = () => {
       if (employee) {
         const updatedEmployee = { ...employee, name: newName };
         await updateEmployeeInSupabase(updatedEmployee);
-        setEmployees(prev => prev.map(emp =>
-          emp.id === employeeId ? updatedEmployee : emp
-        ));
+        // Non aggiornare lo stato qui - sarà aggiornato dal realtime
         toast.success('Nome dipendente aggiornato con successo!');
       }
     } catch (error) {
@@ -351,9 +325,7 @@ const AppointmentScheduler = () => {
       if (employee) {
         const updatedEmployee = { ...employee, vacations };
         await updateEmployeeInSupabase(updatedEmployee);
-        setEmployees(prev => prev.map(emp =>
-          emp.id === employeeId ? updatedEmployee : emp
-        ));
+        // Non aggiornare lo stato qui - sarà aggiornato dal realtime
         toast.success('Ferie aggiornate con successo!');
       }
     } catch (error) {
