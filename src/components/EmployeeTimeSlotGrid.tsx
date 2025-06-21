@@ -47,12 +47,41 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
 
   const getEmployeeAppointmentsForTimeSlot = useCallback((employeeId: number, time: string) => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
-    return appointments.find(
-      appointment => appointment.employeeId === employeeId && 
-                    appointment.date === dateString && 
-                    appointment.time === time
+    
+    console.log('Ricerca appuntamento per:', { 
+      employeeId, 
+      time, 
+      dateString, 
+      totalAppointments: appointments.length,
+      appointmentsForDate: appointments.filter(apt => apt.date === dateString).length
+    });
+    
+    const foundAppointment = appointments.find(
+      appointment => {
+        const matches = appointment.employeeId === employeeId && 
+                      appointment.date === dateString && 
+                      appointment.time === time;
+        
+        if (matches) {
+          console.log('Appuntamento trovato:', appointment);
+        }
+        
+        return matches;
+      }
     );
+    
+    return foundAppointment;
   }, [appointments, selectedDate]);
+
+  // Debug effect per monitorare i props
+  React.useEffect(() => {
+    console.log('EmployeeTimeSlotGrid props aggiornate:', {
+      employeesCount: employees.length,
+      appointmentsCount: appointments.length,
+      selectedDate: format(selectedDate, 'yyyy-MM-dd'),
+      appointments: appointments
+    });
+  }, [employees, appointments, selectedDate]);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -63,6 +62,11 @@ const AppointmentScheduler = () => {
           loadAppointmentsFromSupabase()
         ]);
         
+        console.log('Dati caricati all\'avvio:', { 
+          employees: loadedEmployees.length, 
+          appointments: loadedAppointments.length 
+        });
+        
         setEmployees(loadedEmployees);
         setAppointments(loadedAppointments);
         
@@ -80,6 +84,8 @@ const AppointmentScheduler = () => {
 
   // Setup realtime subscriptions
   useEffect(() => {
+    console.log('Configurazione realtime subscriptions...');
+    
     const appointmentsChannel = supabase
       .channel('appointments-changes')
       .on(
@@ -97,7 +103,7 @@ const AppointmentScheduler = () => {
               id: payload.new.id,
               employeeId: payload.new.employee_id,
               date: payload.new.date,
-              time: payload.new.time,
+              time: payload.new.time.toString(), // Assicuriamoci che sia una stringa
               title: payload.new.title || '',
               client: payload.new.client,
               duration: payload.new.duration,
@@ -108,10 +114,17 @@ const AppointmentScheduler = () => {
               serviceType: payload.new.service_type
             };
             
+            console.log('Nuovo appuntamento da realtime:', newAppointment);
+            
             setAppointments(prev => {
-              const exists = prev.find(apt => apt.id === newAppointment.id);
+              // Controllo duplicati più robusto
+              const exists = prev.some(apt => apt.id === newAppointment.id);
+              console.log('Appuntamento già esistente?', exists);
+              
               if (!exists) {
-                return [...prev, newAppointment];
+                const updated = [...prev, newAppointment];
+                console.log('Appuntamenti aggiornati:', updated.length);
+                return updated;
               }
               return prev;
             });
@@ -120,7 +133,7 @@ const AppointmentScheduler = () => {
               id: payload.new.id,
               employeeId: payload.new.employee_id,
               date: payload.new.date,
-              time: payload.new.time,
+              time: payload.new.time.toString(), // Assicuriamoci che sia una stringa
               title: payload.new.title || '',
               client: payload.new.client,
               duration: payload.new.duration,
@@ -131,15 +144,29 @@ const AppointmentScheduler = () => {
               serviceType: payload.new.service_type
             };
             
-            setAppointments(prev => prev.map(apt =>
-              apt.id === updatedAppointment.id ? updatedAppointment : apt
-            ));
+            console.log('Appuntamento aggiornato da realtime:', updatedAppointment);
+            
+            setAppointments(prev => {
+              const updated = prev.map(apt =>
+                apt.id === updatedAppointment.id ? updatedAppointment : apt
+              );
+              console.log('Appuntamenti dopo aggiornamento:', updated.length);
+              return updated;
+            });
           } else if (payload.eventType === 'DELETE') {
-            setAppointments(prev => prev.filter(apt => apt.id !== payload.old.id));
+            console.log('Appuntamento eliminato da realtime:', payload.old.id);
+            
+            setAppointments(prev => {
+              const updated = prev.filter(apt => apt.id !== payload.old.id);
+              console.log('Appuntamenti dopo eliminazione:', updated.length);
+              return updated;
+            });
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Stato subscription appuntamenti:', status);
+      });
 
     const employeesChannel = supabase
       .channel('employees-changes')
@@ -163,7 +190,7 @@ const AppointmentScheduler = () => {
             };
             
             setEmployees(prev => {
-              const exists = prev.find(emp => emp.id === newEmployee.id);
+              const exists = prev.some(emp => emp.id === newEmployee.id);
               if (!exists) {
                 return [...prev, newEmployee];
               }
@@ -186,13 +213,25 @@ const AppointmentScheduler = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Stato subscription dipendenti:', status);
+      });
 
     return () => {
+      console.log('Pulizia subscriptions...');
       supabase.removeChannel(appointmentsChannel);
       supabase.removeChannel(employeesChannel);
     };
   }, []);
+
+  // Debug effect per monitorare i cambiamenti di stato
+  useEffect(() => {
+    console.log('Stato appuntamenti cambiato:', appointments.length, appointments);
+  }, [appointments]);
+
+  useEffect(() => {
+    console.log('Stato dipendenti cambiato:', employees.length, employees);
+  }, [employees]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -203,6 +242,7 @@ const AppointmentScheduler = () => {
 
   const addAppointment = async (newAppointment: Appointment) => {
     try {
+      console.log('Aggiunta appuntamento:', newAppointment);
       await addAppointmentToSupabase(newAppointment);
       // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       setIsAppointmentFormOpen(false);
@@ -215,6 +255,7 @@ const AppointmentScheduler = () => {
 
   const updateAppointment = async (updatedAppointment: Appointment) => {
     try {
+      console.log('Aggiornamento appuntamento:', updatedAppointment);
       await updateAppointmentInSupabase(updatedAppointment);
       // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       setAppointmentToEdit(null);
@@ -228,6 +269,7 @@ const AppointmentScheduler = () => {
 
   const deleteAppointment = async (appointmentId: string) => {
     try {
+      console.log('Eliminazione appuntamento:', appointmentId);
       await deleteAppointmentFromSupabase(appointmentId);
       // Non aggiornare lo stato qui - sarà aggiornato dal realtime
       toast.success('Appuntamento eliminato con successo!');
@@ -281,12 +323,14 @@ const AppointmentScheduler = () => {
   };
 
   const handleOpenAppointmentForm = (employeeId: number, time: string) => {
+    console.log('Apertura form appuntamento:', { employeeId, time });
     setSelectedEmployeeId(employeeId);
     setSelectedTime(time);
     setIsAppointmentFormOpen(true);
   };
 
   const handleEditAppointment = (appointment: Appointment) => {
+    console.log('Modifica appuntamento:', appointment);
     setAppointmentToEdit(appointment);
     setIsAppointmentFormOpen(true);
   };
