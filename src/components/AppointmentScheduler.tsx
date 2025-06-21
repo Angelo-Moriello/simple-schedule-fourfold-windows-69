@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -14,6 +13,7 @@ import {
   deleteAppointmentFromSupabase,
   migrateLocalStorageToSupabase
 } from '@/utils/supabaseStorage';
+import { supabase } from '@/integrations/supabase/client';
 import AppointmentSchedulerHeader from './AppointmentSchedulerHeader';
 import AppointmentSchedulerControls from './AppointmentSchedulerControls';
 import EmployeeTimeSlotGrid from './EmployeeTimeSlotGrid';
@@ -76,6 +76,122 @@ const AppointmentScheduler = () => {
     };
 
     loadData();
+  }, []);
+
+  // Setup realtime subscriptions
+  useEffect(() => {
+    const appointmentsChannel = supabase
+      .channel('appointments-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments'
+        },
+        (payload) => {
+          console.log('Realtime appointment change:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newAppointment: Appointment = {
+              id: payload.new.id,
+              employeeId: payload.new.employee_id,
+              date: payload.new.date,
+              time: payload.new.time,
+              title: payload.new.title || '',
+              client: payload.new.client,
+              duration: payload.new.duration,
+              notes: payload.new.notes || '',
+              email: payload.new.email || '',
+              phone: payload.new.phone || '',
+              color: payload.new.color,
+              serviceType: payload.new.service_type
+            };
+            
+            setAppointments(prev => {
+              const exists = prev.find(apt => apt.id === newAppointment.id);
+              if (!exists) {
+                return [...prev, newAppointment];
+              }
+              return prev;
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedAppointment: Appointment = {
+              id: payload.new.id,
+              employeeId: payload.new.employee_id,
+              date: payload.new.date,
+              time: payload.new.time,
+              title: payload.new.title || '',
+              client: payload.new.client,
+              duration: payload.new.duration,
+              notes: payload.new.notes || '',
+              email: payload.new.email || '',
+              phone: payload.new.phone || '',
+              color: payload.new.color,
+              serviceType: payload.new.service_type
+            };
+            
+            setAppointments(prev => prev.map(apt =>
+              apt.id === updatedAppointment.id ? updatedAppointment : apt
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setAppointments(prev => prev.filter(apt => apt.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    const employeesChannel = supabase
+      .channel('employees-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'employees'
+        },
+        (payload) => {
+          console.log('Realtime employee change:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newEmployee: Employee = {
+              id: payload.new.id,
+              name: payload.new.name,
+              color: payload.new.color,
+              specialization: payload.new.specialization as 'Parrucchiere' | 'Estetista',
+              vacations: payload.new.vacations || []
+            };
+            
+            setEmployees(prev => {
+              const exists = prev.find(emp => emp.id === newEmployee.id);
+              if (!exists) {
+                return [...prev, newEmployee];
+              }
+              return prev;
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedEmployee: Employee = {
+              id: payload.new.id,
+              name: payload.new.name,
+              color: payload.new.color,
+              specialization: payload.new.specialization as 'Parrucchiere' | 'Estetista',
+              vacations: payload.new.vacations || []
+            };
+            
+            setEmployees(prev => prev.map(emp =>
+              emp.id === updatedEmployee.id ? updatedEmployee : emp
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setEmployees(prev => prev.filter(emp => emp.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(appointmentsChannel);
+      supabase.removeChannel(employeesChannel);
+    };
   }, []);
 
   // Reload data when selected date changes

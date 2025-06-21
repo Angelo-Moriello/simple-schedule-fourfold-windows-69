@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Appointment, Employee, ServiceCategory } from '@/types/appointment';
-import { Calendar, Clock, User, Mail, Phone, Palette, FileText, ExternalLink, Scissors } from 'lucide-react';
+import { Calendar, Clock, User, Mail, Phone, Palette, FileText, Scissors } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -138,8 +138,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     if (isSubmitting) {
       return;
     }
-
-    console.log('Form submission started', formData);
     
     // Enhanced validation with better error messages
     if (!formData.employeeId) {
@@ -171,7 +169,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
     try {
       const appointmentData: Appointment = {
-        id: appointmentToEdit?.id || generateUUID(), // Use proper UUID generation
+        id: appointmentToEdit?.id || generateUUID(),
         employeeId: parseInt(formData.employeeId),
         date: format(date, 'yyyy-MM-dd'),
         time: formData.time,
@@ -184,8 +182,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         color: formData.color,
         serviceType: formData.serviceType
       };
-
-      console.log('Appointment data to be saved:', appointmentData);
 
       if (appointmentToEdit && updateAppointment) {
         await updateAppointment(appointmentData);
@@ -436,36 +432,23 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             />
           </div>
 
-          <div className="flex flex-col gap-4 pt-4 sm:pt-6 border-t border-gray-100">
+          <div className="flex flex-col sm:flex-row gap-3 sm:justify-end pt-4 sm:pt-6 border-t border-gray-100">
             <Button
               type="button"
               variant="outline"
-              onClick={handleGoogleCalendarSync}
-              className="w-full sm:w-auto h-12 px-4 sm:px-6 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg"
+              onClick={handleClose}
               disabled={isSubmitting}
+              className="w-full sm:w-auto h-12 px-6 sm:px-8 rounded-xl border-gray-300 hover:bg-gray-50 transition-all duration-200"
             >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Aggiungi a Google Calendar
+              Annulla
             </Button>
-            
-            <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={isSubmitting}
-                className="w-full sm:w-auto h-12 px-6 sm:px-8 rounded-xl border-gray-300 hover:bg-gray-50 transition-all duration-200"
-              >
-                Annulla
-              </Button>
-              <Button 
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full sm:w-auto h-12 px-6 sm:px-8 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Salvataggio...' : (appointmentToEdit ? 'Salva Modifiche' : 'Crea Appuntamento')}
-              </Button>
-            </div>
+            <Button 
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full sm:w-auto h-12 px-6 sm:px-8 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Salvataggio...' : (appointmentToEdit ? 'Salva Modifiche' : 'Crea Appuntamento')}
+            </Button>
           </div>
         </form>
       </DialogContent>
