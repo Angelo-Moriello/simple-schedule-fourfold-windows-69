@@ -54,6 +54,36 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
     }
   };
 
+  // Funzione per estrarre il colore di sfondo dal color class
+  const getBackgroundColorFromClass = (colorClass: string) => {
+    const colorMap: { [key: string]: string } = {
+      'bg-blue-100 border-blue-300 text-blue-800': '#dbeafe',
+      'bg-green-100 border-green-300 text-green-800': '#dcfce7',
+      'bg-yellow-100 border-yellow-300 text-yellow-800': '#fef3c7',
+      'bg-red-100 border-red-300 text-red-800': '#fee2e2',
+      'bg-purple-100 border-purple-300 text-purple-800': '#f3e8ff',
+      'bg-pink-100 border-pink-300 text-pink-800': '#fce7f3',
+      'bg-orange-100 border-orange-300 text-orange-800': '#fed7aa',
+      'bg-gray-100 border-gray-300 text-gray-800': '#f3f4f6'
+    };
+    return colorMap[colorClass] || '#f3f4f6';
+  };
+
+  // Funzione per estrarre il colore del bordo dal color class
+  const getBorderColorFromClass = (colorClass: string) => {
+    const colorMap: { [key: string]: string } = {
+      'bg-blue-100 border-blue-300 text-blue-800': '#93c5fd',
+      'bg-green-100 border-green-300 text-green-800': '#86efac',
+      'bg-yellow-100 border-yellow-300 text-yellow-800': '#fde047',
+      'bg-red-100 border-red-300 text-red-800': '#fca5a5',
+      'bg-purple-100 border-purple-300 text-purple-800': '#c4b5fd',
+      'bg-pink-100 border-pink-300 text-pink-800': '#f9a8d4',
+      'bg-orange-100 border-orange-300 text-orange-800': '#fdba74',
+      'bg-gray-100 border-gray-300 text-gray-800': '#d1d5db'
+    };
+    return colorMap[colorClass] || '#d1d5db';
+  };
+
   // Slot in ferie
   if (isVacationDay) {
     return (
@@ -73,8 +103,17 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 
   // Slot occupato parzialmente da un appuntamento più lungo
   if (isPartiallyOccupied && occupiedBy) {
+    const backgroundColor = getBackgroundColorFromClass(occupiedBy.color);
+    const borderColor = getBorderColorFromClass(occupiedBy.color);
+    
     return (
-      <div className="p-3 bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-300 rounded-lg relative overflow-hidden">
+      <div 
+        className="p-3 border-2 rounded-lg relative overflow-hidden"
+        style={{ 
+          backgroundColor: backgroundColor,
+          borderColor: borderColor
+        }}
+      >
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-300/30 to-transparent animate-pulse"></div>
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-2">
@@ -128,13 +167,15 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       ? `${durationHours}h ${durationMinutes}min`
       : `${durationMinutes}min`;
 
+    const backgroundColor = getBackgroundColorFromClass(appointment.color);
+    const borderColor = getBorderColorFromClass(appointment.color);
+
     return (
       <div 
-        className="p-3 rounded-lg border-2 border-opacity-60 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
+        className="p-3 rounded-lg border-2 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
         style={{ 
-          backgroundColor: appointment.color + '20',
-          borderColor: appointment.color,
-          background: `linear-gradient(135deg, ${appointment.color}15 0%, ${appointment.color}25 100%)`
+          backgroundColor: backgroundColor,
+          borderColor: borderColor
         }}
         onClick={handleEditClick}
       >
@@ -142,7 +183,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
           <span className="text-xs font-medium text-gray-600">{time}</span>
           <Badge 
             className="text-xs text-white font-medium"
-            style={{ backgroundColor: appointment.color }}
+            style={{ backgroundColor: borderColor }}
           >
             {durationText}
           </Badge>
@@ -150,14 +191,14 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
         
         <div className="space-y-1">
           <p className="font-semibold text-sm text-gray-900 leading-tight">
-            {appointment.title}
+            {appointment.title || appointment.serviceType}
           </p>
           <p className="text-sm text-gray-700 flex items-center">
             <User className="h-3 w-3 mr-1" />
             {appointment.client}
           </p>
           {appointment.serviceType && (
-            <p className="text-xs text-gray-600 font-medium bg-gray-100 px-2 py-1 rounded">
+            <p className="text-xs text-gray-600 font-medium bg-white/50 px-2 py-1 rounded">
               {appointment.serviceType}
             </p>
           )}

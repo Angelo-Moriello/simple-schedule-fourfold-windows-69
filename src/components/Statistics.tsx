@@ -1,12 +1,13 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { format, subDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Appointment, Employee } from '@/types/appointment';
 import { Calendar, TrendingUp, Users, Clock, ArrowLeft, Printer } from 'lucide-react';
+import StatisticsFilters from './StatisticsFilters';
 
 interface StatisticsProps {
   appointments: Appointment[];
@@ -20,24 +21,75 @@ const SOFT_COLORS = [
 ];
 
 const Statistics: React.FC<StatisticsProps> = ({ appointments, employees, onBack }) => {
+  // Stati per i filtri
+  const [dateRange, setDateRange] = useState<'day' | 'week' | 'month' | 'year'>('week');
+  const [specialization, setSpecialization] = useState<'all' | 'Parrucchiere' | 'Estetista'>('all');
+  const [selectedEmployee, setSelectedEmployee] = useState<'all' | number>('all');
+
+  // Funzione per ottenere l'intervallo di date
+  const getDateInterval = (range: 'day' | 'week' | 'month' | 'year') => {
+    const today = new Date();
+    
+    switch (range) {
+      case 'day':
+        return { start: startOfDay(today), end: endOfDay(today) };
+      case 'week':
+        return { start: startOfWeek(today, { weekStartsOn: 1 }), end: endOfWeek(today, { weekStartsOn: 1 }) };
+      case 'month':
+        return { start: startOfMonth(today), end: endOfMonth(today) };
+      case 'year':
+        return { start: startOfYear(today), end: endOfYear(today) };
+      default:
+        return { start: startOfWeek(today, { weekStartsOn: 1 }), end: endOfWeek(today, { weekStartsOn: 1 }) };
+    }
+  };
+
+  // Appuntamenti filtrati
+  const filteredAppointments = useMemo(() => {
+    const interval = getDateInterval(dateRange);
+    
+    return appointments.filter(appointment => {
+      // Filtro per data
+      const appointmentDate = new Date(appointment.date);
+      if (!isWithinInterval(appointmentDate, interval)) {
+        return false;
+      }
+
+      // Filtro per dipendente
+      if (selectedEmployee !== 'all' && appointment.employeeId !== selectedEmployee) {
+        return false;
+      }
+
+      // Filtro per specializzazione
+      if (specialization !== 'all') {
+        const employee = employees.find(emp => emp.id === appointment.employeeId);
+        if (!employee || employee.specialization !== specialization) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [appointments, dateRange, selectedEmployee, specialization, employees]);
+
   // Statistiche per tipo di servizio
   const serviceTypeStats = useMemo(() => {
     const serviceTypes: { [key: string]: number } = {};
-    appointments.forEach(appointment => {
+    filteredAppointments.forEach(appointment => {
       serviceTypes[appointment.serviceType] = (serviceTypes[appointment.serviceType] || 0) + 1;
     });
 
     return Object.entries(serviceTypes).map(([name, value]) => ({
       name,
       value,
-      percentage: ((value / appointments.length) * 100).toFixed(1)
+      percentage: filteredAppointments.length > 0 ? ((value / filteredAppointments.length) * 100).toFixed(1) : '0'
     }));
-  }, [appointments]);
+  }, [filteredAppointments]);
 
   // Statistiche per dipendente
   const employeeStats = useMemo(() => {
     const employeeData: { [key: number]: number } = {};
-    appointments.forEach(appointment => {
+    filteredAppointments.forEach(appointment => {
       employeeData[appointment.employeeId] = (employeeData[appointment.employeeId] || 0) + 1;
     });
 
@@ -46,43 +98,50 @@ const Statistics: React.FC<StatisticsProps> = ({ appointments, employees, onBack
       appuntamenti: employeeData[employee.id] || 0,
       color: employee.color
     })).filter(emp => emp.appuntamenti > 0);
-  }, [appointments, employees]);
+  }, [filteredAppointments, employees]);
 
-  // Statistiche settimanali
-  const weeklyStats = useMemo(() => {
-    const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+  // Statistiche temporali
+  const timeStats = useMemo(() => {
+    const interval = getDateInterval(dateRange);
+    const timeData = [];
     
-    const weeklyData = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(weekStart);
-      day.setDate(weekStart.getDate() + i);
-      
-      const dayAppointments = appointments.filter(appointment => {
-        const appointmentDate = new Date(appointment.date);
-        return format(appointmentDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
-      });
+    if (dateRange === 'week') {
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(interval.start);
+        day.setDate(interval.start.getDate() + i);
+        
+        const dayAppointments = filteredAppointments.filter(appointment => {
+          const appointmentDate = new Date(appointment.date);
+          return format(appointmentDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
+        });
 
-      weeklyData.push({
-        day: format(day, 'EEEE', { locale: it }).substring(0, 3),
-        appuntamenti: dayAppointments.length
-      });
+        timeData.push({
+          day: format(day, 'EEEE', { locale: it }).substring(0, 3),
+          appuntamenti: dayAppointments.length
+        });
+      }
     }
     
-    return weeklyData;
-  }, [appointments]);
+    return timeData;
+  }, [filteredAppointments, dateRange]);
 
   // Funzione di stampa
   const handlePrint = () => {
     window.print();
   };
 
+  // Funzione reset filtri
+  const handleResetFilters = () => {
+    setDateRange('week');
+    setSpecialization('all');
+    setSelectedEmployee('all');
+  };
+
   // Stats summary
-  const avgAppointmentsPerDay = appointments.length / 7;
+  const avgAppointmentsPerDay = filteredAppointments.length / 7;
   const mostActiveEmployee = useMemo(() => {
     const employeeAppointments: { [key: number]: number } = {};
-    appointments.forEach(app => {
+    filteredAppointments.forEach(app => {
       employeeAppointments[app.employeeId] = (employeeAppointments[app.employeeId] || 0) + 1;
     });
     
@@ -92,11 +151,11 @@ const Statistics: React.FC<StatisticsProps> = ({ appointments, employees, onBack
     );
     
     return employees.find(emp => emp.id === mostActive.id);
-  }, [appointments, employees]);
+  }, [filteredAppointments, employees]);
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 p-3 sm:p-4 lg:p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen print:bg-white">
-      {/* Header più sobrio */}
+      {/* Header */}
       <div className="bg-white border border-gray-200 text-gray-800 p-4 sm:p-6 lg:p-8 rounded-lg shadow-sm">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3 sm:space-x-4">
@@ -129,14 +188,26 @@ const Statistics: React.FC<StatisticsProps> = ({ appointments, employees, onBack
         </div>
       </div>
 
-      {/* Cards statistiche principali - responsive grid */}
+      {/* Filtri */}
+      <StatisticsFilters
+        employees={employees}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        specialization={specialization}
+        onSpecializationChange={setSpecialization}
+        selectedEmployee={selectedEmployee}
+        onEmployeeChange={setSelectedEmployee}
+        onResetFilters={handleResetFilters}
+      />
+
+      {/* Cards statistiche principali */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         <Card className="bg-white border border-gray-200 shadow-sm">
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Appuntamenti Totali</p>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-800">{appointments.length}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-800">{filteredAppointments.length}</p>
               </div>
               <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-gray-500" />
             </div>
@@ -268,47 +339,49 @@ const Statistics: React.FC<StatisticsProps> = ({ appointments, employees, onBack
         </Card>
       </div>
 
-      {/* Grafico settimanale full width */}
-      <Card className="shadow-sm border border-gray-200 bg-white">
-        <CardHeader className="bg-gray-50 border-b border-gray-200">
-          <CardTitle className="text-lg sm:text-xl font-bold flex items-center text-gray-800">
-            <div className="bg-gray-200 rounded-full p-2 mr-3">
-              <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+      {/* Grafico temporale */}
+      {dateRange === 'week' && timeStats.length > 0 && (
+        <Card className="shadow-sm border border-gray-200 bg-white">
+          <CardHeader className="bg-gray-50 border-b border-gray-200">
+            <CardTitle className="text-lg sm:text-xl font-bold flex items-center text-gray-800">
+              <div className="bg-gray-200 rounded-full p-2 mr-3">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+              Andamento Settimanale
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 lg:p-8">
+            <div className="h-64 sm:h-80 lg:h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={timeStats}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="day" 
+                    tick={{ fill: '#666', fontSize: 14, fontWeight: 'bold' }}
+                  />
+                  <YAxis 
+                    tick={{ fill: '#666', fontSize: 12 }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Bar 
+                    dataKey="appuntamenti" 
+                    fill="#64748b"
+                    name="Appuntamenti"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-            Andamento Settimanale
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 lg:p-8">
-          <div className="h-64 sm:h-80 lg:h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyStats}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="day" 
-                  tick={{ fill: '#666', fontSize: 14, fontWeight: 'bold' }}
-                />
-                <YAxis 
-                  tick={{ fill: '#666', fontSize: 12 }}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Legend />
-                <Bar 
-                  dataKey="appuntamenti" 
-                  fill="#64748b"
-                  name="Appuntamenti"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
