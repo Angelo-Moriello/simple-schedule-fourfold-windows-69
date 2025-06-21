@@ -34,6 +34,14 @@ const AppointmentScheduler = () => {
   const [showFullCalendar, setShowFullCalendar] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Force page refresh function
+  const forcePageRefresh = () => {
+    console.log('DEBUG - Forzando aggiornamento pagina...');
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000); // Small delay to allow toast messages to show
+  };
+
   // Load data from Supabase on component mount
   useEffect(() => {
     const loadData = async () => {
@@ -124,13 +132,14 @@ const AppointmentScheduler = () => {
             console.log('DEBUG - Nuovo appuntamento da realtime:', newAppointment);
             
             setAppointments(prev => {
-              // Controllo se l'appuntamento esiste già
               const exists = prev.some(apt => apt.id === newAppointment.id);
               console.log('DEBUG - Appuntamento già esistente?', exists);
               
               if (!exists) {
                 const updated = [...prev, newAppointment];
                 console.log('DEBUG - Appuntamenti dopo INSERT:', updated.length);
+                // Force page refresh after appointment addition
+                setTimeout(forcePageRefresh, 500);
                 return updated;
               }
               return prev;
@@ -158,6 +167,8 @@ const AppointmentScheduler = () => {
                 apt.id === updatedAppointment.id ? updatedAppointment : apt
               );
               console.log('DEBUG - Appuntamenti dopo UPDATE:', updated.length);
+              // Force page refresh after appointment update
+              setTimeout(forcePageRefresh, 500);
               return updated;
             });
           } else if (payload.eventType === 'DELETE') {
@@ -166,6 +177,8 @@ const AppointmentScheduler = () => {
             setAppointments(prev => {
               const updated = prev.filter(apt => apt.id !== payload.old.id);
               console.log('DEBUG - Appuntamenti dopo DELETE:', updated.length);
+              // Force page refresh after appointment deletion
+              setTimeout(forcePageRefresh, 500);
               return updated;
             });
           }
@@ -227,6 +240,7 @@ const AppointmentScheduler = () => {
     return () => {
       console.log('Pulizia subscriptions...');
       supabase.removeChannel(appointmentsChannel);
+      supabase.removeChannel(employeesChannel);
     };
   }, []);
 
@@ -261,6 +275,8 @@ const AppointmentScheduler = () => {
       await addAppointmentToSupabase(newAppointment);
       setIsAppointmentFormOpen(false);
       toast.success('Appuntamento aggiunto con successo!');
+      // Additional refresh trigger for add operation
+      setTimeout(forcePageRefresh, 200);
     } catch (error) {
       console.error('Errore nell\'aggiungere l\'appuntamento:', error);
       toast.error('Errore nell\'aggiungere l\'appuntamento');
@@ -274,6 +290,8 @@ const AppointmentScheduler = () => {
       setAppointmentToEdit(null);
       setIsAppointmentFormOpen(false);
       toast.success('Appuntamento modificato con successo!');
+      // Additional refresh trigger for update operation
+      setTimeout(forcePageRefresh, 200);
     } catch (error) {
       console.error('Errore nella modifica dell\'appuntamento:', error);
       toast.error('Errore nella modifica dell\'appuntamento');
@@ -285,6 +303,8 @@ const AppointmentScheduler = () => {
       console.log('DEBUG - Eliminazione appuntamento:', appointmentId);
       await deleteAppointmentFromSupabase(appointmentId);
       toast.success('Appuntamento eliminato con successo!');
+      // Additional refresh trigger for delete operation
+      setTimeout(forcePageRefresh, 200);
     } catch (error) {
       console.error('Errore nell\'eliminazione dell\'appuntamento:', error);
       toast.error('Errore nell\'eliminazione dell\'appuntamento');
