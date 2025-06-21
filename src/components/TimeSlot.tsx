@@ -14,41 +14,9 @@ interface TimeSlotProps {
   onDeleteAppointment: (appointmentId: string) => void;
   isVacationDay: boolean;
   isOccupied: boolean;
-  occupiedBy?: Appointment; // Appuntamento che occupa questo slot
-  isPartiallyOccupied?: boolean; // Se è occupato parzialmente da un appuntamento più lungo
+  occupiedBy?: Appointment;
+  isPartiallyOccupied?: boolean;
 }
-
-// Funzione helper per calcolare se uno slot è occupato da un appuntamento di durata maggiore
-const isSlotOccupiedByLongerAppointment = (
-  currentTime: string,
-  appointments: Appointment[],
-  employeeId: number
-): { isOccupied: boolean; occupiedBy?: Appointment; isPartiallyOccupied?: boolean } => {
-  // Converti l'orario corrente in minuti
-  const [currentHour, currentMinute] = currentTime.split(':').map(Number);
-  const currentTimeInMinutes = currentHour * 60 + currentMinute;
-
-  for (const appointment of appointments) {
-    if (appointment.employeeId !== employeeId) continue;
-
-    // Converti l'orario dell'appuntamento in minuti
-    const [appointmentHour, appointmentMinute] = appointment.time.split(':').map(Number);
-    const appointmentStartInMinutes = appointmentHour * 60 + appointmentMinute;
-    const appointmentEndInMinutes = appointmentStartInMinutes + appointment.duration;
-
-    // Verifica se il current slot è nel range dell'appuntamento
-    if (currentTimeInMinutes >= appointmentStartInMinutes && 
-        currentTimeInMinutes < appointmentEndInMinutes) {
-      return {
-        isOccupied: true,
-        occupiedBy: appointment,
-        isPartiallyOccupied: currentTimeInMinutes !== appointmentStartInMinutes
-      };
-    }
-  }
-
-  return { isOccupied: false };
-};
 
 const TimeSlot: React.FC<TimeSlotProps> = ({
   time,
@@ -119,10 +87,15 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
             <p className="text-sm font-medium text-gray-700 mb-1">
               Continua: {occupiedBy.title}
             </p>
-            <p className="text-xs text-gray-600 mb-2 flex items-center justify-center">
+            <p className="text-xs text-gray-600 mb-1 flex items-center justify-center">
               <User className="h-3 w-3 mr-1" />
               {occupiedBy.client}
             </p>
+            {occupiedBy.serviceType && (
+              <p className="text-xs text-gray-500 mb-2 italic">
+                {occupiedBy.serviceType}
+              </p>
+            )}
             <div className="flex justify-center space-x-1">
               <Button
                 onClick={handleEditClick}
@@ -183,6 +156,11 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
             <User className="h-3 w-3 mr-1" />
             {appointment.client}
           </p>
+          {appointment.serviceType && (
+            <p className="text-xs text-gray-600 font-medium bg-gray-100 px-2 py-1 rounded">
+              {appointment.serviceType}
+            </p>
+          )}
           {appointment.notes && (
             <p className="text-xs text-gray-600 italic truncate">
               {appointment.notes}
