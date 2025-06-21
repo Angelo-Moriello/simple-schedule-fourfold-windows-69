@@ -45,84 +45,60 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
     return employee.vacations.includes(dateString);
   }, [employees]);
 
+  // Funzione per verificare se uno slot è occupato da un appuntamento di durata maggiore
+  const getSlotOccupationInfo = useCallback((employeeId: number, time: string) => {
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    
+    // Converti l'orario corrente in minuti
+    const [currentHour, currentMinute] = time.split(':').map(Number);
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+    // Trova tutti gli appuntamenti del dipendente per questa data
+    const employeeAppointments = appointments.filter(apt => 
+      apt.employeeId === employeeId && apt.date === dateString
+    );
+
+    for (const appointment of employeeAppointments) {
+      // Converti l'orario dell'appuntamento in minuti
+      const appointmentTime = String(appointment.time).substring(0, 5); // Prende solo HH:MM
+      const [appointmentHour, appointmentMinute] = appointmentTime.split(':').map(Number);
+      const appointmentStartInMinutes = appointmentHour * 60 + appointmentMinute;
+      const appointmentEndInMinutes = appointmentStartInMinutes + appointment.duration;
+
+      // Verifica se il current slot è nel range dell'appuntamento
+      if (currentTimeInMinutes >= appointmentStartInMinutes && 
+          currentTimeInMinutes < appointmentEndInMinutes) {
+        return {
+          isOccupied: true,
+          occupiedBy: appointment,
+          isPartiallyOccupied: currentTimeInMinutes !== appointmentStartInMinutes,
+          isDirectMatch: currentTimeInMinutes === appointmentStartInMinutes
+        };
+      }
+    }
+
+    return { 
+      isOccupied: false, 
+      isPartiallyOccupied: false, 
+      isDirectMatch: false 
+    };
+  }, [appointments, selectedDate]);
+
   const getEmployeeAppointmentsForTimeSlot = useCallback((employeeId: number, time: string) => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     
-    console.log('DEBUG - Ricerca appuntamento:', {
-      employeeId,
-      time,
-      dateString,
-      totalAppointments: appointments.length,
-      appointments: appointments.map(apt => ({
-        id: apt.id,
-        employeeId: apt.employeeId,
-        date: apt.date,
-        time: apt.time,
-        client: apt.client
-      }))
-    });
-    
-    // Filtriamo prima per data e dipendente
-    const appointmentsForDateAndEmployee = appointments.filter(apt => {
+    // Trova l'appuntamento che inizia esattamente a questo orario
+    const exactAppointment = appointments.find(apt => {
       const dateMatch = apt.date === dateString;
       const employeeMatch = apt.employeeId === employeeId;
-      
-      console.log('DEBUG - Filtro per data e dipendente:', {
-        appointmentId: apt.id,
-        aptDate: apt.date,
-        aptEmployeeId: apt.employeeId,
-        dateMatch,
-        employeeMatch,
-        dateString,
-        employeeId
-      });
-      
-      return dateMatch && employeeMatch;
-    });
-    
-    console.log('DEBUG - Appuntamenti filtrati per data e dipendente:', appointmentsForDateAndEmployee);
-    
-    // Poi filtriamo per orario
-    const foundAppointment = appointmentsForDateAndEmployee.find(apt => {
-      // Normalizziamo l'orario per il confronto
       const aptTime = String(apt.time).substring(0, 5); // Prende solo HH:MM
-      const slotTime = time;
+      const timeMatch = aptTime === time;
       
-      console.log('DEBUG - Confronto orari:', {
-        appointmentId: apt.id,
-        aptTime,
-        slotTime,
-        originalAptTime: apt.time,
-        match: aptTime === slotTime
-      });
-      
-      return aptTime === slotTime;
+      return dateMatch && employeeMatch && timeMatch;
     });
     
-    if (foundAppointment) {
-      console.log('DEBUG - Appuntamento trovato:', foundAppointment);
-    } else {
-      console.log('DEBUG - Nessun appuntamento trovato per:', { employeeId, time, dateString });
-    }
-    
-    return foundAppointment;
+    return exactAppointment;
   }, [appointments, selectedDate]);
-
-  // Debug effect per monitorare i props
-  React.useEffect(() => {
-    console.log('DEBUG - EmployeeTimeSlotGrid props aggiornate:', {
-      employeesCount: employees.length,
-      appointmentsCount: appointments.length,
-      selectedDate: format(selectedDate, 'yyyy-MM-dd'),
-      appointments: appointments.map(apt => ({
-        id: apt.id,
-        employeeId: apt.employeeId,
-        date: apt.date,
-        time: apt.time,
-        client: apt.client
-      }))
-    });
-  }, [employees, appointments, selectedDate]);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -138,20 +114,23 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
 
             <div className="grid grid-cols-1 gap-2">
               {timeSlots.map(time => {
-                const appointment = getEmployeeAppointmentsForTimeSlot(employee.id, time);
+                const directAppointment = getEmployeeAppointmentsForTimeSlot(employee.id, time);
+                const occupationInfo = getSlotOccupationInfo(employee.id, time);
                 const vacation = isVacationDay(employee.id, selectedDate);
 
                 return (
                   <TimeSlot
                     key={`${employee.id}-${time}`}
                     time={time}
-                    appointment={appointment}
+                    appointment={occupationInfo.isDirectMatch ? occupationInfo.occupiedBy : directAppointment}
                     employee={employee}
                     onAddAppointment={onAddAppointment}
                     onEditAppointment={onEditAppointment}
                     onDeleteAppointment={onDeleteAppointment}
                     isVacationDay={vacation}
-                    isOccupied={false}
+                    isOccupied={occupationInfo.isOccupied}
+                    occupiedBy={occupationInfo.occupiedBy}
+                    isPartiallyOccupied={occupationInfo.isPartiallyOccupied}
                   />
                 );
               })}
