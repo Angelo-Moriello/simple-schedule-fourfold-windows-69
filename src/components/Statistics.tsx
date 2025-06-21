@@ -1,14 +1,16 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { format, subDays, startOfWeek, endOfWeek } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Appointment, Employee } from '@/types/appointment';
-import { Calendar, TrendingUp, Users, Clock, Euro, Star } from 'lucide-react';
+import { Calendar, TrendingUp, Users, Clock, Euro, Star, ArrowLeft } from 'lucide-react';
 
 interface StatisticsProps {
   appointments: Appointment[];
   employees: Employee[];
+  onBack?: () => void;
 }
 
 const RADIAN = Math.PI / 180;
@@ -51,7 +53,7 @@ const SOLID_COLORS = [
   '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'
 ];
 
-const Statistics: React.FC<StatisticsProps> = ({ appointments, employees }) => {
+const Statistics: React.FC<StatisticsProps> = ({ appointments, employees, onBack }) => {
   const serviceTypeStats = useMemo(() => {
     const serviceTypes: { [key: string]: number } = {};
     appointments.forEach(appointment => {
@@ -109,13 +111,27 @@ const Statistics: React.FC<StatisticsProps> = ({ appointments, employees }) => {
 
   return (
     <div className="space-y-8 p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
-      {/* Header migliorato */}
+      {/* Header migliorato con pulsante back */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-8 rounded-2xl shadow-2xl">
-        <div className="flex items-center space-x-4 mb-4">
-          <TrendingUp className="h-10 w-10" />
-          <h1 className="text-4xl font-bold">Statistiche Avanzate</h1>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-4">
+            <TrendingUp className="h-10 w-10" />
+            <div>
+              <h1 className="text-4xl font-bold">Statistiche Avanzate</h1>
+              <p className="text-xl opacity-90">Analisi completa delle performance del salone</p>
+            </div>
+          </div>
+          {onBack && (
+            <Button
+              variant="outline"
+              onClick={onBack}
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-12 px-6"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Indietro
+            </Button>
+          )}
         </div>
-        <p className="text-xl opacity-90">Analisi completa delle performance del salone</p>
       </div>
 
       {/* Cards statistiche principali */}
