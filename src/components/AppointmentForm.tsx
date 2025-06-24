@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -94,55 +93,53 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   const serviceCategories = getStoredServices();
 
-  // Unico useEffect per gestire l'apertura/chiusura del dialog
+  // Effect per gestire apertura/chiusura dialog - SENZA dipendenze problematiche
   useEffect(() => {
     console.log('DEBUG - Dialog state changed:', { isOpen, appointmentToEdit: !!appointmentToEdit });
     
-    if (isOpen) {
-      // Determina immediatamente se stiamo modificando o creando
-      const isEditing = !!appointmentToEdit;
-      console.log('DEBUG - Is editing determined:', isEditing);
+    if (isOpen && appointmentToEdit) {
+      // SOLO se stiamo modificando un appuntamento esistente
+      console.log('DEBUG - Loading edit data:', appointmentToEdit);
       
-      if (isEditing) {
-        console.log('DEBUG - Loading edit data:', appointmentToEdit);
-        
-        const editFormData = {
-          employeeId: appointmentToEdit.employeeId?.toString() || '',
-          time: appointmentToEdit.time || '',
-          title: appointmentToEdit.title || '',
-          client: appointmentToEdit.client || '',
-          duration: appointmentToEdit.duration?.toString() || '30',
-          notes: appointmentToEdit.notes || '',
-          email: appointmentToEdit.email || '',
-          phone: appointmentToEdit.phone || '',
-          color: appointmentToEdit.color || appointmentColors[0].value,
-          serviceType: appointmentToEdit.serviceType || '',
-          clientId: appointmentToEdit.clientId || ''
-        };
-        
-        console.log('DEBUG - Setting edit form data:', editFormData);
-        setFormData(editFormData);
-      } else {
-        console.log('DEBUG - Loading new appointment data');
-        const newFormData = {
-          employeeId: employeeId?.toString() || '',
-          time: time || '',
-          title: '',
-          client: '',
-          duration: '30',
-          notes: '',
-          email: '',
-          phone: '',
-          color: appointmentColors[0].value,
-          serviceType: '',
-          clientId: ''
-        };
-        
-        console.log('DEBUG - Setting new form data:', newFormData);
-        setFormData(newFormData);
-      }
-    } else {
-      // Reset form quando il dialog si chiude
+      const editFormData = {
+        employeeId: appointmentToEdit.employeeId?.toString() || '',
+        time: appointmentToEdit.time || '',
+        title: appointmentToEdit.title || '',
+        client: appointmentToEdit.client || '',
+        duration: appointmentToEdit.duration?.toString() || '30',
+        notes: appointmentToEdit.notes || '',
+        email: appointmentToEdit.email || '',
+        phone: appointmentToEdit.phone || '',
+        color: appointmentToEdit.color || appointmentColors[0].value,
+        serviceType: appointmentToEdit.serviceType || '',
+        clientId: appointmentToEdit.clientId || ''
+      };
+      
+      console.log('DEBUG - Setting edit form data:', editFormData);
+      setFormData(editFormData);
+      
+    } else if (isOpen && !appointmentToEdit) {
+      // SOLO se stiamo creando un nuovo appuntamento
+      console.log('DEBUG - Loading new appointment data');
+      const newFormData = {
+        employeeId: employeeId?.toString() || '',
+        time: time || '',
+        title: '',
+        client: '',
+        duration: '30',
+        notes: '',
+        email: '',
+        phone: '',
+        color: appointmentColors[0].value,
+        serviceType: '',
+        clientId: ''
+      };
+      
+      console.log('DEBUG - Setting new form data:', newFormData);
+      setFormData(newFormData);
+      
+    } else if (!isOpen) {
+      // Reset solo quando si chiude
       console.log('DEBUG - Dialog closed, resetting form');
       setFormData({
         employeeId: '',
@@ -158,7 +155,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         clientId: ''
       });
     }
-  }, [isOpen, appointmentToEdit, employeeId, time]);
+  }, [isOpen, appointmentToEdit]); // SOLO isOpen e appointmentToEdit, NON employeeId e time
 
   // Debug: mostra quando formData cambia
   useEffect(() => {
