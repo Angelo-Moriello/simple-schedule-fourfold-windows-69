@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Client, RecurringTreatment } from '@/types/client';
 import { Appointment } from '@/types/appointment';
@@ -6,28 +5,28 @@ import { Appointment } from '@/types/appointment';
 // Client operations
 export const loadClientsFromSupabase = async (): Promise<Client[]> => {
   try {
-    console.log('Caricamento clienti da Supabase...');
+    console.log('DEBUG - Caricamento clienti da Supabase...');
     const { data, error } = await supabase
       .from('clients')
       .select('*')
-      .order('name');
+      .order('created_at', { ascending: false }); // Ordina per data di creazione più recente
     
     if (error) {
-      console.error('Errore nel caricamento clienti:', error);
+      console.error('DEBUG - Errore nel caricamento clienti:', error);
       throw error;
     }
     
-    console.log('Clienti caricati:', data?.length || 0);
+    console.log('DEBUG - Clienti caricati da DB:', data?.length || 0, data);
     return data || [];
   } catch (error) {
-    console.error('Errore nel caricare i clienti da Supabase:', error);
+    console.error('DEBUG - Errore nel caricare i clienti da Supabase:', error);
     return [];
   }
 };
 
 export const addClientToSupabase = async (client: Omit<Client, 'id' | 'created_at' | 'updated_at'>): Promise<Client> => {
   try {
-    console.log('Aggiunta cliente a Supabase:', client);
+    console.log('DEBUG - Aggiunta cliente a Supabase:', client);
     const { data, error } = await supabase
       .from('clients')
       .insert(client)
@@ -35,14 +34,14 @@ export const addClientToSupabase = async (client: Omit<Client, 'id' | 'created_a
       .single();
       
     if (error) {
-      console.error('Errore nell\'aggiunta cliente:', error);
+      console.error('DEBUG - Errore nell\'aggiunta cliente:', error);
       throw error;
     }
     
-    console.log('Cliente aggiunto con successo:', data);
+    console.log('DEBUG - Cliente aggiunto con successo:', data);
     return data;
   } catch (error) {
-    console.error('Errore nell\'aggiungere cliente su Supabase:', error);
+    console.error('DEBUG - Errore nell\'aggiungere cliente su Supabase:', error);
     throw error;
   }
 };

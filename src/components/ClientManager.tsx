@@ -28,6 +28,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
+      console.log('DEBUG - ClientManager aperto, caricamento clienti...');
       loadClients();
     }
   }, [isOpen]);
@@ -39,10 +40,12 @@ const ClientManager: React.FC<ClientManagerProps> = ({ isOpen, onClose }) => {
   const loadClients = async () => {
     try {
       setIsLoading(true);
+      console.log('DEBUG - Caricamento clienti da Supabase...');
       const loadedClients = await loadClientsFromSupabase();
+      console.log('DEBUG - Clienti caricati:', loadedClients.length, loadedClients);
       setClients(loadedClients);
     } catch (error) {
-      console.error('Errore nel caricamento clienti:', error);
+      console.error('DEBUG - Errore nel caricamento clienti:', error);
       toast.error('Errore nel caricamento dei clienti');
     } finally {
       setIsLoading(false);

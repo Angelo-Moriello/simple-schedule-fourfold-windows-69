@@ -172,20 +172,33 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       let clientId = appointmentToEdit?.clientId;
 
       // Create client automatically if we have client data and it's a new appointment
-      if (!appointmentToEdit && (formData.email || formData.phone) && formData.client.trim()) {
-        try {
-          console.log('Creazione automatica cliente:', formData.client);
-          const newClient = await addClientToSupabase({
-            name: formData.client.trim(),
-            email: formData.email.trim() || undefined,
-            phone: formData.phone.trim() || undefined,
-            notes: `Cliente creato automaticamente durante appuntamento del ${format(date, 'dd/MM/yyyy')}`
-          });
-          clientId = newClient.id;
-          toast.success(`Cliente "${formData.client}" creato automaticamente!`);
-        } catch (error) {
-          console.warn('Errore nella creazione automatica del cliente:', error);
-          // Continue without blocking appointment creation
+      if (!appointmentToEdit && formData.client.trim()) {
+        // Always try to create a client if we have name and at least email or phone
+        if (formData.email.trim() || formData.phone.trim()) {
+          try {
+            console.log('DEBUG - Creazione automatica cliente:', {
+              name: formData.client.trim(),
+              email: formData.email.trim(),
+              phone: formData.phone.trim()
+            });
+            
+            const newClient = await addClientToSupabase({
+              name: formData.client.trim(),
+              email: formData.email.trim() || undefined,
+              phone: formData.phone.trim() || undefined,
+              notes: `Cliente creato automaticamente durante appuntamento del ${format(date, 'dd/MM/yyyy')}`
+            });
+            
+            clientId = newClient.id;
+            console.log('DEBUG - Cliente creato con successo:', newClient);
+            toast.success(`Cliente "${formData.client}" creato automaticamente!`);
+          } catch (error) {
+            console.error('DEBUG - Errore nella creazione automatica del cliente:', error);
+            toast.error('Errore nella creazione automatica del cliente, ma l\'appuntamento sarà comunque salvato');
+            // Continue without blocking appointment creation
+          }
+        } else {
+          console.log('DEBUG - Nessun email/telefono fornito, salto creazione automatica cliente');
         }
       }
 
@@ -205,6 +218,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         clientId: clientId
       };
 
+      console.log('DEBUG - Salvataggio appuntamento:', appointmentData);
+
       if (appointmentToEdit && updateAppointment) {
         await updateAppointment(appointmentData);
         toast.success('Appuntamento modificato con successo!');
@@ -216,7 +231,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       // Close form after successful submission
       onClose();
     } catch (error) {
-      console.error('Error saving appointment:', error);
+      console.error('DEBUG - Error saving appointment:', error);
       toast.error('Errore nel salvare l\'appuntamento. Riprova.');
     } finally {
       setIsSubmitting(false);
