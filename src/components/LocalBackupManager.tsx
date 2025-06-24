@@ -174,10 +174,10 @@ const LocalBackupManager = () => {
       <DialogTrigger asChild>
         <Button 
           variant="outline" 
-          className="w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6"
+          className="h-11 px-4 rounded-full border-2 border-teal-200 text-teal-700 hover:bg-teal-50 hover:border-teal-300 transition-all duration-200 shadow-sm hover:shadow-md"
         >
-          <HardDrive className="h-4 w-4 mr-2" />
-          Backup Locale
+          <HardDrive className="h-5 w-5 mr-2" />
+          <span className="font-medium">Backup</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -201,7 +201,10 @@ const LocalBackupManager = () => {
               <p className="text-sm text-gray-600">
                 Scarica immediatamente una copia locale di tutti i tuoi dati
               </p>
-              <Button onClick={performLocalBackup} className="w-full">
+              <Button 
+                onClick={performLocalBackup} 
+                className="w-full h-11 rounded-full bg-green-600 hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
+              >
                 <HardDrive className="h-4 w-4 mr-2" />
                 Scarica Backup Locale Ora
               </Button>
@@ -277,7 +280,11 @@ const LocalBackupManager = () => {
               <p className="text-sm text-gray-600">
                 Configura dove salvare i file di backup
               </p>
-              <Button onClick={handleFolderSelect} variant="outline" className="w-full">
+              <Button 
+                onClick={handleFolderSelect} 
+                variant="outline" 
+                className="w-full h-11 rounded-full border-2 hover:border-gray-400 transition-all duration-200"
+              >
                 <FolderOpen className="h-4 w-4 mr-2" />
                 Configura Cartella Download
               </Button>
@@ -298,7 +305,7 @@ const LocalBackupManager = () => {
               <CardContent>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {backupHistory.slice(0, 10).map((backup, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
                       <div className="flex flex-col">
                         <span className="text-sm font-medium">{backup.name}</span>
                         <div className="flex gap-4 text-xs text-gray-500">
@@ -310,9 +317,9 @@ const LocalBackupManager = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => removeBackupFromHistory(backup.name)}
-                        className="text-red-600 hover:text-red-700 h-6 w-6 p-0"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}

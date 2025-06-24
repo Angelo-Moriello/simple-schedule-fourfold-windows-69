@@ -5,6 +5,7 @@ import { Calendar, CalendarDays, UserPlus, Plane, History, BarChart3, Users } fr
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Employee } from '@/types/appointment';
+import { useIsMobile } from '@/hooks/use-mobile';
 import DateNavigator from './DateNavigator';
 import FullCalendar from './FullCalendar';
 import VacationManager from './VacationManager';
@@ -37,6 +38,8 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
   onOpenClientManager,
   appointments = []
 }) => {
+  const isMobile = useIsMobile();
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
       <div className="p-4 sm:p-6">
@@ -49,33 +52,33 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
         </div>
 
         {/* Action Buttons - All in one horizontal line */}
-        <div className="flex flex-wrap items-center justify-center gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-3">
           <Button 
             onClick={() => onShowFullCalendar(true)} 
             variant="outline" 
-            className="border-purple-200 text-purple-700 hover:bg-purple-50"
+            className="h-11 px-4 rounded-full border-2 border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <CalendarDays className="h-4 w-4 mr-2" />
-            Calendario Completo
+            <CalendarDays className="h-5 w-5 mr-2" />
+            <span className="font-medium">Calendario</span>
           </Button>
 
           <Button 
             onClick={onOpenEmployeeForm} 
             variant="outline" 
-            className="border-green-200 text-green-700 hover:bg-green-50"
+            className="h-11 px-4 rounded-full border-2 border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Gestisci Dipendenti
+            <UserPlus className="h-5 w-5 mr-2" />
+            <span className="font-medium">Dipendenti</span>
           </Button>
 
           {onOpenClientManager && (
             <Button 
               onClick={onOpenClientManager} 
               variant="outline" 
-              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              className="h-11 px-4 rounded-full border-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 shadow-sm hover:shadow-md"
             >
-              <Users className="h-4 w-4 mr-2" />
-              Gestisci Clienti
+              <Users className="h-5 w-5 mr-2" />
+              <span className="font-medium">Clienti</span>
             </Button>
           )}
 
@@ -84,24 +87,24 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
             onUpdateEmployeeVacations={onUpdateEmployeeVacations} 
           />
 
-          <LocalBackupManager />
+          {!isMobile && <LocalBackupManager />}
 
           <Button 
             onClick={onNavigateToHistory} 
             variant="outline" 
-            className="border-orange-200 text-orange-700 hover:bg-orange-50"
+            className="h-11 px-4 rounded-full border-2 border-orange-200 text-orange-700 hover:bg-orange-50 hover:border-orange-300 transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <History className="h-4 w-4 mr-2" />
-            Storico
+            <History className="h-5 w-5 mr-2" />
+            <span className="font-medium">Storico</span>
           </Button>
 
           <Button 
             onClick={onNavigateToStatistics} 
             variant="outline" 
-            className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+            className="h-11 px-4 rounded-full border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Statistiche
+            <BarChart3 className="h-5 w-5 mr-2" />
+            <span className="font-medium">Statistiche</span>
           </Button>
         </div>
       </div>

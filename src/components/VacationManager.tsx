@@ -128,9 +128,12 @@ const VacationManager: React.FC<VacationManagerProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="h-10 px-3 gap-2 text-sm">
-          <Plane className="h-4 w-4" />
-          Gestisci Ferie
+        <Button 
+          variant="outline" 
+          className="h-11 px-4 rounded-full border-2 border-cyan-200 text-cyan-700 hover:bg-cyan-50 hover:border-cyan-300 transition-all duration-200 shadow-sm hover:shadow-md"
+        >
+          <Plane className="h-5 w-5 mr-2" />
+          <span className="font-medium">Ferie</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -221,7 +224,7 @@ const VacationManager: React.FC<VacationManagerProps> = ({
                     <Button 
                       onClick={handleAddVacation} 
                       disabled={!selectedDate}
-                      className="w-full"
+                      className="w-full h-11 rounded-full bg-green-600 hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
                     >
                       Aggiungi Ferie
                     </Button>
@@ -234,7 +237,7 @@ const VacationManager: React.FC<VacationManagerProps> = ({
                   <label className="block text-sm font-medium mb-2">Ferie Esistenti:</label>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {vacationEntries.map((entry, index) => (
-                      <div key={`${entry.date}-${index}`} className={`flex items-center justify-between p-3 rounded border ${getVacationTypeColor(entry)}`}>
+                      <div key={`${entry.date}-${index}`} className={`flex items-center justify-between p-3 rounded-lg border ${getVacationTypeColor(entry)}`}>
                         <div className="flex flex-col">
                           <span className="font-medium text-sm">
                             {format(new Date(entry.date), 'dd MMMM yyyy', { locale: it })}
@@ -247,9 +250,9 @@ const VacationManager: React.FC<VacationManagerProps> = ({
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveVacation(selectedEmployee.id, entry.date)}
-                          className="text-current hover:bg-black/10 h-6 w-6 p-0"
+                          className="text-current hover:bg-black/10 h-8 w-8 p-0 rounded-full"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     ))}
