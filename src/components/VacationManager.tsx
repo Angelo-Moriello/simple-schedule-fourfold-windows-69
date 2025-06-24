@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plane, Trash2, Clock, Calendar as CalendarIcon } from 'lucide-react';
+import { Trash2, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { Employee } from '@/types/appointment';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -30,7 +30,7 @@ const VacationManager: React.FC<VacationManagerProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [vacationType, setVacationType] = useState<'full' | 'morning' | 'afternoon' | 'hours'>('full');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
@@ -56,31 +56,34 @@ const VacationManager: React.FC<VacationManagerProps> = ({
     return JSON.stringify(entry);
   };
 
-  const handleAddVacation = () => {
-    if (!selectedDate || !selectedEmployeeId) return;
-
-    const dateString = format(selectedDate, 'yyyy-MM-dd');
-    const newEntry: VacationEntry = {
-      date: dateString,
-      type: vacationType,
-      ...(vacationType === 'hours' && { startTime, endTime })
-    };
+  const handleAddVacations = () => {
+    if (selectedDates.length === 0 || !selectedEmployeeId) return;
 
     const existingVacations = selectedEmployee?.vacations || [];
     const vacationEntries = parseVacationEntries(existingVacations);
     
-    // Check if vacation already exists for this date
-    const existingIndex = vacationEntries.findIndex(entry => entry.date === dateString);
-    if (existingIndex >= 0) {
-      vacationEntries[existingIndex] = newEntry;
-    } else {
-      vacationEntries.push(newEntry);
-    }
+    // Add vacation entries for all selected dates
+    selectedDates.forEach(date => {
+      const dateString = format(date, 'yyyy-MM-dd');
+      const newEntry: VacationEntry = {
+        date: dateString,
+        type: vacationType,
+        ...(vacationType === 'hours' && { startTime, endTime })
+      };
+
+      // Check if vacation already exists for this date
+      const existingIndex = vacationEntries.findIndex(entry => entry.date === dateString);
+      if (existingIndex >= 0) {
+        vacationEntries[existingIndex] = newEntry;
+      } else {
+        vacationEntries.push(newEntry);
+      }
+    });
 
     const updatedVacations = vacationEntries.map(formatVacationEntry);
     onUpdateEmployeeVacations(parseInt(selectedEmployeeId), updatedVacations);
     
-    setSelectedDate(undefined);
+    setSelectedDates([]);
     setVacationType('full');
     setStartTime('09:00');
     setEndTime('17:00');
@@ -132,7 +135,7 @@ const VacationManager: React.FC<VacationManagerProps> = ({
           variant="outline" 
           className="h-11 px-4 rounded-full border-2 border-cyan-200 text-cyan-700 hover:bg-cyan-50 hover:border-cyan-300 transition-all duration-200 shadow-sm hover:shadow-md"
         >
-          <Plane className="h-5 w-5 mr-2" />
+          <span className="text-lg mr-2">🏖️</span>
           <span className="font-medium">Ferie</span>
         </Button>
       </DialogTrigger>
@@ -161,21 +164,26 @@ const VacationManager: React.FC<VacationManagerProps> = ({
           {selectedEmployee && (
             <>
               <div className="space-y-4">
-                <label className="block text-sm font-medium">Aggiungi Nuova Ferie:</label>
+                <label className="block text-sm font-medium">Aggiungi Nuove Ferie:</label>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium mb-2 flex items-center gap-2">
                       <CalendarIcon className="h-4 w-4" />
-                      Data
+                      Date (puoi selezionare più giorni)
                     </Label>
                     <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
+                      mode="multiple"
+                      selected={selectedDates}
+                      onSelect={(dates) => setSelectedDates(dates || [])}
                       locale={it}
                       className="rounded-md border"
                     />
+                    {selectedDates.length > 0 && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        {selectedDates.length} giorni selezionati
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-4">
@@ -222,11 +230,12 @@ const VacationManager: React.FC<VacationManagerProps> = ({
                     )}
 
                     <Button 
-                      onClick={handleAddVacation} 
-                      disabled={!selectedDate}
+                      onClick={handleAddVacations} 
+                      disabled={selectedDates.length === 0}
                       className="w-full h-11 rounded-full bg-green-600 hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
                     >
-                      Aggiungi Ferie
+                      <span className="text-lg mr-2">✅</span>
+                      Aggiungi Ferie ({selectedDates.length} giorni)
                     </Button>
                   </div>
                 </div>
@@ -252,7 +261,7 @@ const VacationManager: React.FC<VacationManagerProps> = ({
                           onClick={() => handleRemoveVacation(selectedEmployee.id, entry.date)}
                           className="text-current hover:bg-black/10 h-8 w-8 p-0 rounded-full"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <span className="text-sm">🗑️</span>
                         </Button>
                       </div>
                     ))}
