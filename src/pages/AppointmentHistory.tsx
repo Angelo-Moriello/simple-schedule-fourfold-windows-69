@@ -143,10 +143,6 @@ const AppointmentHistory = () => {
             startDate = startOfMonth(today);
             endDate = endOfMonth(today);
             break;
-          case 'year':
-            startDate = new Date(today.getFullYear(), 0, 1);
-            endDate = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
-            break;
           case 'custom':
             if (customStartDate && customEndDate) {
               startDate = new Date(customStartDate);
@@ -333,7 +329,7 @@ const AppointmentHistory = () => {
 
           {/* Search Bar - con controlli di sicurezza migliorati */}
           <div className="relative w-full">
-            {Array.isArray(uniqueClients) ? (
+            {Array.isArray(uniqueClients) && uniqueClients.length >= 0 ? (
               <Command className="rounded-lg border shadow-md bg-white">
                 <CommandInput
                   placeholder="Cerca per nome cliente..."
@@ -346,23 +342,27 @@ const AppointmentHistory = () => {
                 {showSearch && uniqueClients.length > 0 && (
                   <CommandList className="max-h-48 border-t">
                     <CommandGroup>
-                      {uniqueClients.map((client, index) => (
-                        <CommandItem
-                          key={`client-${index}-${client}`}
-                          onSelect={() => {
-                            setSearchTerm(client);
-                            setShowSearch(false);
-                          }}
-                          className="px-4 py-3 cursor-pointer hover:bg-gray-50"
-                        >
-                          <User className="mr-3 h-4 w-4 shrink-0" />
-                          <span className="text-base">{client}</span>
-                        </CommandItem>
-                      ))}
+                      {uniqueClients.map((client, index) => 
+                        client && typeof client === 'string' ? (
+                          <CommandItem
+                            key={`client-${index}-${client}`}
+                            onSelect={() => {
+                              setSearchTerm(client);
+                              setShowSearch(false);
+                            }}
+                            className="px-4 py-3 cursor-pointer hover:bg-gray-50"
+                          >
+                            <User className="mr-3 h-4 w-4 shrink-0" />
+                            <span className="text-base">{client}</span>
+                          </CommandItem>
+                        ) : null
+                      )}
                     </CommandGroup>
-                    <CommandEmpty className="py-6 text-center text-sm text-gray-500">
-                      Nessun cliente trovato
-                    </CommandEmpty>
+                    {uniqueClients.length === 0 && (
+                      <CommandEmpty className="py-6 text-center text-sm text-gray-500">
+                        Nessun cliente trovato
+                      </CommandEmpty>
+                    )}
                   </CommandList>
                 )}
               </Command>
