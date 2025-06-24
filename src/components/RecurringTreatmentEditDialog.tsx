@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { RecurringTreatment } from '@/types/client';
 import { Employee } from '@/types/appointment';
-import { updateRecurringTreatmentInSupabase, loadEmployeesFromSupabase } from '@/utils/supabaseStorage';
+import { updateRecurringTreatmentInSupabase } from '@/utils/clientStorage';
+import { loadEmployeesFromSupabase } from '@/utils/supabaseStorage';
 import { getStoredServices } from '@/components/appointment-form/AppointmentFormLogic';
 
 interface RecurringTreatmentEditDialogProps {
