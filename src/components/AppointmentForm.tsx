@@ -94,19 +94,50 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   const serviceCategories = getStoredServices();
 
+  // Reset form when dialog opens/closes
   useEffect(() => {
-    console.log('DEBUG - AppointmentForm useEffect triggered:', {
-      appointmentToEdit,
+    console.log('DEBUG - Dialog state changed:', { isOpen, appointmentToEdit });
+    
+    if (!isOpen) {
+      // Reset form when dialog closes
+      setFormData({
+        employeeId: '',
+        time: '',
+        title: '',
+        client: '',
+        duration: '30',
+        notes: '',
+        email: '',
+        phone: '',
+        color: appointmentColors[0].value,
+        serviceType: '',
+        clientId: ''
+      });
+    }
+  }, [isOpen]);
+
+  // Load appointment data when editing
+  useEffect(() => {
+    console.log('DEBUG - AppointmentForm data loading effect:', {
+      isOpen,
+      appointmentToEdit: appointmentToEdit ? {
+        id: appointmentToEdit.id,
+        client: appointmentToEdit.client,
+        email: appointmentToEdit.email,
+        phone: appointmentToEdit.phone,
+        employeeId: appointmentToEdit.employeeId,
+        time: appointmentToEdit.time,
+        serviceType: appointmentToEdit.serviceType,
+        clientId: appointmentToEdit.clientId
+      } : null,
       employeeId,
-      time,
-      isOpen
+      time
     });
 
     if (isOpen) {
       if (appointmentToEdit) {
-        console.log('DEBUG - Caricamento dati appuntamento da modificare:', appointmentToEdit);
+        console.log('DEBUG - Caricamento dati appuntamento da modificare completo:', appointmentToEdit);
         
-        // Assicuriamoci che tutti i campi siano popolati correttamente
         const newFormData = {
           employeeId: appointmentToEdit.employeeId?.toString() || '',
           time: appointmentToEdit.time || '',
@@ -121,7 +152,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           clientId: appointmentToEdit.clientId || ''
         };
         
-        console.log('DEBUG - Form data caricato per modifica:', newFormData);
+        console.log('DEBUG - Dati del form impostati per modifica:', newFormData);
         setFormData(newFormData);
       } else {
         console.log('DEBUG - Inizializzazione form nuovo appuntamento');
@@ -140,11 +171,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         });
       }
     }
-  }, [appointmentToEdit, employeeId, time, isOpen]);
+  }, [isOpen, appointmentToEdit, employeeId, time]);
 
   // Debug: mostra quando formData cambia
   useEffect(() => {
-    console.log('DEBUG - FormData aggiornato:', formData);
+    console.log('DEBUG - FormData aggiornato in AppointmentForm:', formData);
   }, [formData]);
 
   const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
