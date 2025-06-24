@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +15,8 @@ import {
   deleteRecurringTreatmentFromSupabase
 } from '@/utils/clientStorage';
 import { loadEmployeesFromSupabase } from '@/utils/supabaseStorage';
+import { generateAppointmentsForDateRange } from '@/utils/recurringTreatmentUtils';
+import { addDays } from 'date-fns';
 
 interface RecurringTreatmentsListProps {
   clientId: string;
@@ -53,11 +54,19 @@ const RecurringTreatmentsList: React.FC<RecurringTreatmentsListProps> = ({ clien
         ...treatment,
         is_active: !treatment.is_active
       });
+      
+      // Se il trattamento viene attivato, genera appuntamenti futuri
+      if (!treatment.is_active) {
+        const startDate = new Date();
+        const endDate = addDays(new Date(), 90); // 3 mesi in avanti
+        await generateAppointmentsForDateRange([{...treatment, is_active: true}], startDate, endDate);
+      }
+      
       await loadData();
       toast.success(
         treatment.is_active 
           ? 'Trattamento disattivato' 
-          : 'Trattamento attivato'
+          : 'Trattamento attivato e appuntamenti generati'
       );
     } catch (error) {
       console.error('Errore nell\'aggiornamento del trattamento:', error);

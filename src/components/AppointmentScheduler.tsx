@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -21,6 +20,9 @@ import EmployeeTimeSlotGrid from './EmployeeTimeSlotGrid';
 import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
 import ClientManager from './ClientManager';
+import { loadRecurringTreatmentsFromSupabase } from '@/utils/clientStorage';
+import { generateAppointmentsForDateRange } from '@/utils/recurringTreatmentUtils';
+import { addDays, subDays } from 'date-fns';
 
 const AppointmentScheduler = () => {
   const navigate = useNavigate();
@@ -88,7 +90,23 @@ const AppointmentScheduler = () => {
         setEmployees(loadedEmployees);
         setAppointments(loadedAppointments);
         
-        toast.success(`Caricati ${loadedEmployees.length} dipendenti e ${loadedAppointments.length} appuntamenti`);
+        // Dopo aver caricato i dati, genera appuntamenti ricorrenti per la settimana corrente
+        try {
+          const recurringTreatments = await loadRecurringTreatmentsFromSupabase();
+          const startDate = subDays(selectedDate, 3); // 3 giorni prima
+          const endDate = addDays(selectedDate, 30); // 30 giorni dopo
+          
+          await generateAppointmentsForDateRange(recurringTreatments, startDate, endDate);
+          console.log('Appuntamenti ricorrenti generati per il periodo');
+        } catch (recurringError) {
+          console.error('Errore nella generazione appuntamenti ricorrenti:', recurringError);
+        }
+        
+        // Ricarica gli appuntamenti dopo la generazione
+        const finalAppointments = await loadAppointmentsFromSupabase();
+        setAppointments(finalAppointments);
+        
+        toast.success(`Caricati ${loadedEmployees.length} dipendenti e ${finalAppointments.length} appuntamenti`);
       } catch (error) {
         console.error('Errore nel caricamento dei dati:', error);
         toast.error('Errore nel caricamento dei dati da Supabase');
@@ -421,6 +439,29 @@ const AppointmentScheduler = () => {
   const handleNavigateToStatistics = () => {
     navigate('/statistics');
   };
+
+  // Aggiungi un effect per generare appuntamenti ricorrenti quando cambia la data selezionata
+  useEffect(() => {
+    const generateRecurringForDate = async () => {
+      try {
+        const recurringTreatments = await loadRecurringTreatmentsFromSupabase();
+        const startDate = subDays(selectedDate, 1);
+        const endDate = addDays(selectedDate, 7);
+        
+        await generateAppointmentsForDateRange(recurringTreatments, startDate, endDate);
+        
+        // Ricarica gli appuntamenti
+        const updatedAppointments = await loadAppointmentsFromSupabase();
+        setAppointments(updatedAppointments);
+      } catch (error) {
+        console.error('Errore nella generazione appuntamenti ricorrenti per data:', error);
+      }
+    };
+
+    if (!isLoading) {
+      generateRecurringForDate();
+    }
+  }, [selectedDate, isLoading]);
 
   if (isLoading) {
     return (

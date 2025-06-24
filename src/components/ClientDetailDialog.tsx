@@ -52,10 +52,22 @@ const ClientDetailDialog: React.FC<ClientDetailDialogProps> = ({
     }
   }, [isOpen, client]);
 
+  // Aggiungi un effect per ricaricare quando il dialog si apre
+  useEffect(() => {
+    if (isOpen) {
+      const reloadInterval = setInterval(() => {
+        loadAppointmentHistory();
+      }, 5000); // Ricarica ogni 5 secondi quando il dialog è aperto
+      
+      return () => clearInterval(reloadInterval);
+    }
+  }, [isOpen]);
+
   const loadAppointmentHistory = async () => {
     try {
       setIsLoadingHistory(true);
       const clientAppointments = await getClientAppointmentsFromSupabase(client.id);
+      console.log('DEBUG - Storico appuntamenti caricato per cliente:', client.id, clientAppointments.length);
       setAppointments(clientAppointments);
     } catch (error) {
       console.error('Errore nel caricamento storico:', error);

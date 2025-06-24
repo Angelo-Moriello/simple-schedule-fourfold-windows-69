@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -169,89 +168,68 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Prevent double submission
-    if (isSubmitting) {
-      return;
-    }
-    
-    // Enhanced validation with better error messages
-    if (!formData.employeeId) {
-      toast.error('Seleziona un dipendente');
-      return;
-    }
-    
-    if (!formData.time) {
-      toast.error('Seleziona un orario');
-      return;
-    }
-    
-    if (!formData.client || formData.client.trim() === '') {
-      toast.error('Inserisci il nome del cliente');
-      return;
-    }
-    
-    if (!formData.serviceType) {
-      toast.error('Seleziona il tipo di servizio');
-      return;
-    }
-    
-    if (!formData.duration) {
-      toast.error('Seleziona la durata');
+    if (!formData.client.trim()) {
+      toast.error('Il nome del cliente è obbligatorio');
       return;
     }
 
-    setIsSubmitting(true);
+    if (!formData.serviceType.trim()) {
+      toast.error('Il tipo di servizio è obbligatorio');
+      return;
+    }
 
     try {
-      let clientId: string | undefined = appointmentToEdit?.clientId;
-
-      // Handle client creation/lookup for new appointments
-      if (!appointmentToEdit && formData.client.trim()) {
-        console.log('DEBUG - Gestione cliente per nuovo appuntamento');
+      setIsSubmitting(true);
+      
+      let finalClientId = formData.clientId;
+      
+      // Se non abbiamo un clientId, proviamo a trovare o creare il cliente
+      if (!finalClientId) {
+        console.log('DEBUG - Tentativo di trovare o creare cliente:', {
+          name: formData.client,
+          email: formData.email,
+          phone: formData.phone
+        });
         
-        // First, try to find existing client
-        const existingClient = await findExistingClient(
-          formData.client.trim(),
-          formData.email.trim() || undefined,
-          formData.phone.trim() || undefined
+        // Carica tutti i clienti esistenti
+        const existingClients = await loadClientsFromSupabase();
+        console.log('DEBUG - Clienti esistenti:', existingClients.length);
+        
+        // Cerca cliente esistente per nome (email e telefono ora opzionali)
+        let existingClient = existingClients.find(client => 
+          client.name.toLowerCase().trim() === formData.client.toLowerCase().trim()
         );
+
+        // Se non trovato per nome, cerca per email o telefono se forniti
+        if (!existingClient && (formData.email || formData.phone)) {
+          existingClient = existingClients.find(client => 
+            (formData.email && client.email === formData.email) ||
+            (formData.phone && client.phone === formData.phone)
+          );
+        }
         
         if (existingClient) {
-          console.log('DEBUG - Cliente esistente trovato, uso quello:', existingClient);
-          clientId = existingClient.id;
-          toast.success(`Cliente "${existingClient.name}" collegato all'appuntamento!`);
+          console.log('DEBUG - Cliente trovato:', existingClient);
+          finalClientId = existingClient.id;
         } else {
-          // Create new client only if we have at least name and (email OR phone)
-          // Or if user explicitly provided email/phone, create the client
-          const shouldCreateClient = formData.email.trim() || formData.phone.trim();
-          
-          if (shouldCreateClient) {
-            try {
-              console.log('DEBUG - Creazione nuovo cliente:', {
-                name: formData.client.trim(),
-                email: formData.email.trim() || undefined,
-                phone: formData.phone.trim() || undefined
-              });
-              
-              const newClient = await addClientToSupabase({
-                name: formData.client.trim(),
-                email: formData.email.trim() || undefined,
-                phone: formData.phone.trim() || undefined,
-                notes: `Cliente creato automaticamente durante appuntamento del ${format(date, 'dd/MM/yyyy')}`
-              });
-              
-              clientId = newClient.id;
-              console.log('DEBUG - Nuovo cliente creato con successo:', newClient);
-              toast.success(`Cliente "${formData.client}" creato e collegato all'appuntamento!`);
-            } catch (error) {
-              console.error('DEBUG - Errore nella creazione del cliente:', error);
-              toast.error('Errore nella creazione del cliente, ma l\'appuntamento sarà comunque salvato');
-              // Continue without blocking appointment creation
-              clientId = undefined;
-            }
-          } else {
-            console.log('DEBUG - Nessun email/telefono fornito, appuntamento salvato senza collegamento cliente');
-            clientId = undefined;
+          // Crea nuovo cliente - email e telefono opzionali
+          console.log('DEBUG - Creazione nuovo cliente');
+          try {
+            const newClientData = {
+              name: formData.client.trim(),
+              email: formData.email?.trim() || undefined,
+              phone: formData.phone?.trim() || undefined,
+              notes: undefined
+            };
+            
+            const newClient = await addClientToSupabase(newClientData);
+            console.log('DEBUG - Nuovo cliente creato:', newClient);
+            finalClientId = newClient.id;
+            toast.success('Nuovo cliente creato con successo');
+          } catch (clientError) {
+            console.error('DEBUG - Errore nella creazione del cliente:', clientError);
+            toast.error('Errore nella creazione del cliente');
+            return;
           }
         }
       }
@@ -269,7 +247,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         phone: formData.phone.trim(),
         color: formData.color,
         serviceType: formData.serviceType,
-        clientId: clientId // This will be either a valid UUID string or undefined
+        clientId: finalClientId // This will be either a valid UUID string or undefined
       };
 
       console.log('DEBUG - Salvataggio appuntamento:', appointmentData);
@@ -285,8 +263,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       // Close form after successful submission
       onClose();
     } catch (error) {
-      console.error('DEBUG - Error saving appointment:', error);
-      toast.error('Errore nel salvare l\'appuntamento. Riprova.');
+      console.error('Errore nell\'operazione:', error);
+      toast.error('Errore nell\'operazione');
     } finally {
       setIsSubmitting(false);
     }
