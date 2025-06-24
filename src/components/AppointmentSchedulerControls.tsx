@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, ChevronLeft, ChevronRight, CalendarDays, UserPlus, Plane, History, BarChart3, Users } from 'lucide-react';
-import { format, addDays, subDays } from 'date-fns';
+import { Calendar, CalendarDays, UserPlus, Plane, History, BarChart3, Users } from 'lucide-react';
+import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Employee } from '@/types/appointment';
 import DateNavigator from './DateNavigator';
@@ -36,106 +36,87 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
   onOpenClientManager,
   appointments = []
 }) => {
-  const previousDay = () => {
-    onDateSelect(subDays(selectedDate, 1));
-  };
-
-  const nextDay = () => {
-    onDateSelect(addDays(selectedDate, 1));
-  };
-
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
       <div className="p-4 sm:p-6">
-        {/* Navigation and Date Selection */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-4">
-          <div className="flex items-center space-x-3">
-            <Button
-              onClick={previousDay}
-              variant="outline"
-              size="sm"
-              className="h-9 w-9 p-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
-              <h2 className="text-lg font-bold text-blue-800">
-                {format(selectedDate, 'EEEE d MMMM yyyy', { locale: it })}
-              </h2>
-            </div>
-            
-            <Button
-              onClick={nextDay}
-              variant="outline"
-              size="sm"
-              className="h-9 w-9 p-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        {/* Header with Date Display */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
+          <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+            <h2 className="text-lg font-bold text-blue-800">
+              {format(selectedDate, 'EEEE d MMMM yyyy', { locale: it })}
+            </h2>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2">
-          <DateNavigator
-            selectedDate={selectedDate}
-            showFullCalendar={showFullCalendar}
-            onDateSelect={onDateSelect}
-            onShowFullCalendar={onShowFullCalendar}
-          />
-          
-          <Button
-            onClick={() => onShowFullCalendar(true)}
-            variant="outline"
-            className="border-purple-200 text-purple-700 hover:bg-purple-50"
-          >
-            <CalendarDays className="h-4 w-4 mr-2" />
-            Calendario Completo
-          </Button>
-
-          <Button
-            onClick={onOpenEmployeeForm}
-            variant="outline"
-            className="border-green-200 text-green-700 hover:bg-green-50"
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Gestisci Dipendenti
-          </Button>
-
-          {onOpenClientManager && (
+        {/* Action Buttons - Organized in rows for better alignment */}
+        <div className="space-y-3">
+          {/* First row: Navigation and Calendar */}
+          <div className="flex flex-wrap gap-2">
+            <DateNavigator
+              selectedDate={selectedDate}
+              showFullCalendar={showFullCalendar}
+              onDateSelect={onDateSelect}
+              onShowFullCalendar={onShowFullCalendar}
+            />
+            
             <Button
-              onClick={onOpenClientManager}
+              onClick={() => onShowFullCalendar(true)}
               variant="outline"
-              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              className="border-purple-200 text-purple-700 hover:bg-purple-50"
             >
-              <Users className="h-4 w-4 mr-2" />
-              Gestisci Clienti
+              <CalendarDays className="h-4 w-4 mr-2" />
+              Calendario Completo
             </Button>
-          )}
+          </div>
 
-          <VacationManager
-            employees={employees}
-            onUpdateEmployeeVacations={onUpdateEmployeeVacations}
-          />
+          {/* Second row: Management buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={onOpenEmployeeForm}
+              variant="outline"
+              className="border-green-200 text-green-700 hover:bg-green-50"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Gestisci Dipendenti
+            </Button>
 
-          <Button
-            onClick={onNavigateToHistory}
-            variant="outline"
-            className="border-orange-200 text-orange-700 hover:bg-orange-50"
-          >
-            <History className="h-4 w-4 mr-2" />
-            Storico
-          </Button>
+            {onOpenClientManager && (
+              <Button
+                onClick={onOpenClientManager}
+                variant="outline"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Gestisci Clienti
+              </Button>
+            )}
 
-          <Button
-            onClick={onNavigateToStatistics}
-            variant="outline"
-            className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-          >
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Statistiche
-          </Button>
+            <VacationManager
+              employees={employees}
+              onUpdateEmployeeVacations={onUpdateEmployeeVacations}
+            />
+          </div>
+
+          {/* Third row: Reports and history */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={onNavigateToHistory}
+              variant="outline"
+              className="border-orange-200 text-orange-700 hover:bg-orange-50"
+            >
+              <History className="h-4 w-4 mr-2" />
+              Storico
+            </Button>
+
+            <Button
+              onClick={onNavigateToStatistics}
+              variant="outline"
+              className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Statistiche
+            </Button>
+          </div>
         </div>
       </div>
 

@@ -9,6 +9,7 @@ import { Appointment, Employee, ServiceCategory } from '@/types/appointment';
 import { Calendar, Clock, User, Mail, Phone, Palette, FileText, Scissors } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { addClientToSupabase } from '@/utils/clientStorage';
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -168,6 +169,26 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     setIsSubmitting(true);
 
     try {
+      let clientId = appointmentToEdit?.clientId;
+
+      // Create client automatically if we have client data and it's a new appointment
+      if (!appointmentToEdit && (formData.email || formData.phone) && formData.client.trim()) {
+        try {
+          console.log('Creazione automatica cliente:', formData.client);
+          const newClient = await addClientToSupabase({
+            name: formData.client.trim(),
+            email: formData.email.trim() || undefined,
+            phone: formData.phone.trim() || undefined,
+            notes: `Cliente creato automaticamente durante appuntamento del ${format(date, 'dd/MM/yyyy')}`
+          });
+          clientId = newClient.id;
+          toast.success(`Cliente "${formData.client}" creato automaticamente!`);
+        } catch (error) {
+          console.warn('Errore nella creazione automatica del cliente:', error);
+          // Continue without blocking appointment creation
+        }
+      }
+
       const appointmentData: Appointment = {
         id: appointmentToEdit?.id || generateUUID(),
         employeeId: parseInt(formData.employeeId),
@@ -180,7 +201,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         color: formData.color,
-        serviceType: formData.serviceType
+        serviceType: formData.serviceType,
+        clientId: clientId
       };
 
       if (appointmentToEdit && updateAppointment) {
@@ -367,6 +389,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               <Label htmlFor="email" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <Mail className="h-4 w-4" />
                 Email Cliente
+                {!appointmentToEdit && (
+                  <span className="text-xs text-blue-600 font-normal">(verrà creato un cliente automaticamente)</span>
+                )}
               </Label>
               <Input
                 id="email"
@@ -382,6 +407,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <Phone className="h-4 w-4" />
                 Telefono Cliente
+                {!appointmentToEdit && (
+                  <span className="text-xs text-blue-600 font-normal">(verrà creato un cliente automaticamente)</span>
+                )}
               </Label>
               <Input
                 id="phone"
