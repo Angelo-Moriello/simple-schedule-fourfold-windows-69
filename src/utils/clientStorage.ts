@@ -9,7 +9,7 @@ export const loadClientsFromSupabase = async (): Promise<Client[]> => {
     const { data, error } = await supabase
       .from('clients')
       .select('*')
-      .order('created_at', { ascending: false }); // Ordina per data di creazione più recente
+      .order('created_at', { ascending: false });
     
     if (error) {
       console.error('DEBUG - Errore nel caricamento clienti:', error);
@@ -205,22 +205,26 @@ export const deleteRecurringTreatmentFromSupabase = async (treatmentId: string):
   }
 };
 
-// Get client appointments history
+// Get client appointments history - FIXED to properly show appointments
 export const getClientAppointmentsFromSupabase = async (clientId: string): Promise<Appointment[]> => {
   try {
-    console.log('Caricamento storico appuntamenti cliente da Supabase...');
-    const { data, error } = await supabase
+    console.log('DEBUG - Caricamento storico appuntamenti per cliente:', clientId);
+    
+    // Load appointments by client_id
+    const { data: appointmentsData, error } = await supabase
       .from('appointments')
       .select('*')
       .eq('client_id', clientId)
       .order('date', { ascending: false });
     
     if (error) {
-      console.error('Errore nel caricamento storico appuntamenti:', error);
+      console.error('DEBUG - Errore nel caricamento storico appuntamenti:', error);
       throw error;
     }
     
-    const appointments = data?.map(app => ({
+    console.log('DEBUG - Appuntamenti raw da DB:', appointmentsData);
+    
+    const appointments = appointmentsData?.map(app => ({
       id: app.id,
       employeeId: app.employee_id,
       date: app.date,
@@ -236,10 +240,10 @@ export const getClientAppointmentsFromSupabase = async (clientId: string): Promi
       clientId: app.client_id
     })) || [];
     
-    console.log('Storico appuntamenti caricato:', appointments.length);
+    console.log('DEBUG - Appuntamenti trasformati per cliente', clientId, ':', appointments.length, appointments);
     return appointments;
   } catch (error) {
-    console.error('Errore nel caricare lo storico appuntamenti da Supabase:', error);
+    console.error('DEBUG - Errore nel caricare lo storico appuntamenti da Supabase:', error);
     return [];
   }
 };

@@ -73,7 +73,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     email: '',
     phone: '',
     color: appointmentColors[0].value,
-    serviceType: ''
+    serviceType: '',
+    clientId: '' // Add clientId to formData type
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,7 +110,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         email: appointmentToEdit.email || '',
         phone: appointmentToEdit.phone || '',
         color: appointmentToEdit.color,
-        serviceType: appointmentToEdit.serviceType
+        serviceType: appointmentToEdit.serviceType,
+        clientId: appointmentToEdit.clientId || ''
       });
     } else {
       setFormData({
@@ -122,7 +124,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         email: '',
         phone: '',
         color: appointmentColors[0].value,
-        serviceType: ''
+        serviceType: '',
+        clientId: ''
       });
     }
   }, [appointmentToEdit, employeeId, time, isOpen]);
@@ -131,39 +134,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const availableServices = selectedEmployee && serviceCategories[selectedEmployee.specialization] 
     ? serviceCategories[selectedEmployee.specialization]
     : [];
-
-  // Function to find existing client by name, email or phone
-  const findExistingClient = async (clientName: string, email?: string, phone?: string) => {
-    try {
-      const existingClients = await loadClientsFromSupabase();
-      console.log('DEBUG - Ricerca cliente esistente:', { clientName, email, phone, existingClients: existingClients.length });
-      
-      // Search by name first (exact match)
-      let foundClient = existingClients.find(client => 
-        client.name.toLowerCase().trim() === clientName.toLowerCase().trim()
-      );
-      
-      // If not found by name, try by email
-      if (!foundClient && email && email.trim()) {
-        foundClient = existingClients.find(client => 
-          client.email && client.email.toLowerCase().trim() === email.toLowerCase().trim()
-        );
-      }
-      
-      // If not found by email, try by phone
-      if (!foundClient && phone && phone.trim()) {
-        foundClient = existingClients.find(client => 
-          client.phone && client.phone.trim() === phone.trim()
-        );
-      }
-      
-      console.log('DEBUG - Cliente esistente trovato:', foundClient);
-      return foundClient;
-    } catch (error) {
-      console.error('DEBUG - Errore nella ricerca cliente esistente:', error);
-      return null;
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,7 +165,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         const existingClients = await loadClientsFromSupabase();
         console.log('DEBUG - Clienti esistenti:', existingClients.length);
         
-        // Cerca cliente esistente per nome (email e telefono ora opzionali)
+        // Cerca cliente esistente per nome
         let existingClient = existingClients.find(client => 
           client.name.toLowerCase().trim() === formData.client.toLowerCase().trim()
         );
@@ -247,7 +217,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         phone: formData.phone.trim(),
         color: formData.color,
         serviceType: formData.serviceType,
-        clientId: finalClientId // This will be either a valid UUID string or undefined
+        clientId: finalClientId
       };
 
       console.log('DEBUG - Salvataggio appuntamento:', appointmentData);
