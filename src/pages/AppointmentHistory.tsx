@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { User, Briefcase, ArrowLeft, BarChart3, Calendar, Clock, Mail, Phone, CalendarDays, Scissors } from 'lucide-react';
@@ -21,7 +21,7 @@ const AppointmentHistory = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showStatistics, setShowStatistics] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -61,16 +61,13 @@ const AppointmentHistory = () => {
     loadData();
   }, []);
 
-  // Ottieni tutti i nomi clienti unici per l'omnibox con controlli di sicurezza migliorati
+  // Ottieni tutti i nomi clienti unici per i suggerimenti
   const uniqueClients = useMemo(() => {
     try {
-      // Assicuriamoci che appointments sia sempre un array valido
       if (!Array.isArray(appointments) || appointments.length === 0) {
-        console.log('DEBUG - appointments non è un array valido o è vuoto:', appointments);
         return [];
       }
       
-      // Filtriamo solo appuntamenti validi con client definiti
       const validAppointments = appointments.filter(app => 
         app && 
         typeof app === 'object' && 
@@ -79,22 +76,18 @@ const AppointmentHistory = () => {
         app.client.trim().length > 0
       );
       
-      console.log('DEBUG - Appuntamenti validi filtrati:', validAppointments.length);
-      
       if (validAppointments.length === 0) {
         return [];
       }
       
-      // Creiamo un Set per ottenere nomi unici
-      const clientsSet = new Set();
+      const clientsSet = new Set<string>();
       validAppointments.forEach(app => {
         if (app.client) {
           clientsSet.add(app.client.trim());
         }
       });
       
-      // Convertiamo in array e filtriamo per il termine di ricerca
-      const allUniqueClients = Array.from(clientsSet) as string[];
+      const allUniqueClients = Array.from(clientsSet);
       
       if (!searchTerm || searchTerm.trim().length === 0) {
         return allUniqueClients;
@@ -327,56 +320,42 @@ const AppointmentHistory = () => {
             </div>
           </Card>
 
-          {/* Search Bar - con controlli di sicurezza migliorati */}
+          {/* Simple Search Bar with suggestions */}
           <div className="relative w-full">
-            {Array.isArray(uniqueClients) && uniqueClients.length >= 0 ? (
-              <Command className="rounded-lg border shadow-md bg-white">
-                <CommandInput
-                  placeholder="Cerca per nome cliente..."
-                  value={searchTerm}
-                  onValueChange={setSearchTerm}
-                  onFocus={() => setShowSearch(true)}
-                  onBlur={() => setTimeout(() => setShowSearch(false), 200)}
-                  className="h-12 px-4 text-base"
-                />
-                {showSearch && uniqueClients.length > 0 && (
-                  <CommandList className="max-h-48 border-t">
-                    <CommandGroup>
-                      {uniqueClients.map((client, index) => 
-                        client && typeof client === 'string' ? (
-                          <CommandItem
-                            key={`client-${index}-${client}`}
-                            onSelect={() => {
-                              setSearchTerm(client);
-                              setShowSearch(false);
-                            }}
-                            className="px-4 py-3 cursor-pointer hover:bg-gray-50"
-                          >
-                            <User className="mr-3 h-4 w-4 shrink-0" />
-                            <span className="text-base">{client}</span>
-                          </CommandItem>
-                        ) : null
-                      )}
-                    </CommandGroup>
-                    {uniqueClients.length === 0 && (
-                      <CommandEmpty className="py-6 text-center text-sm text-gray-500">
-                        Nessun cliente trovato
-                      </CommandEmpty>
-                    )}
-                  </CommandList>
+            <Card className="relative">
+              <div className="p-1">
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <User className="h-4 w-4 text-gray-500" />
+                  <Input
+                    placeholder="Cerca per nome cliente..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={() => setShowSearchSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
+                    className="border-0 shadow-none focus-visible:ring-0 text-base"
+                  />
+                </div>
+                
+                {/* Suggestions dropdown */}
+                {showSearchSuggestions && uniqueClients.length > 0 && searchTerm.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                    {uniqueClients.slice(0, 10).map((client, index) => (
+                      <button
+                        key={`suggestion-${index}-${client}`}
+                        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0"
+                        onClick={() => {
+                          setSearchTerm(client);
+                          setShowSearchSuggestions(false);
+                        }}
+                      >
+                        <User className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm">{client}</span>
+                      </button>
+                    ))}
+                  </div>
                 )}
-              </Command>
-            ) : (
-              <div className="rounded-lg border shadow-md bg-white p-4">
-                <input
-                  type="text"
-                  placeholder="Cerca per nome cliente..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-8 w-full px-3 text-base outline-none"
-                />
               </div>
-            )}
+            </Card>
           </div>
         </div>
 
