@@ -9,6 +9,27 @@ interface UseRealtimeSubscriptionsProps {
   forcePageRefresh: () => void;
 }
 
+// Helper function to get client info by ID
+const getClientInfo = async (clientId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('name, email, phone')
+      .eq('id', clientId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Errore nel recupero info cliente:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Errore nel recupero info cliente:', error);
+    return null;
+  }
+};
+
 export const useRealtimeSubscriptions = ({ 
   setAppointments, 
   setEmployees, 
@@ -26,21 +47,37 @@ export const useRealtimeSubscriptions = ({
           schema: 'public',
           table: 'appointments'
         },
-        (payload) => {
+        async (payload) => {
           console.log('DEBUG - Realtime appointment change:', payload);
           
           if (payload.eventType === 'INSERT') {
+            let clientName = payload.new.client;
+            let clientEmail = payload.new.email || '';
+            let clientPhone = payload.new.phone || '';
+            
+            // Se il nome del cliente è vuoto ma abbiamo un client_id, recupera le info dal database
+            if ((!clientName || clientName.trim() === '') && payload.new.client_id) {
+              console.log('DEBUG - Recupero info cliente per realtime INSERT:', payload.new.client_id);
+              const clientInfo = await getClientInfo(payload.new.client_id);
+              if (clientInfo) {
+                clientName = clientInfo.name;
+                clientEmail = clientInfo.email || payload.new.email || '';
+                clientPhone = clientInfo.phone || payload.new.phone || '';
+                console.log('DEBUG - Info cliente recuperate per realtime:', clientInfo);
+              }
+            }
+            
             const newAppointment: Appointment = {
               id: payload.new.id,
               employeeId: payload.new.employee_id,
               date: payload.new.date,
               time: payload.new.time,
               title: payload.new.title || '',
-              client: payload.new.client,
+              client: clientName || '',
               duration: payload.new.duration,
               notes: payload.new.notes || '',
-              email: payload.new.email || '',
-              phone: payload.new.phone || '',
+              email: clientEmail,
+              phone: clientPhone,
               color: payload.new.color,
               serviceType: payload.new.service_type,
               clientId: payload.new.client_id
@@ -61,17 +98,33 @@ export const useRealtimeSubscriptions = ({
               return prev;
             });
           } else if (payload.eventType === 'UPDATE') {
+            let clientName = payload.new.client;
+            let clientEmail = payload.new.email || '';
+            let clientPhone = payload.new.phone || '';
+            
+            // Se il nome del cliente è vuoto ma abbiamo un client_id, recupera le info dal database
+            if ((!clientName || clientName.trim() === '') && payload.new.client_id) {
+              console.log('DEBUG - Recupero info cliente per realtime UPDATE:', payload.new.client_id);
+              const clientInfo = await getClientInfo(payload.new.client_id);
+              if (clientInfo) {
+                clientName = clientInfo.name;
+                clientEmail = clientInfo.email || payload.new.email || '';
+                clientPhone = clientInfo.phone || payload.new.phone || '';
+                console.log('DEBUG - Info cliente recuperate per realtime:', clientInfo);
+              }
+            }
+            
             const updatedAppointment: Appointment = {
               id: payload.new.id,
               employeeId: payload.new.employee_id,
               date: payload.new.date,
               time: payload.new.time,
               title: payload.new.title || '',
-              client: payload.new.client,
+              client: clientName || '',
               duration: payload.new.duration,
               notes: payload.new.notes || '',
-              email: payload.new.email || '',
-              phone: payload.new.phone || '',
+              email: clientEmail,
+              phone: clientPhone,
               color: payload.new.color,
               serviceType: payload.new.service_type,
               clientId: payload.new.client_id

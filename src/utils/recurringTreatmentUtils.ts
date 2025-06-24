@@ -3,6 +3,28 @@ import { format, addWeeks, addMonths, isAfter, isBefore } from 'date-fns';
 import { RecurringTreatment } from '@/types/client';
 import { Appointment } from '@/types/appointment';
 import { addAppointmentToSupabase, loadAppointmentsFromSupabase } from '@/utils/supabaseStorage';
+import { supabase } from '@/integrations/supabase/client';
+
+// Helper function to get client info by ID
+const getClientInfo = async (clientId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('name, email, phone')
+      .eq('id', clientId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Errore nel recupero info cliente per ricorrente:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Errore nel recupero info cliente per ricorrente:', error);
+    return null;
+  }
+};
 
 export const generateRecurringAppointments = async (
   treatment: RecurringTreatment,
@@ -13,6 +35,10 @@ export const generateRecurringAppointments = async (
   
   const generatedAppointments: Appointment[] = [];
   const existingAppointments = await loadAppointmentsFromSupabase();
+  
+  // Recupera le info del cliente
+  const clientInfo = await getClientInfo(treatment.client_id);
+  console.log('DEBUG - Info cliente per appuntamento ricorrente:', clientInfo);
   
   let currentDate = new Date(Math.max(new Date(treatment.start_date).getTime(), startDate.getTime()));
   const treatmentEndDate = treatment.end_date ? new Date(treatment.end_date) : endDate;
@@ -38,16 +64,17 @@ export const generateRecurringAppointments = async (
           date: dateString,
           time: treatment.preferred_time || '09:00',
           title: `${treatment.service_type} (Ricorrente)`,
-          client: '', // Verrà riempito dal nome del cliente
+          client: clientInfo?.name || '', // Usa il nome del cliente dal database
           duration: treatment.duration,
           notes: treatment.notes || 'Appuntamento generato automaticamente',
-          email: '',
-          phone: '',
+          email: clientInfo?.email || '',
+          phone: clientInfo?.phone || '',
           color: '#22c55e', // Verde per trattamenti ricorrenti
           serviceType: treatment.service_type,
           clientId: treatment.client_id
         };
         
+        console.log('DEBUG - Appuntamento ricorrente generato con info cliente:', newAppointment);
         generatedAppointments.push(newAppointment);
       }
     }

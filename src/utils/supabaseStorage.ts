@@ -11,6 +11,48 @@ const generateUUID = () => {
   });
 };
 
+// Helper function to find client by ID and get full client info
+const getClientInfo = async (clientId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('name, email, phone')
+      .eq('id', clientId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Errore nel recupero info cliente:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Errore nel recupero info cliente:', error);
+    return null;
+  }
+};
+
+// Helper function to find client ID by name
+const findClientIdByName = async (clientName: string): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id')
+      .ilike('name', clientName.trim())
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Errore nella ricerca cliente:', error);
+      return null;
+    }
+    
+    return data?.id || null;
+  } catch (error) {
+    console.error('Errore nella ricerca cliente:', error);
+    return null;
+  }
+};
+
 // Employee operations
 export const saveEmployeesToSupabase = async (employees: Employee[]) => {
   try {
@@ -137,27 +179,6 @@ export const deleteEmployeeFromSupabase = async (employeeId: number) => {
   }
 };
 
-// Helper function to find client ID by name
-const findClientIdByName = async (clientName: string): Promise<string | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('clients')
-      .select('id')
-      .ilike('name', clientName.trim())
-      .maybeSingle();
-    
-    if (error) {
-      console.error('Errore nella ricerca cliente:', error);
-      return null;
-    }
-    
-    return data?.id || null;
-  } catch (error) {
-    console.error('Errore nella ricerca cliente:', error);
-    return null;
-  }
-};
-
 // Appointment operations
 export const saveAppointmentsToSupabase = async (appointments: Appointment[]) => {
   try {
@@ -224,21 +245,39 @@ export const loadAppointmentsFromSupabase = async (): Promise<Appointment[]> => 
       throw error;
     }
     
-    const appointments = data?.map(app => ({
-      id: app.id,
-      employeeId: app.employee_id,
-      date: app.date,
-      time: app.time,
-      title: app.title || '',
-      client: app.client,
-      duration: app.duration,
-      notes: app.notes || '',
-      email: app.email || '',
-      phone: app.phone || '',
-      color: app.color,
-      serviceType: app.service_type,
-      clientId: app.client_id
-    })) || [];
+    const appointments = await Promise.all((data || []).map(async (app) => {
+      let clientName = app.client;
+      let clientEmail = app.email || '';
+      let clientPhone = app.phone || '';
+      
+      // Se il nome del cliente è vuoto ma abbiamo un client_id, recupera le info dal database
+      if ((!clientName || clientName.trim() === '') && app.client_id) {
+        console.log('DEBUG - Recupero info cliente per ID:', app.client_id);
+        const clientInfo = await getClientInfo(app.client_id);
+        if (clientInfo) {
+          clientName = clientInfo.name;
+          clientEmail = clientInfo.email || app.email || '';
+          clientPhone = clientInfo.phone || app.phone || '';
+          console.log('DEBUG - Info cliente recuperate:', clientInfo);
+        }
+      }
+      
+      return {
+        id: app.id,
+        employeeId: app.employee_id,
+        date: app.date,
+        time: app.time,
+        title: app.title || '',
+        client: clientName || '',
+        duration: app.duration,
+        notes: app.notes || '',
+        email: clientEmail,
+        phone: clientPhone,
+        color: app.color,
+        serviceType: app.service_type,
+        clientId: app.client_id
+      };
+    }));
     
     console.log('Appuntamenti caricati:', appointments);
     return appointments;
