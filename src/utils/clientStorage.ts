@@ -110,8 +110,14 @@ export const loadRecurringTreatmentsFromSupabase = async (clientId?: string): Pr
       throw error;
     }
     
-    console.log('Trattamenti ricorrenti caricati:', data?.length || 0);
-    return data || [];
+    // Cast frequency_type to the correct type
+    const treatments = data?.map(treatment => ({
+      ...treatment,
+      frequency_type: treatment.frequency_type as 'weekly' | 'monthly'
+    })) || [];
+    
+    console.log('Trattamenti ricorrenti caricati:', treatments.length);
+    return treatments;
   } catch (error) {
     console.error('Errore nel caricare i trattamenti ricorrenti da Supabase:', error);
     return [];
@@ -132,8 +138,14 @@ export const addRecurringTreatmentToSupabase = async (treatment: Omit<RecurringT
       throw error;
     }
     
-    console.log('Trattamento ricorrente aggiunto con successo:', data);
-    return data;
+    // Cast frequency_type to the correct type
+    const result = {
+      ...data,
+      frequency_type: data.frequency_type as 'weekly' | 'monthly'
+    };
+    
+    console.log('Trattamento ricorrente aggiunto con successo:', result);
+    return result;
   } catch (error) {
     console.error('Errore nell\'aggiungere trattamento ricorrente su Supabase:', error);
     throw error;
@@ -221,7 +233,8 @@ export const getClientAppointmentsFromSupabase = async (clientId: string): Promi
       email: app.email || '',
       phone: app.phone || '',
       color: app.color,
-      serviceType: app.service_type
+      serviceType: app.service_type,
+      clientId: app.client_id
     })) || [];
     
     console.log('Storico appuntamenti caricato:', appointments.length);

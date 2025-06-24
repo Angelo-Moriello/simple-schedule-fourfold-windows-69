@@ -20,6 +20,7 @@ interface AppointmentSchedulerControlsProps {
   onNavigateToHistory: () => void;
   onNavigateToStatistics: () => void;
   onOpenClientManager?: () => void;
+  appointments?: any[];
 }
 
 const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> = ({
@@ -32,7 +33,8 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
   onUpdateEmployeeVacations,
   onNavigateToHistory,
   onNavigateToStatistics,
-  onOpenClientManager
+  onOpenClientManager,
+  appointments = []
 }) => {
   const previousDay = () => {
     onDateSelect(subDays(selectedDate, 1));
@@ -78,7 +80,9 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
         <div className="flex flex-wrap gap-2">
           <DateNavigator
             selectedDate={selectedDate}
+            showFullCalendar={showFullCalendar}
             onDateSelect={onDateSelect}
+            onShowFullCalendar={onShowFullCalendar}
           />
           
           <Button
@@ -137,9 +141,14 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
 
       {showFullCalendar && (
         <FullCalendar
-          selectedDate={selectedDate}
-          onDateSelect={onDateSelect}
+          isOpen={showFullCalendar}
           onClose={() => onShowFullCalendar(false)}
+          appointments={appointments}
+          employees={employees}
+          onDateSelect={(date) => {
+            onDateSelect(date);
+            onShowFullCalendar(false);
+          }}
         />
       )}
     </div>
