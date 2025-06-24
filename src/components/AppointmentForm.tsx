@@ -74,7 +74,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const timeSlots = generateTimeSlots();
 
   // Load stored services from localStorage
@@ -95,18 +94,16 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   const serviceCategories = getStoredServices();
 
-  // Effetto separato per determinare se siamo in modalità editing
+  // Unico useEffect per gestire l'apertura/chiusura del dialog
   useEffect(() => {
-    console.log('DEBUG - Setting editing mode:', !!appointmentToEdit);
-    setIsEditing(!!appointmentToEdit);
-  }, [appointmentToEdit]);
-
-  // Effetto per inizializzare il form quando si apre il dialog
-  useEffect(() => {
+    console.log('DEBUG - Dialog state changed:', { isOpen, appointmentToEdit: !!appointmentToEdit });
+    
     if (isOpen) {
-      console.log('DEBUG - Dialog opened, editing mode:', isEditing);
+      // Determina immediatamente se stiamo modificando o creando
+      const isEditing = !!appointmentToEdit;
+      console.log('DEBUG - Is editing determined:', isEditing);
       
-      if (isEditing && appointmentToEdit) {
+      if (isEditing) {
         console.log('DEBUG - Loading edit data:', appointmentToEdit);
         
         const editFormData = {
@@ -125,7 +122,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         
         console.log('DEBUG - Setting edit form data:', editFormData);
         setFormData(editFormData);
-      } else if (!isEditing) {
+      } else {
         console.log('DEBUG - Loading new appointment data');
         const newFormData = {
           employeeId: employeeId?.toString() || '',
@@ -144,12 +141,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         console.log('DEBUG - Setting new form data:', newFormData);
         setFormData(newFormData);
       }
-    }
-  }, [isOpen, isEditing]); // Solo quando il dialog si apre o cambia modalità
-
-  // Effetto separato per il reset quando si chiude il dialog
-  useEffect(() => {
-    if (!isOpen) {
+    } else {
+      // Reset form quando il dialog si chiude
       console.log('DEBUG - Dialog closed, resetting form');
       setFormData({
         employeeId: '',
@@ -164,9 +157,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         serviceType: '',
         clientId: ''
       });
-      setIsEditing(false);
     }
-  }, [isOpen]);
+  }, [isOpen, appointmentToEdit, employeeId, time]);
 
   // Debug: mostra quando formData cambia
   useEffect(() => {
