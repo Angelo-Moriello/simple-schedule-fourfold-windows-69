@@ -9,9 +9,7 @@ import { it } from 'date-fns/locale';
 
 interface DateNavigatorProps {
   selectedDate: Date;
-  showFullCalendar: boolean;
   onDateSelect: (date: Date | undefined) => void;
-  onShowFullCalendar: (show: boolean) => void;
 }
 
 const DateNavigator: React.FC<DateNavigatorProps> = ({
