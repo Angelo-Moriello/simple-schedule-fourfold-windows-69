@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,7 +10,7 @@ import { Appointment, Employee, ServiceCategory } from '@/types/appointment';
 import { Calendar, Clock, User, Mail, Phone, Palette, FileText, Scissors } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { addClientToSupabase } from '@/utils/clientStorage';
+import { addClientToSupabase, loadClientsFromSupabase } from '@/utils/clientStorage';
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -132,6 +133,39 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     ? serviceCategories[selectedEmployee.specialization]
     : [];
 
+  // Function to find existing client by name, email or phone
+  const findExistingClient = async (clientName: string, email?: string, phone?: string) => {
+    try {
+      const existingClients = await loadClientsFromSupabase();
+      console.log('DEBUG - Ricerca cliente esistente:', { clientName, email, phone, existingClients: existingClients.length });
+      
+      // Search by name first (exact match)
+      let foundClient = existingClients.find(client => 
+        client.name.toLowerCase().trim() === clientName.toLowerCase().trim()
+      );
+      
+      // If not found by name, try by email
+      if (!foundClient && email && email.trim()) {
+        foundClient = existingClients.find(client => 
+          client.email && client.email.toLowerCase().trim() === email.toLowerCase().trim()
+        );
+      }
+      
+      // If not found by email, try by phone
+      if (!foundClient && phone && phone.trim()) {
+        foundClient = existingClients.find(client => 
+          client.phone && client.phone.trim() === phone.trim()
+        );
+      }
+      
+      console.log('DEBUG - Cliente esistente trovato:', foundClient);
+      return foundClient;
+    } catch (error) {
+      console.error('DEBUG - Errore nella ricerca cliente esistente:', error);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -169,36 +203,56 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      let clientId = appointmentToEdit?.clientId;
+      let clientId: string | undefined = appointmentToEdit?.clientId;
 
-      // Create client automatically if we have client data and it's a new appointment
+      // Handle client creation/lookup for new appointments
       if (!appointmentToEdit && formData.client.trim()) {
-        // Always try to create a client if we have name and at least email or phone
-        if (formData.email.trim() || formData.phone.trim()) {
-          try {
-            console.log('DEBUG - Creazione automatica cliente:', {
-              name: formData.client.trim(),
-              email: formData.email.trim(),
-              phone: formData.phone.trim()
-            });
-            
-            const newClient = await addClientToSupabase({
-              name: formData.client.trim(),
-              email: formData.email.trim() || undefined,
-              phone: formData.phone.trim() || undefined,
-              notes: `Cliente creato automaticamente durante appuntamento del ${format(date, 'dd/MM/yyyy')}`
-            });
-            
-            clientId = newClient.id;
-            console.log('DEBUG - Cliente creato con successo:', newClient);
-            toast.success(`Cliente "${formData.client}" creato automaticamente!`);
-          } catch (error) {
-            console.error('DEBUG - Errore nella creazione automatica del cliente:', error);
-            toast.error('Errore nella creazione automatica del cliente, ma l\'appuntamento sarà comunque salvato');
-            // Continue without blocking appointment creation
-          }
+        console.log('DEBUG - Gestione cliente per nuovo appuntamento');
+        
+        // First, try to find existing client
+        const existingClient = await findExistingClient(
+          formData.client.trim(),
+          formData.email.trim() || undefined,
+          formData.phone.trim() || undefined
+        );
+        
+        if (existingClient) {
+          console.log('DEBUG - Cliente esistente trovato, uso quello:', existingClient);
+          clientId = existingClient.id;
+          toast.success(`Cliente "${existingClient.name}" collegato all'appuntamento!`);
         } else {
-          console.log('DEBUG - Nessun email/telefono fornito, salto creazione automatica cliente');
+          // Create new client only if we have at least name and (email OR phone)
+          // Or if user explicitly provided email/phone, create the client
+          const shouldCreateClient = formData.email.trim() || formData.phone.trim();
+          
+          if (shouldCreateClient) {
+            try {
+              console.log('DEBUG - Creazione nuovo cliente:', {
+                name: formData.client.trim(),
+                email: formData.email.trim() || undefined,
+                phone: formData.phone.trim() || undefined
+              });
+              
+              const newClient = await addClientToSupabase({
+                name: formData.client.trim(),
+                email: formData.email.trim() || undefined,
+                phone: formData.phone.trim() || undefined,
+                notes: `Cliente creato automaticamente durante appuntamento del ${format(date, 'dd/MM/yyyy')}`
+              });
+              
+              clientId = newClient.id;
+              console.log('DEBUG - Nuovo cliente creato con successo:', newClient);
+              toast.success(`Cliente "${formData.client}" creato e collegato all'appuntamento!`);
+            } catch (error) {
+              console.error('DEBUG - Errore nella creazione del cliente:', error);
+              toast.error('Errore nella creazione del cliente, ma l\'appuntamento sarà comunque salvato');
+              // Continue without blocking appointment creation
+              clientId = undefined;
+            }
+          } else {
+            console.log('DEBUG - Nessun email/telefono fornito, appuntamento salvato senza collegamento cliente');
+            clientId = undefined;
+          }
         }
       }
 
@@ -215,7 +269,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         phone: formData.phone.trim(),
         color: formData.color,
         serviceType: formData.serviceType,
-        clientId: clientId
+        clientId: clientId // This will be either a valid UUID string or undefined
       };
 
       console.log('DEBUG - Salvataggio appuntamento:', appointmentData);
@@ -405,7 +459,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 <Mail className="h-4 w-4" />
                 Email Cliente
                 {!appointmentToEdit && (
-                  <span className="text-xs text-blue-600 font-normal">(verrà creato un cliente automaticamente)</span>
+                  <span className="text-xs text-blue-600 font-normal">(collegherà il cliente esistente o ne creerà uno nuovo)</span>
                 )}
               </Label>
               <Input
@@ -423,7 +477,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 <Phone className="h-4 w-4" />
                 Telefono Cliente
                 {!appointmentToEdit && (
-                  <span className="text-xs text-blue-600 font-normal">(verrà creato un cliente automaticamente)</span>
+                  <span className="text-xs text-blue-600 font-normal">(collegherà il cliente esistente o ne creerà uno nuovo)</span>
                 )}
               </Label>
               <Input
