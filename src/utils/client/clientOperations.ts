@@ -1,0 +1,92 @@
+
+import { supabase } from '@/integrations/supabase/client';
+import { Client } from '@/types/client';
+
+export const loadClientsFromSupabase = async (): Promise<Client[]> => {
+  try {
+    console.log('DEBUG - Caricamento clienti da Supabase...');
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('DEBUG - Errore nel caricamento clienti:', error);
+      throw error;
+    }
+    
+    console.log('DEBUG - Clienti caricati da DB:', data?.length || 0, data);
+    return data || [];
+  } catch (error) {
+    console.error('DEBUG - Errore nel caricare i clienti da Supabase:', error);
+    return [];
+  }
+};
+
+export const addClientToSupabase = async (client: Omit<Client, 'id' | 'created_at' | 'updated_at'>): Promise<Client> => {
+  try {
+    console.log('DEBUG - Aggiunta cliente a Supabase:', client);
+    const { data, error } = await supabase
+      .from('clients')
+      .insert(client)
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('DEBUG - Errore nell\'aggiunta cliente:', error);
+      throw error;
+    }
+    
+    console.log('DEBUG - Cliente aggiunto con successo:', data);
+    return data;
+  } catch (error) {
+    console.error('DEBUG - Errore nell\'aggiungere cliente su Supabase:', error);
+    throw error;
+  }
+};
+
+export const updateClientInSupabase = async (client: Client): Promise<void> => {
+  try {
+    console.log('Aggiornamento cliente su Supabase:', client);
+    const { error } = await supabase
+      .from('clients')
+      .update({
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        notes: client.notes,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', client.id);
+      
+    if (error) {
+      console.error('Errore nell\'aggiornamento cliente:', error);
+      throw error;
+    }
+    
+    console.log('Cliente aggiornato con successo');
+  } catch (error) {
+    console.error('Errore nell\'aggiornare cliente su Supabase:', error);
+    throw error;
+  }
+};
+
+export const deleteClientFromSupabase = async (clientId: string): Promise<void> => {
+  try {
+    console.log('Eliminazione cliente da Supabase:', clientId);
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', clientId);
+      
+    if (error) {
+      console.error('Errore nell\'eliminazione cliente:', error);
+      throw error;
+    }
+    
+    console.log('Cliente eliminato con successo');
+  } catch (error) {
+    console.error('Errore nell\'eliminare cliente da Supabase:', error);
+    throw error;
+  }
+};

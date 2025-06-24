@@ -1,12 +1,10 @@
+
 import React, { useCallback, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { Employee, Appointment } from '@/types/appointment';
-import TimeSlot from './TimeSlot';
-import EmployeeNameEditor from './EmployeeNameEditor';
 import { useIsMobile } from '@/hooks/use-mobile';
+import EmployeeMobileCard from './employee-grid/EmployeeMobileCard';
+import EmployeeDesktopCard from './employee-grid/EmployeeDesktopCard';
 
 interface EmployeeTimeSlotGridProps {
   employees: Employee[];
@@ -106,7 +104,6 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
     return exactAppointment;
   }, [appointments, selectedDate]);
 
-  // Calcola il numero di appuntamenti per dipendente
   const getEmployeeAppointmentCount = (employeeId: number) => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     return appointments.filter(apt => 
@@ -122,83 +119,23 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
           const isOpen = openEmployees[employee.id] || false;
           
           return (
-            <Collapsible
+            <EmployeeMobileCard
               key={employee.id}
-              open={isOpen}
-              onOpenChange={() => toggleEmployee(employee.id)}
-            >
-              <Card className="bg-white rounded-lg shadow-md overflow-hidden">
-                <CollapsibleTrigger className="w-full">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div 
-                          className="w-4 h-4 rounded-full border-2"
-                          style={{ 
-                            backgroundColor: employee.color + '40',
-                            borderColor: employee.color 
-                          }}
-                        />
-                        <div className="text-left">
-                          <h3 className="font-semibold text-gray-900">{employee.name}</h3>
-                          <p className="text-sm text-gray-600">{employee.specialization}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-gray-900">
-                            {appointmentCount} appuntament{appointmentCount !== 1 ? 'i' : 'o'}
-                          </p>
-                          <p className="text-xs text-gray-500">oggi</p>
-                        </div>
-                        {isOpen ? (
-                          <ChevronUp className="h-5 w-5 text-gray-500" />
-                        ) : (
-                          <ChevronDown className="h-5 w-5 text-gray-500" />
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent>
-                  <CardContent className="px-4 pb-4 pt-0">
-                    <div className="border-t border-gray-200 pt-4">
-                      <div className="mb-4">
-                        <EmployeeNameEditor
-                          employee={employee}
-                          onUpdateName={onUpdateEmployeeName}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-2">
-                        {timeSlots.map(time => {
-                          const directAppointment = getEmployeeAppointmentsForTimeSlot(employee.id, time);
-                          const occupationInfo = getSlotOccupationInfo(employee.id, time);
-                          const vacation = isVacationDay(employee.id, selectedDate);
-
-                          return (
-                            <TimeSlot
-                              key={`${employee.id}-${time}`}
-                              time={time}
-                              appointment={occupationInfo.isDirectMatch ? occupationInfo.occupiedBy : directAppointment}
-                              employee={employee}
-                              onAddAppointment={onAddAppointment}
-                              onEditAppointment={onEditAppointment}
-                              onDeleteAppointment={onDeleteAppointment}
-                              isVacationDay={vacation}
-                              isOccupied={occupationInfo.isOccupied}
-                              occupiedBy={occupationInfo.occupiedBy}
-                              isPartiallyOccupied={occupationInfo.isPartiallyOccupied}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
+              employee={employee}
+              appointmentCount={appointmentCount}
+              isOpen={isOpen}
+              onToggle={() => toggleEmployee(employee.id)}
+              timeSlots={timeSlots}
+              appointments={appointments}
+              selectedDate={selectedDate}
+              onAddAppointment={onAddAppointment}
+              onEditAppointment={onEditAppointment}
+              onDeleteAppointment={onDeleteAppointment}
+              onUpdateEmployeeName={onUpdateEmployeeName}
+              getEmployeeAppointmentsForTimeSlot={getEmployeeAppointmentsForTimeSlot}
+              getSlotOccupationInfo={getSlotOccupationInfo}
+              isVacationDay={isVacationDay}
+            />
           );
         })}
       </div>
@@ -208,40 +145,20 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {employees.map(employee => (
-        <Card key={employee.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex flex-col gap-4 mb-4">
-              <EmployeeNameEditor
-                employee={employee}
-                onUpdateName={onUpdateEmployeeName}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              {timeSlots.map(time => {
-                const directAppointment = getEmployeeAppointmentsForTimeSlot(employee.id, time);
-                const occupationInfo = getSlotOccupationInfo(employee.id, time);
-                const vacation = isVacationDay(employee.id, selectedDate);
-
-                return (
-                  <TimeSlot
-                    key={`${employee.id}-${time}`}
-                    time={time}
-                    appointment={occupationInfo.isDirectMatch ? occupationInfo.occupiedBy : directAppointment}
-                    employee={employee}
-                    onAddAppointment={onAddAppointment}
-                    onEditAppointment={onEditAppointment}
-                    onDeleteAppointment={onDeleteAppointment}
-                    isVacationDay={vacation}
-                    isOccupied={occupationInfo.isOccupied}
-                    occupiedBy={occupationInfo.occupiedBy}
-                    isPartiallyOccupied={occupationInfo.isPartiallyOccupied}
-                  />
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        <EmployeeDesktopCard
+          key={employee.id}
+          employee={employee}
+          timeSlots={timeSlots}
+          appointments={appointments}
+          selectedDate={selectedDate}
+          onAddAppointment={onAddAppointment}
+          onEditAppointment={onEditAppointment}
+          onDeleteAppointment={onDeleteAppointment}
+          onUpdateEmployeeName={onUpdateEmployeeName}
+          getEmployeeAppointmentsForTimeSlot={getEmployeeAppointmentsForTimeSlot}
+          getSlotOccupationInfo={getSlotOccupationInfo}
+          isVacationDay={isVacationDay}
+        />
       ))}
     </div>
   );
