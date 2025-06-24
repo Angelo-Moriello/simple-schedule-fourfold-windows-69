@@ -45,8 +45,8 @@ const AppointmentHistory = () => {
         console.log('Storico - Appuntamenti caricati:', loadedAppointments);
         console.log('Storico - Dipendenti caricati:', loadedEmployees);
         
-        setAppointments(loadedAppointments || []);
-        setEmployees(loadedEmployees || []);
+        setAppointments(Array.isArray(loadedAppointments) ? loadedAppointments : []);
+        setEmployees(Array.isArray(loadedEmployees) ? loadedEmployees : []);
         
       } catch (error) {
         console.error('Errore nel caricamento storico:', error);
@@ -61,20 +61,52 @@ const AppointmentHistory = () => {
     loadData();
   }, []);
 
-  // Ottieni tutti i nomi clienti unici per l'omnibox con controlli di sicurezza
+  // Ottieni tutti i nomi clienti unici per l'omnibox con controlli di sicurezza migliorati
   const uniqueClients = useMemo(() => {
-    if (!appointments || !Array.isArray(appointments) || appointments.length === 0) {
-      return [];
-    }
-    
     try {
-      const clients = new Set(appointments
-        .filter(app => app && app.client && typeof app.client === 'string') // Filtriamo appuntamenti validi
-        .map(app => app.client)
+      // Assicuriamoci che appointments sia sempre un array valido
+      if (!Array.isArray(appointments) || appointments.length === 0) {
+        console.log('DEBUG - appointments non è un array valido o è vuoto:', appointments);
+        return [];
+      }
+      
+      // Filtriamo solo appuntamenti validi con client definiti
+      const validAppointments = appointments.filter(app => 
+        app && 
+        typeof app === 'object' && 
+        app.client && 
+        typeof app.client === 'string' && 
+        app.client.trim().length > 0
       );
-      return Array.from(clients).filter(client => 
-        client && typeof client === 'string' && client.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      console.log('DEBUG - Appuntamenti validi filtrati:', validAppointments.length);
+      
+      if (validAppointments.length === 0) {
+        return [];
+      }
+      
+      // Creiamo un Set per ottenere nomi unici
+      const clientsSet = new Set();
+      validAppointments.forEach(app => {
+        if (app.client) {
+          clientsSet.add(app.client.trim());
+        }
+      });
+      
+      // Convertiamo in array e filtriamo per il termine di ricerca
+      const allUniqueClients = Array.from(clientsSet) as string[];
+      
+      if (!searchTerm || searchTerm.trim().length === 0) {
+        return allUniqueClients;
+      }
+      
+      const searchTermLower = searchTerm.toLowerCase().trim();
+      return allUniqueClients.filter(client => 
+        client && 
+        typeof client === 'string' && 
+        client.toLowerCase().includes(searchTermLower)
       );
+      
     } catch (error) {
       console.error('Errore nella generazione dei clienti unici:', error);
       return [];
@@ -83,11 +115,11 @@ const AppointmentHistory = () => {
 
   // Enhanced filtering with date filter con controlli di sicurezza
   const filteredAppointments = useMemo(() => {
-    if (!appointments || !Array.isArray(appointments) || appointments.length === 0) {
-      return [];
-    }
-
     try {
+      if (!Array.isArray(appointments) || appointments.length === 0) {
+        return [];
+      }
+
       let dateFilteredAppointments = [...appointments];
 
       // Apply date filter
@@ -110,6 +142,10 @@ const AppointmentHistory = () => {
           case 'month':
             startDate = startOfMonth(today);
             endDate = endOfMonth(today);
+            break;
+          case 'year':
+            startDate = new Date(today.getFullYear(), 0, 1);
+            endDate = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
             break;
           case 'custom':
             if (customStartDate && customEndDate) {
@@ -139,12 +175,13 @@ const AppointmentHistory = () => {
       }
 
       // Apply search filter
+      const searchTermLower = searchTerm.toLowerCase().trim();
       return dateFilteredAppointments
         .filter(appointment => 
           appointment && 
           appointment.client && 
           typeof appointment.client === 'string' &&
-          appointment.client.toLowerCase().includes(searchTerm.toLowerCase())
+          (searchTermLower === '' || appointment.client.toLowerCase().includes(searchTermLower))
         )
         .sort((a, b) => {
           try {
@@ -164,10 +201,10 @@ const AppointmentHistory = () => {
   }, [appointments, searchTerm, dateFilter, customStartDate, customEndDate]);
 
   const getEmployeeName = (employeeId: number) => {
-    if (!employees || !Array.isArray(employees) || employees.length === 0) {
-      return 'Dipendente non trovato';
-    }
     try {
+      if (!Array.isArray(employees) || employees.length === 0) {
+        return 'Dipendente non trovato';
+      }
       const employee = employees.find(emp => emp && emp.id === employeeId);
       return employee ? employee.name : 'Dipendente non trovato';
     } catch (error) {
@@ -177,10 +214,10 @@ const AppointmentHistory = () => {
   };
 
   const getEmployeeSpecialization = (employeeId: number) => {
-    if (!employees || !Array.isArray(employees) || employees.length === 0) {
-      return '';
-    }
     try {
+      if (!Array.isArray(employees) || employees.length === 0) {
+        return '';
+      }
       const employee = employees.find(emp => emp && emp.id === employeeId);
       return employee ? employee.specialization : '';
     } catch (error) {
@@ -296,38 +333,50 @@ const AppointmentHistory = () => {
 
           {/* Search Bar - con controlli di sicurezza migliorati */}
           <div className="relative w-full">
-            <Command className="rounded-lg border shadow-md bg-white">
-              <CommandInput
-                placeholder="Cerca per nome cliente..."
-                value={searchTerm}
-                onValueChange={setSearchTerm}
-                onFocus={() => setShowSearch(true)}
-                onBlur={() => setTimeout(() => setShowSearch(false), 200)}
-                className="h-12 px-4 text-base"
-              />
-              {showSearch && uniqueClients && uniqueClients.length > 0 && (
-                <CommandList className="max-h-48 border-t">
-                  <CommandGroup>
-                    {uniqueClients.map((client) => (
-                      <CommandItem
-                        key={client}
-                        onSelect={() => {
-                          setSearchTerm(client);
-                          setShowSearch(false);
-                        }}
-                        className="px-4 py-3 cursor-pointer hover:bg-gray-50"
-                      >
-                        <User className="mr-3 h-4 w-4 shrink-0" />
-                        <span className="text-base">{client}</span>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                  <CommandEmpty className="py-6 text-center text-sm text-gray-500">
-                    Nessun cliente trovato
-                  </CommandEmpty>
-                </CommandList>
-              )}
-            </Command>
+            {Array.isArray(uniqueClients) ? (
+              <Command className="rounded-lg border shadow-md bg-white">
+                <CommandInput
+                  placeholder="Cerca per nome cliente..."
+                  value={searchTerm}
+                  onValueChange={setSearchTerm}
+                  onFocus={() => setShowSearch(true)}
+                  onBlur={() => setTimeout(() => setShowSearch(false), 200)}
+                  className="h-12 px-4 text-base"
+                />
+                {showSearch && uniqueClients.length > 0 && (
+                  <CommandList className="max-h-48 border-t">
+                    <CommandGroup>
+                      {uniqueClients.map((client, index) => (
+                        <CommandItem
+                          key={`client-${index}-${client}`}
+                          onSelect={() => {
+                            setSearchTerm(client);
+                            setShowSearch(false);
+                          }}
+                          className="px-4 py-3 cursor-pointer hover:bg-gray-50"
+                        >
+                          <User className="mr-3 h-4 w-4 shrink-0" />
+                          <span className="text-base">{client}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    <CommandEmpty className="py-6 text-center text-sm text-gray-500">
+                      Nessun cliente trovato
+                    </CommandEmpty>
+                  </CommandList>
+                )}
+              </Command>
+            ) : (
+              <div className="rounded-lg border shadow-md bg-white p-4">
+                <input
+                  type="text"
+                  placeholder="Cerca per nome cliente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-8 w-full px-3 text-base outline-none"
+                />
+              </div>
+            )}
           </div>
         </div>
 
