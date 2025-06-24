@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,9 +37,13 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log('DEBUG - TimeSlot edit click:', { appointment, occupiedBy });
+    
     if (appointment) {
+      console.log('DEBUG - Editing appointment:', appointment);
       onEditAppointment(appointment);
     } else if (occupiedBy) {
+      console.log('DEBUG - Editing occupied appointment:', occupiedBy);
       onEditAppointment(occupiedBy);
     }
   };
@@ -169,6 +172,15 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 
     const backgroundColor = getBackgroundColorFromClass(appointment.color);
     const borderColor = getBorderColorFromClass(appointment.color);
+
+    console.log('DEBUG - Rendering appointment slot:', {
+      id: appointment.id,
+      client: appointment.client,
+      email: appointment.email,
+      phone: appointment.phone,
+      serviceType: appointment.serviceType,
+      clientId: appointment.clientId
+    });
 
     return (
       <div 

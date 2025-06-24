@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -101,38 +102,50 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       isOpen
     });
 
-    if (appointmentToEdit) {
-      console.log('DEBUG - Caricamento dati appuntamento da modificare:', appointmentToEdit);
-      setFormData({
-        employeeId: appointmentToEdit.employeeId?.toString() || '',
-        time: appointmentToEdit.time || '',
-        title: appointmentToEdit.title || '',
-        client: appointmentToEdit.client || '',
-        duration: appointmentToEdit.duration?.toString() || '30',
-        notes: appointmentToEdit.notes || '',
-        email: appointmentToEdit.email || '',
-        phone: appointmentToEdit.phone || '',
-        color: appointmentToEdit.color || appointmentColors[0].value,
-        serviceType: appointmentToEdit.serviceType || '',
-        clientId: appointmentToEdit.clientId || ''
-      });
-    } else {
-      console.log('DEBUG - Inizializzazione form nuovo appuntamento');
-      setFormData({
-        employeeId: employeeId?.toString() || '',
-        time: time || '',
-        title: '',
-        client: '',
-        duration: '30',
-        notes: '',
-        email: '',
-        phone: '',
-        color: appointmentColors[0].value,
-        serviceType: '',
-        clientId: ''
-      });
+    if (isOpen) {
+      if (appointmentToEdit) {
+        console.log('DEBUG - Caricamento dati appuntamento da modificare:', appointmentToEdit);
+        
+        // Assicuriamoci che tutti i campi siano popolati correttamente
+        const newFormData = {
+          employeeId: appointmentToEdit.employeeId?.toString() || '',
+          time: appointmentToEdit.time || '',
+          title: appointmentToEdit.title || '',
+          client: appointmentToEdit.client || '',
+          duration: appointmentToEdit.duration?.toString() || '30',
+          notes: appointmentToEdit.notes || '',
+          email: appointmentToEdit.email || '',
+          phone: appointmentToEdit.phone || '',
+          color: appointmentToEdit.color || appointmentColors[0].value,
+          serviceType: appointmentToEdit.serviceType || '',
+          clientId: appointmentToEdit.clientId || ''
+        };
+        
+        console.log('DEBUG - Form data caricato per modifica:', newFormData);
+        setFormData(newFormData);
+      } else {
+        console.log('DEBUG - Inizializzazione form nuovo appuntamento');
+        setFormData({
+          employeeId: employeeId?.toString() || '',
+          time: time || '',
+          title: '',
+          client: '',
+          duration: '30',
+          notes: '',
+          email: '',
+          phone: '',
+          color: appointmentColors[0].value,
+          serviceType: '',
+          clientId: ''
+        });
+      }
     }
   }, [appointmentToEdit, employeeId, time, isOpen]);
+
+  // Debug: mostra quando formData cambia
+  useEffect(() => {
+    console.log('DEBUG - FormData aggiornato:', formData);
+  }, [formData]);
 
   const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
   const availableServices = selectedEmployee && serviceCategories[selectedEmployee.specialization] 
@@ -141,6 +154,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('DEBUG - Submit con formData:', formData);
     
     if (!formData.client.trim()) {
       toast.error('Il nome del cliente è obbligatorio');
@@ -157,7 +172,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       
       let finalClientId = formData.clientId;
       
-      if (!finalClientId) {
+      // Solo se non stiamo modificando un appuntamento esistente e non abbiamo già un clientId
+      if (!appointmentToEdit && !finalClientId) {
         console.log('DEBUG - Tentativo di trovare o creare cliente:', {
           name: formData.client,
           email: formData.email,
