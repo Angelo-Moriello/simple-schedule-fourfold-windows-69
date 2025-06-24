@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -19,6 +20,7 @@ import AppointmentSchedulerControls from './AppointmentSchedulerControls';
 import EmployeeTimeSlotGrid from './EmployeeTimeSlotGrid';
 import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
+import ClientManager from './ClientManager';
 
 const AppointmentScheduler = () => {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ const AppointmentScheduler = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
   const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
+  const [isClientManagerOpen, setIsClientManagerOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
@@ -375,6 +378,14 @@ const AppointmentScheduler = () => {
     setIsEmployeeFormOpen(false);
   };
 
+  const handleOpenClientManager = () => {
+    setIsClientManagerOpen(true);
+  };
+
+  const handleCloseClientManager = () => {
+    setIsClientManagerOpen(false);
+  };
+
   const updateEmployeeName = async (employeeId: number, newName: string) => {
     try {
       const employee = employees.find(emp => emp.id === employeeId);
@@ -442,6 +453,7 @@ const AppointmentScheduler = () => {
           onUpdateEmployeeVacations={handleUpdateEmployeeVacations}
           onNavigateToHistory={handleNavigateToHistory}
           onNavigateToStatistics={handleNavigateToStatistics}
+          onOpenClientManager={handleOpenClientManager}
         />
 
         <EmployeeTimeSlotGrid
@@ -472,6 +484,11 @@ const AppointmentScheduler = () => {
           addEmployee={addEmployee}
           updateEmployee={updateEmployee}
           employees={employees}
+        />
+
+        <ClientManager
+          isOpen={isClientManagerOpen}
+          onClose={handleCloseClientManager}
         />
       </div>
     </div>

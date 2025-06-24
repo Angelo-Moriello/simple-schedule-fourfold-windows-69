@@ -1,4 +1,3 @@
-
 export interface Appointment {
   id: string;
   employeeId: number;
@@ -12,6 +11,7 @@ export interface Appointment {
   phone?: string;
   color: string; // colore per l'etichetta
   serviceType: string;
+  clientId?: string; // Nuovo campo per collegare ai clienti
 }
 
 export interface Employee {

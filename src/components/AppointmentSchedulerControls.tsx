@@ -1,11 +1,13 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Clock, TrendingUp, Scissors, Users } from 'lucide-react';
-import VacationManager from './VacationManager';
-import ServiceCategoryManager from './ServiceCategoryManager';
-import DateNavigator from './DateNavigator';
+import { Calendar, ChevronLeft, ChevronRight, CalendarDays, UserPlus, Plane, History, BarChart3, Users } from 'lucide-react';
+import { format, addDays, subDays } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { Employee } from '@/types/appointment';
+import DateNavigator from './DateNavigator';
+import FullCalendar from './FullCalendar';
+import VacationManager from './VacationManager';
 
 interface AppointmentSchedulerControlsProps {
   selectedDate: Date;
@@ -17,6 +19,7 @@ interface AppointmentSchedulerControlsProps {
   onUpdateEmployeeVacations: (employeeId: number, vacations: string[]) => void;
   onNavigateToHistory: () => void;
   onNavigateToStatistics: () => void;
+  onOpenClientManager?: () => void;
 }
 
 const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> = ({
@@ -28,55 +31,117 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
   onOpenEmployeeForm,
   onUpdateEmployeeVacations,
   onNavigateToHistory,
-  onNavigateToStatistics
+  onNavigateToStatistics,
+  onOpenClientManager
 }) => {
+  const previousDay = () => {
+    onDateSelect(subDays(selectedDate, 1));
+  };
+
+  const nextDay = () => {
+    onDateSelect(addDays(selectedDate, 1));
+  };
+
   return (
-    <div className="flex flex-col gap-4 p-4 bg-white rounded-lg shadow-md mb-6">
-      {/* Prima riga: Navigazione data */}
-      <div className="flex items-center justify-center">
-        <DateNavigator
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+      <div className="p-4 sm:p-6">
+        {/* Navigation and Date Selection */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-4">
+          <div className="flex items-center space-x-3">
+            <Button
+              onClick={previousDay}
+              variant="outline"
+              size="sm"
+              className="h-9 w-9 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+              <h2 className="text-lg font-bold text-blue-800">
+                {format(selectedDate, 'EEEE d MMMM yyyy', { locale: it })}
+              </h2>
+            </div>
+            
+            <Button
+              onClick={nextDay}
+              variant="outline"
+              size="sm"
+              className="h-9 w-9 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2">
+          <DateNavigator
+            selectedDate={selectedDate}
+            onDateSelect={onDateSelect}
+          />
+          
+          <Button
+            onClick={() => onShowFullCalendar(true)}
+            variant="outline"
+            className="border-purple-200 text-purple-700 hover:bg-purple-50"
+          >
+            <CalendarDays className="h-4 w-4 mr-2" />
+            Calendario Completo
+          </Button>
+
+          <Button
+            onClick={onOpenEmployeeForm}
+            variant="outline"
+            className="border-green-200 text-green-700 hover:bg-green-50"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Gestisci Dipendenti
+          </Button>
+
+          {onOpenClientManager && (
+            <Button
+              onClick={onOpenClientManager}
+              variant="outline"
+              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Gestisci Clienti
+            </Button>
+          )}
+
+          <VacationManager
+            employees={employees}
+            onUpdateEmployeeVacations={onUpdateEmployeeVacations}
+          />
+
+          <Button
+            onClick={onNavigateToHistory}
+            variant="outline"
+            className="border-orange-200 text-orange-700 hover:bg-orange-50"
+          >
+            <History className="h-4 w-4 mr-2" />
+            Storico
+          </Button>
+
+          <Button
+            onClick={onNavigateToStatistics}
+            variant="outline"
+            className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Statistiche
+          </Button>
+        </div>
+      </div>
+
+      {showFullCalendar && (
+        <FullCalendar
           selectedDate={selectedDate}
-          showFullCalendar={showFullCalendar}
           onDateSelect={onDateSelect}
-          onShowFullCalendar={onShowFullCalendar}
+          onClose={() => onShowFullCalendar(false)}
         />
-      </div>
-      
-      {/* Seconda riga: Tutti i pulsanti con stile uniforme */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <Button 
-          variant="outline" 
-          className="h-10 px-3 gap-2 text-sm"
-          onClick={onNavigateToHistory}
-        >
-          <Clock className="h-4 w-4" />
-          Storico
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          className="h-10 px-3 gap-2 text-sm"
-          onClick={onNavigateToStatistics}
-        >
-          <TrendingUp className="h-4 w-4" />
-          Statistiche
-        </Button>
-        
-        <ServiceCategoryManager />
-        
-        <VacationManager 
-          employees={employees}
-          onUpdateEmployeeVacations={onUpdateEmployeeVacations}
-        />
-        
-        <Button 
-          onClick={onOpenEmployeeForm} 
-          className="h-10 px-3 gap-2 text-sm bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          <Users className="h-4 w-4" />
-          Gestisci Dipendenti
-        </Button>
-      </div>
+      )}
     </div>
   );
 };

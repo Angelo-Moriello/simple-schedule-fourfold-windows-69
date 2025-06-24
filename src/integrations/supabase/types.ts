@@ -12,6 +12,7 @@ export type Database = {
       appointments: {
         Row: {
           client: string
+          client_id: string | null
           color: string
           created_at: string | null
           date: string
@@ -28,6 +29,7 @@ export type Database = {
         }
         Insert: {
           client: string
+          client_id?: string | null
           color: string
           created_at?: string | null
           date: string
@@ -44,6 +46,7 @@ export type Database = {
         }
         Update: {
           client?: string
+          client_id?: string | null
           color?: string
           created_at?: string | null
           date?: string
@@ -60,6 +63,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointments_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
@@ -67,6 +77,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      clients: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       employees: {
         Row: {
@@ -97,6 +137,78 @@ export type Database = {
           vacations?: string[] | null
         }
         Relationships: []
+      }
+      recurring_treatments: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          duration: number
+          employee_id: number
+          end_date: string | null
+          frequency_type: string
+          frequency_value: number
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          preferred_day_of_month: number | null
+          preferred_day_of_week: number | null
+          preferred_time: string | null
+          service_type: string
+          start_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          duration?: number
+          employee_id: number
+          end_date?: string | null
+          frequency_type: string
+          frequency_value?: number
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          preferred_day_of_month?: number | null
+          preferred_day_of_week?: number | null
+          preferred_time?: string | null
+          service_type: string
+          start_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          duration?: number
+          employee_id?: number
+          end_date?: string | null
+          frequency_type?: string
+          frequency_value?: number
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          preferred_day_of_month?: number | null
+          preferred_day_of_week?: number | null
+          preferred_time?: string | null
+          service_type?: string
+          start_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_treatments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_treatments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
