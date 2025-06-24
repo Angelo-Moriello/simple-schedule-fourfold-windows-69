@@ -8,6 +8,7 @@ import { Employee } from '@/types/appointment';
 import DateNavigator from './DateNavigator';
 import FullCalendar from './FullCalendar';
 import VacationManager from './VacationManager';
+import LocalBackupManager from './LocalBackupManager';
 
 interface AppointmentSchedulerControlsProps {
   selectedDate: Date;
@@ -82,6 +83,8 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
             employees={employees} 
             onUpdateEmployeeVacations={onUpdateEmployeeVacations} 
           />
+
+          <LocalBackupManager />
 
           <Button 
             onClick={onNavigateToHistory} 
