@@ -46,7 +46,6 @@ const EmployeeDesktopCard: React.FC<EmployeeDesktopCardProps> = ({
           {timeSlots.map(time => {
             const directAppointment = getEmployeeAppointmentsForTimeSlot(employee.id, time);
             const occupationInfo = getSlotOccupationInfo(employee.id, time);
-            const vacation = isVacationDay(employee.id, selectedDate);
 
             return (
               <TimeSlot
@@ -57,9 +56,12 @@ const EmployeeDesktopCard: React.FC<EmployeeDesktopCardProps> = ({
                 onAddAppointment={onAddAppointment}
                 onEditAppointment={onEditAppointment}
                 onDeleteAppointment={onDeleteAppointment}
-                isVacationDay={vacation}
+                isVacationDay={occupationInfo.isVacation || false}
                 isOccupied={occupationInfo.isOccupied}
-                occupiedBy={occupationInfo.occupiedBy}
+                occupiedBy={occupationInfo.isVacation ? { 
+                  isVacation: true, 
+                  vacationType: occupationInfo.vacationType 
+                } : occupationInfo.occupiedBy}
                 isPartiallyOccupied={occupationInfo.isPartiallyOccupied}
               />
             );

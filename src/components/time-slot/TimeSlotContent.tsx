@@ -85,17 +85,21 @@ const TimeSlotContent: React.FC<TimeSlotContentProps> = ({
     return colorMap[colorClass] || '#d1d5db';
   };
 
+  // Check if this is a vacation slot from the occupation info
+  const isVacationSlot = (occupiedBy as any)?.isVacation || isVacationDay;
+  const vacationType = (occupiedBy as any)?.vacationType || 'Ferie';
+
   // Slot in ferie
-  if (isVacationDay) {
+  if (isVacationSlot) {
     return (
       <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
         <div className="flex items-center justify-center text-red-600">
-          <Clock className="h-4 w-4 mr-2" />
+          <span className="text-lg mr-2">🏖️</span>
           <span className="text-sm font-medium">{time}</span>
         </div>
         <div className="text-center mt-1">
           <Badge variant="destructive" className="text-xs">
-            Ferie
+            {typeof vacationType === 'string' ? vacationType : 'Ferie'}
           </Badge>
         </div>
       </div>
