@@ -22,10 +22,16 @@ const DailyStatsToast: React.FC<DailyStatsToastProps> = ({
 
     const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
     
-    // Filtra appuntamenti solo per il giorno selezionato
-    const todayAppointments = appointments.filter(apt => apt.date === selectedDateString);
+    // Filtra appuntamenti SOLO per il giorno selezionato (correzione del bug)
+    const todayAppointments = appointments.filter(apt => {
+      const isDateMatch = apt.date === selectedDateString;
+      console.log('DEBUG - Filtro data:', { appointmentDate: apt.date, selectedDate: selectedDateString, match: isDateMatch });
+      return isDateMatch;
+    });
     
-    // Conta dipendenti attivi (che hanno almeno un appuntamento oggi)
+    console.log('DEBUG - Appuntamenti filtrati per oggi:', todayAppointments.length, 'su totali:', appointments.length);
+    
+    // Conta dipendenti attivi SOLO per oggi
     const activeEmployeeIds = new Set(todayAppointments.map(apt => apt.employeeId));
     const activeEmployeesCount = activeEmployeeIds.size;
     

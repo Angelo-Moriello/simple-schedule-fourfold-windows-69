@@ -1,8 +1,12 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, User, Edit, Trash2 } from 'lucide-react';
+import { Clock, User, Edit, Trash2, Settings } from 'lucide-react';
 import { Appointment, Employee } from '@/types/appointment';
+import { RecurringTreatment } from '@/types/client';
+import { loadRecurringTreatmentsFromSupabase } from '@/utils/clientStorage';
+import RecurringTreatmentEditDialog from './RecurringTreatmentEditDialog';
 
 interface TimeSlotProps {
   time: string;
@@ -29,6 +33,9 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   occupiedBy,
   isPartiallyOccupied
 }) => {
+  const [recurringTreatment, setRecurringTreatment] = useState<RecurringTreatment | null>(null);
+  const [isRecurringEditOpen, setIsRecurringEditOpen] = useState(false);
+
   const handleAddClick = () => {
     if (!isVacationDay && !isOccupied && !appointment) {
       onAddAppointment(employee.id, time);
@@ -54,6 +61,31 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       onDeleteAppointment(appointment.id);
     } else if (occupiedBy) {
       onDeleteAppointment(occupiedBy.id);
+    }
+  };
+
+  const handleRecurringEdit = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const targetAppointment = appointment || occupiedBy;
+    if (!targetAppointment || !targetAppointment.clientId) return;
+
+    try {
+      const treatments = await loadRecurringTreatmentsFromSupabase(targetAppointment.clientId);
+      const matchingTreatment = treatments.find(t => 
+        t.employee_id === targetAppointment.employeeId &&
+        t.service_type === targetAppointment.serviceType &&
+        t.is_active
+      );
+
+      if (matchingTreatment) {
+        setRecurringTreatment(matchingTreatment);
+        setIsRecurringEditOpen(true);
+      } else {
+        console.log('Nessun trattamento ricorrente trovato per questo appuntamento');
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento trattamenti ricorrenti:', error);
     }
   };
 
@@ -87,6 +119,11 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
     return colorMap[colorClass] || '#d1d5db';
   };
 
+  // Determina se è un appuntamento ricorrente
+  const isRecurringAppointment = (apt: Appointment) => {
+    return apt.title?.includes('(Ricorrente)') || apt.color === '#22c55e';
+  };
+
   // Slot in ferie
   if (isVacationDay) {
     return (
@@ -108,57 +145,80 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   if (isPartiallyOccupied && occupiedBy) {
     const backgroundColor = getBackgroundColorFromClass(occupiedBy.color);
     const borderColor = getBorderColorFromClass(occupiedBy.color);
+    const isRecurring = isRecurringAppointment(occupiedBy);
     
     return (
-      <div 
-        className="p-3 border-2 rounded-lg relative overflow-hidden"
-        style={{ 
-          backgroundColor: backgroundColor,
-          borderColor: borderColor
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-300/30 to-transparent animate-pulse"></div>
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-gray-600">{time}</span>
-            <Badge variant="secondary" className="text-xs bg-gray-400 text-white">
-              Occupato
-            </Badge>
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-700 mb-1">
-              Continua: {occupiedBy.title}
-            </p>
-            <p className="text-xs text-gray-600 mb-1 flex items-center justify-center">
-              <User className="h-3 w-3 mr-1" />
-              {occupiedBy.client}
-            </p>
-            {occupiedBy.serviceType && (
-              <p className="text-xs text-gray-500 mb-2 italic">
-                {occupiedBy.serviceType}
+      <>
+        <div 
+          className="p-3 border-2 rounded-lg relative overflow-hidden"
+          style={{ 
+            backgroundColor: backgroundColor,
+            borderColor: borderColor
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-300/30 to-transparent animate-pulse"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-600">{time}</span>
+              <Badge variant="secondary" className="text-xs bg-gray-400 text-white">
+                Occupato
+              </Badge>
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-gray-700 mb-1">
+                Continua: {occupiedBy.title}
               </p>
-            )}
-            <div className="flex justify-center space-x-1">
-              <Button
-                onClick={handleEditClick}
-                size="sm"
-                variant="outline"
-                className="h-6 px-2 text-xs border-gray-400 hover:bg-gray-200"
-              >
-                <Edit className="h-3 w-3" />
-              </Button>
-              <Button
-                onClick={handleDeleteClick}
-                size="sm"
-                variant="outline"
-                className="h-6 px-2 text-xs border-red-400 text-red-600 hover:bg-red-50"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              <p className="text-xs text-gray-600 mb-1 flex items-center justify-center">
+                <User className="h-3 w-3 mr-1" />
+                {occupiedBy.client}
+              </p>
+              {occupiedBy.serviceType && (
+                <p className="text-xs text-gray-500 mb-2 italic">
+                  {occupiedBy.serviceType}
+                </p>
+              )}
+              <div className="flex justify-center space-x-1">
+                <Button
+                  onClick={handleEditClick}
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs border-gray-400 hover:bg-gray-200"
+                >
+                  <Edit className="h-3 w-3" />
+                </Button>
+                {isRecurring && (
+                  <Button
+                    onClick={handleRecurringEdit}
+                    size="sm"
+                    variant="outline"
+                    className="h-6 px-2 text-xs border-green-400 text-green-600 hover:bg-green-50"
+                  >
+                    <Settings className="h-3 w-3" />
+                  </Button>
+                )}
+                <Button
+                  onClick={handleDeleteClick}
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs border-red-400 text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+        
+        <RecurringTreatmentEditDialog
+          isOpen={isRecurringEditOpen}
+          onClose={() => setIsRecurringEditOpen(false)}
+          treatment={recurringTreatment}
+          onTreatmentUpdated={() => {
+            setIsRecurringEditOpen(false);
+            // Ricarica i dati se necessario
+          }}
+        />
+      </>
     );
   }
 
@@ -172,6 +232,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 
     const backgroundColor = getBackgroundColorFromClass(appointment.color);
     const borderColor = getBorderColorFromClass(appointment.color);
+    const isRecurring = isRecurringAppointment(appointment);
 
     console.log('DEBUG - Rendering appointment slot:', {
       id: appointment.id,
@@ -179,67 +240,97 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       email: appointment.email,
       phone: appointment.phone,
       serviceType: appointment.serviceType,
-      clientId: appointment.clientId
+      clientId: appointment.clientId,
+      isRecurring
     });
 
     return (
-      <div 
-        className="p-3 rounded-lg border-2 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
-        style={{ 
-          backgroundColor: backgroundColor,
-          borderColor: borderColor
-        }}
-        onClick={handleEditClick}
-      >
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-gray-600">{time}</span>
-          <Badge 
-            className="text-xs text-white font-medium"
-            style={{ backgroundColor: borderColor }}
-          >
-            {durationText}
-          </Badge>
-        </div>
-        
-        <div className="space-y-1">
-          <p className="font-semibold text-sm text-gray-900 leading-tight">
-            {appointment.title || appointment.serviceType}
-          </p>
-          <p className="text-sm text-gray-700 flex items-center">
-            <User className="h-3 w-3 mr-1" />
-            {appointment.client}
-          </p>
-          {appointment.serviceType && (
-            <p className="text-xs text-gray-600 font-medium bg-white/50 px-2 py-1 rounded">
-              {appointment.serviceType}
+      <>
+        <div 
+          className="p-3 rounded-lg border-2 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
+          style={{ 
+            backgroundColor: backgroundColor,
+            borderColor: borderColor
+          }}
+          onClick={handleEditClick}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-600">{time}</span>
+            <div className="flex items-center space-x-1">
+              <Badge 
+                className="text-xs text-white font-medium"
+                style={{ backgroundColor: borderColor }}
+              >
+                {durationText}
+              </Badge>
+              {isRecurring && (
+                <Badge className="text-xs bg-green-500 text-white">
+                  R
+                </Badge>
+              )}
+            </div>
+          </div>
+          
+          <div className="space-y-1">
+            <p className="font-semibold text-sm text-gray-900 leading-tight">
+              {appointment.title || appointment.serviceType}
             </p>
-          )}
-          {appointment.notes && (
-            <p className="text-xs text-gray-600 italic truncate">
-              {appointment.notes}
+            <p className="text-sm text-gray-700 flex items-center">
+              <User className="h-3 w-3 mr-1" />
+              {appointment.client}
             </p>
-          )}
+            {appointment.serviceType && (
+              <p className="text-xs text-gray-600 font-medium bg-white/50 px-2 py-1 rounded">
+                {appointment.serviceType}
+              </p>
+            )}
+            {appointment.notes && (
+              <p className="text-xs text-gray-600 italic truncate">
+                {appointment.notes}
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-end space-x-1 mt-3">
+            <Button
+              onClick={handleEditClick}
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs bg-white/50 hover:bg-white/80"
+            >
+              <Edit className="h-3 w-3" />
+            </Button>
+            {isRecurring && (
+              <Button
+                onClick={handleRecurringEdit}
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs bg-green-50 border-green-200 text-green-600 hover:bg-green-100"
+              >
+                <Settings className="h-3 w-3" />
+              </Button>
+            )}
+            <Button
+              onClick={handleDeleteClick}
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
 
-        <div className="flex justify-end space-x-1 mt-3">
-          <Button
-            onClick={handleEditClick}
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs bg-white/50 hover:bg-white/80"
-          >
-            <Edit className="h-3 w-3" />
-          </Button>
-          <Button
-            onClick={handleDeleteClick}
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
-      </div>
+        <RecurringTreatmentEditDialog
+          isOpen={isRecurringEditOpen}
+          onClose={() => setIsRecurringEditOpen(false)}
+          treatment={recurringTreatment}
+          onTreatmentUpdated={() => {
+            setIsRecurringEditOpen(false);
+            // Ricarica i dati se necessario
+          }}
+        />
+      </>
     );
   }
 
