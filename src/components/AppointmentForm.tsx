@@ -74,7 +74,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     phone: '',
     color: appointmentColors[0].value,
     serviceType: '',
-    clientId: '' // Add clientId to formData type
+    clientId: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,21 +99,30 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const serviceCategories = getStoredServices();
 
   useEffect(() => {
+    console.log('DEBUG - AppointmentForm useEffect triggered:', {
+      appointmentToEdit,
+      employeeId,
+      time,
+      isOpen
+    });
+
     if (appointmentToEdit) {
+      console.log('DEBUG - Caricamento dati appuntamento da modificare:', appointmentToEdit);
       setFormData({
-        employeeId: appointmentToEdit.employeeId.toString(),
-        time: appointmentToEdit.time,
+        employeeId: appointmentToEdit.employeeId?.toString() || '',
+        time: appointmentToEdit.time || '',
         title: appointmentToEdit.title || '',
-        client: appointmentToEdit.client,
-        duration: appointmentToEdit.duration.toString(),
+        client: appointmentToEdit.client || '',
+        duration: appointmentToEdit.duration?.toString() || '30',
         notes: appointmentToEdit.notes || '',
         email: appointmentToEdit.email || '',
         phone: appointmentToEdit.phone || '',
-        color: appointmentToEdit.color,
-        serviceType: appointmentToEdit.serviceType,
+        color: appointmentToEdit.color || appointmentColors[0].value,
+        serviceType: appointmentToEdit.serviceType || '',
         clientId: appointmentToEdit.clientId || ''
       });
     } else {
+      console.log('DEBUG - Inizializzazione form nuovo appuntamento');
       setFormData({
         employeeId: employeeId?.toString() || '',
         time: time || '',

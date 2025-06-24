@@ -247,3 +247,109 @@ export const getClientAppointmentsFromSupabase = async (clientId: string): Promi
     return [];
   }
 };
+
+// NEW: Funzione per generare appuntamenti da trattamenti ricorrenti con nome cliente
+export const generateRecurringAppointments = async (
+  treatments: RecurringTreatment[],
+  clients: Client[],
+  startDate: Date,
+  endDate: Date
+): Promise<Appointment[]> => {
+  try {
+    console.log('DEBUG - Generazione appuntamenti ricorrenti da:', startDate, 'a:', endDate);
+    console.log('DEBUG - Trattamenti ricorrenti attivi:', treatments.length);
+    console.log('DEBUG - Clienti disponibili:', clients.length);
+    
+    const generatedAppointments: Appointment[] = [];
+    
+    for (const treatment of treatments) {
+      if (!treatment.is_active) continue;
+      
+      // Trova il cliente associato al trattamento
+      const client = clients.find(c => c.id === treatment.client_id);
+      if (!client) {
+        console.warn('DEBUG - Cliente non trovato per trattamento:', treatment.id);
+        continue;
+      }
+      
+      console.log('DEBUG - Processando trattamento per cliente:', client.name);
+      
+      // Genera le date degli appuntamenti basate sulla frequenza
+      const appointmentDates = generateAppointmentDates(treatment, startDate, endDate);
+      
+      for (const appointmentDate of appointmentDates) {
+        const appointment: Appointment = {
+          id: `recurring-${treatment.id}-${appointmentDate.toISOString()}`,
+          employeeId: treatment.employee_id,
+          date: appointmentDate.toISOString().split('T')[0],
+          time: treatment.preferred_time || '09:00',
+          title: `${treatment.service_type} (Ricorrente)`,
+          client: client.name, // Nome del cliente dal database
+          duration: treatment.duration,
+          notes: treatment.notes || 'Appuntamento generato automaticamente da trattamento ricorrente',
+          email: client.email || '',
+          phone: client.phone || '',
+          color: 'bg-purple-100 border-purple-300 text-purple-800', // Colore distintivo per ricorrenti
+          serviceType: treatment.service_type,
+          clientId: client.id
+        };
+        
+        generatedAppointments.push(appointment);
+      }
+    }
+    
+    console.log('DEBUG - Appuntamenti ricorrenti generati:', generatedAppointments.length);
+    return generatedAppointments;
+  } catch (error) {
+    console.error('DEBUG - Errore nella generazione appuntamenti ricorrenti:', error);
+    return [];
+  }
+};
+
+// Helper function per generare le date degli appuntamenti
+const generateAppointmentDates = (treatment: RecurringTreatment, startDate: Date, endDate: Date): Date[] => {
+  const dates: Date[] = [];
+  const treatmentStartDate = new Date(treatment.start_date);
+  const treatmentEndDate = treatment.end_date ? new Date(treatment.end_date) : null;
+  
+  // Inizia dalla data di inizio del trattamento o dalla data di inizio richiesta, quale è più tarda
+  let currentDate = new Date(Math.max(treatmentStartDate.getTime(), startDate.getTime()));
+  
+  while (currentDate <= endDate) {
+    // Controlla se siamo oltre la data di fine del trattamento
+    if (treatmentEndDate && currentDate > treatmentEndDate) {
+      break;
+    }
+    
+    if (treatment.frequency_type === 'weekly' && treatment.preferred_day_of_week !== null) {
+      // Per frequenza settimanale, trova il prossimo giorno della settimana preferito
+      const dayOfWeek = currentDate.getDay();
+      const daysUntilPreferred = (treatment.preferred_day_of_week - dayOfWeek + 7) % 7;
+      
+      if (daysUntilPreferred === 0 && currentDate >= treatmentStartDate) {
+        dates.push(new Date(currentDate));
+      }
+      
+      // Avanza alla prossima settimana
+      currentDate.setDate(currentDate.getDate() + (daysUntilPreferred === 0 ? 7 * treatment.frequency_value : daysUntilPreferred));
+    } else if (treatment.frequency_type === 'monthly' && treatment.preferred_day_of_month) {
+      // Per frequenza mensile, trova il prossimo giorno del mese preferito
+      const targetDay = treatment.preferred_day_of_month;
+      
+      // Imposta al giorno target del mese corrente
+      currentDate.setDate(targetDay);
+      
+      if (currentDate >= treatmentStartDate && currentDate >= startDate) {
+        dates.push(new Date(currentDate));
+      }
+      
+      // Avanza al prossimo mese
+      currentDate.setMonth(currentDate.getMonth() + treatment.frequency_value);
+    } else {
+      // Se non ci sono preferenze specifiche, avanza semplicemente
+      currentDate.setDate(currentDate.getDate() + 7); // Default a settimanale
+    }
+  }
+  
+  return dates;
+};
