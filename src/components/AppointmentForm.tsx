@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -94,29 +93,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   const serviceCategories = getStoredServices();
 
-  // Reset form when dialog opens/closes
-  useEffect(() => {
-    console.log('DEBUG - Dialog state changed:', { isOpen, appointmentToEdit });
-    
-    if (!isOpen) {
-      // Reset form when dialog closes
-      setFormData({
-        employeeId: '',
-        time: '',
-        title: '',
-        client: '',
-        duration: '30',
-        notes: '',
-        email: '',
-        phone: '',
-        color: appointmentColors[0].value,
-        serviceType: '',
-        clientId: ''
-      });
-    }
-  }, [isOpen]);
-
-  // Load appointment data when editing
+  // Load appointment data when dialog opens
   useEffect(() => {
     console.log('DEBUG - AppointmentForm data loading effect:', {
       isOpen,
@@ -170,6 +147,22 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           clientId: ''
         });
       }
+    } else {
+      // Reset form only when dialog closes
+      console.log('DEBUG - Reset form su chiusura dialog');
+      setFormData({
+        employeeId: '',
+        time: '',
+        title: '',
+        client: '',
+        duration: '30',
+        notes: '',
+        email: '',
+        phone: '',
+        color: appointmentColors[0].value,
+        serviceType: '',
+        clientId: ''
+      });
     }
   }, [isOpen, appointmentToEdit, employeeId, time]);
 
