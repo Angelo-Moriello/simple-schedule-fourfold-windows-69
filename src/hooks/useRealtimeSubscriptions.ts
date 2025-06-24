@@ -42,7 +42,8 @@ export const useRealtimeSubscriptions = ({
               email: payload.new.email || '',
               phone: payload.new.phone || '',
               color: payload.new.color,
-              serviceType: payload.new.service_type
+              serviceType: payload.new.service_type,
+              clientId: payload.new.client_id
             };
             
             console.log('DEBUG - Nuovo appuntamento da realtime:', newAppointment);
@@ -72,7 +73,8 @@ export const useRealtimeSubscriptions = ({
               email: payload.new.email || '',
               phone: payload.new.phone || '',
               color: payload.new.color,
-              serviceType: payload.new.service_type
+              serviceType: payload.new.service_type,
+              clientId: payload.new.client_id
             };
             
             console.log('DEBUG - Appuntamento aggiornato da realtime:', updatedAppointment);

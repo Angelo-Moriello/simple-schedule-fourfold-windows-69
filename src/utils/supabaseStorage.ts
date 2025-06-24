@@ -137,6 +137,27 @@ export const deleteEmployeeFromSupabase = async (employeeId: number) => {
   }
 };
 
+// Helper function to find client ID by name
+const findClientIdByName = async (clientName: string): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id')
+      .ilike('name', clientName.trim())
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Errore nella ricerca cliente:', error);
+      return null;
+    }
+    
+    return data?.id || null;
+  } catch (error) {
+    console.error('Errore nella ricerca cliente:', error);
+    return null;
+  }
+};
+
 // Appointment operations
 export const saveAppointmentsToSupabase = async (appointments: Appointment[]) => {
   try {
@@ -151,22 +172,31 @@ export const saveAppointmentsToSupabase = async (appointments: Appointment[]) =>
     
     // Insert new appointments with proper UUID conversion
     if (appointments.length > 0) {
-      const appointmentsToInsert = appointments.map(app => ({
-        id: app.id.includes('-') ? app.id : generateUUID(), // Convert timestamp IDs to UUID
-        employee_id: app.employeeId,
-        date: app.date,
-        time: app.time,
-        title: app.title,
-        client: app.client,
-        duration: app.duration,
-        notes: app.notes,
-        email: app.email,
-        phone: app.phone,
-        color: app.color,
-        service_type: app.serviceType
+      const appointmentsToInsert = await Promise.all(appointments.map(async (app) => {
+        // Find client_id if not already set
+        let clientId = app.clientId;
+        if (!clientId && app.client) {
+          clientId = await findClientIdByName(app.client);
+        }
+        
+        return {
+          id: app.id.includes('-') ? app.id : generateUUID(), // Convert timestamp IDs to UUID
+          employee_id: app.employeeId,
+          date: app.date,
+          time: app.time,
+          title: app.title,
+          client: app.client,
+          duration: app.duration,
+          notes: app.notes,
+          email: app.email,
+          phone: app.phone,
+          color: app.color,
+          service_type: app.serviceType,
+          client_id: clientId
+        };
       }));
       
-      console.log('Appuntamenti con UUID corretti:', appointmentsToInsert);
+      console.log('Appuntamenti con UUID e client_id corretti:', appointmentsToInsert);
       
       const { error: insertError } = await supabase.from('appointments').insert(appointmentsToInsert);
       if (insertError) {
@@ -206,7 +236,8 @@ export const loadAppointmentsFromSupabase = async (): Promise<Appointment[]> => 
       email: app.email || '',
       phone: app.phone || '',
       color: app.color,
-      serviceType: app.service_type
+      serviceType: app.service_type,
+      clientId: app.client_id
     })) || [];
     
     console.log('Appuntamenti caricati:', appointments);
@@ -224,6 +255,12 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
     // Ensure we have a proper UUID
     const appointmentId = appointment.id.includes('-') ? appointment.id : generateUUID();
     
+    // Find client_id if not already set
+    let clientId = appointment.clientId;
+    if (!clientId && appointment.client) {
+      clientId = await findClientIdByName(appointment.client);
+    }
+    
     const { error } = await supabase.from('appointments').insert({
       id: appointmentId,
       employee_id: appointment.employeeId,
@@ -236,7 +273,8 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       email: appointment.email || '',
       phone: appointment.phone || '',
       color: appointment.color,
-      service_type: appointment.serviceType
+      service_type: appointment.serviceType,
+      client_id: clientId
     });
     if (error) {
       console.error('Errore SQL nell\'aggiunta appuntamento:', error);
@@ -252,6 +290,13 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
 export const updateAppointmentInSupabase = async (appointment: Appointment) => {
   try {
     console.log('Aggiornamento appuntamento su Supabase:', appointment);
+    
+    // Find client_id if not already set
+    let clientId = appointment.clientId;
+    if (!clientId && appointment.client) {
+      clientId = await findClientIdByName(appointment.client);
+    }
+    
     const { error } = await supabase
       .from('appointments')
       .update({
@@ -265,7 +310,8 @@ export const updateAppointmentInSupabase = async (appointment: Appointment) => {
         email: appointment.email || '',
         phone: appointment.phone || '',
         color: appointment.color,
-        service_type: appointment.serviceType
+        service_type: appointment.serviceType,
+        client_id: clientId
       })
       .eq('id', appointment.id);
     if (error) {
