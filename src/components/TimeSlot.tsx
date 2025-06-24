@@ -14,6 +14,7 @@ interface TimeSlotProps {
   isOccupied: boolean;
   occupiedBy?: Appointment;
   isPartiallyOccupied?: boolean;
+  onRecurringEdit?: () => void;
 }
 
 const TimeSlot: React.FC<TimeSlotProps> = (props) => {

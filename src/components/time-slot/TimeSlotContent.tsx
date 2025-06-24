@@ -17,6 +17,7 @@ interface TimeSlotContentProps {
   isOccupied: boolean;
   occupiedBy?: Appointment;
   isPartiallyOccupied?: boolean;
+  onRecurringEdit?: () => void;
 }
 
 const TimeSlotContent: React.FC<TimeSlotContentProps> = ({
@@ -29,7 +30,8 @@ const TimeSlotContent: React.FC<TimeSlotContentProps> = ({
   isVacationDay,
   isOccupied,
   occupiedBy,
-  isPartiallyOccupied
+  isPartiallyOccupied,
+  onRecurringEdit
 }) => {
   const handleAddClick = () => {
     if (!isVacationDay && !isOccupied && !appointment) {
@@ -145,6 +147,7 @@ const TimeSlotContent: React.FC<TimeSlotContentProps> = ({
               </Button>
               <RecurringTreatmentHandler 
                 occupiedBy={occupiedBy}
+                onRecurringEdit={onRecurringEdit}
               />
               <Button
                 onClick={handleDeleteClick}
@@ -224,6 +227,7 @@ const TimeSlotContent: React.FC<TimeSlotContentProps> = ({
           </Button>
           <RecurringTreatmentHandler 
             appointment={appointment}
+            onRecurringEdit={onRecurringEdit}
           />
           <Button
             onClick={handleDeleteClick}

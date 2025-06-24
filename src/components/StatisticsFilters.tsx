@@ -28,11 +28,11 @@ const StatisticsFilters: React.FC<StatisticsFiltersProps> = ({
   onResetFilters
 }) => {
   return (
-    <Card className="bg-white border border-gray-200 shadow-sm">
-      <CardHeader className="bg-gray-50 border-b border-gray-200 pb-3">
+    <Card className="bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+      <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50/50 border-b border-gray-200/50 pb-3 rounded-t-lg">
         <CardTitle className="text-lg font-bold flex items-center text-gray-800">
-          <div className="bg-gray-200 rounded-full p-2 mr-3">
-            <Filter className="h-4 w-4" />
+          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-2 mr-3 shadow-md">
+            <Filter className="h-4 w-4 text-white" />
           </div>
           Filtri Statistiche
         </CardTitle>
@@ -42,11 +42,11 @@ const StatisticsFilters: React.FC<StatisticsFiltersProps> = ({
           {/* Filtro periodo */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <Calendar className="h-4 w-4" />
+              <Calendar className="h-4 w-4 text-blue-600" />
               Periodo
             </label>
             <Select value={dateRange} onValueChange={onDateRangeChange}>
-              <SelectTrigger className="h-10 rounded-lg border-gray-200">
+              <SelectTrigger className="h-10 rounded-lg border-gray-200/60 bg-white/50 backdrop-blur-sm hover:bg-white/80 transition-all">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -61,11 +61,11 @@ const StatisticsFilters: React.FC<StatisticsFiltersProps> = ({
           {/* Filtro specializzazione */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <Scissors className="h-4 w-4" />
+              <Scissors className="h-4 w-4 text-green-600" />
               Specializzazione
             </label>
             <Select value={specialization} onValueChange={onSpecializationChange}>
-              <SelectTrigger className="h-10 rounded-lg border-gray-200">
+              <SelectTrigger className="h-10 rounded-lg border-gray-200/60 bg-white/50 backdrop-blur-sm hover:bg-white/80 transition-all">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -79,14 +79,14 @@ const StatisticsFilters: React.FC<StatisticsFiltersProps> = ({
           {/* Filtro dipendente */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <Users className="h-4 w-4" />
+              <Users className="h-4 w-4 text-purple-600" />
               Dipendente
             </label>
             <Select 
               value={selectedEmployee.toString()} 
               onValueChange={(value) => onEmployeeChange(value === 'all' ? 'all' : parseInt(value))}
             >
-              <SelectTrigger className="h-10 rounded-lg border-gray-200">
+              <SelectTrigger className="h-10 rounded-lg border-gray-200/60 bg-white/50 backdrop-blur-sm hover:bg-white/80 transition-all">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -106,7 +106,7 @@ const StatisticsFilters: React.FC<StatisticsFiltersProps> = ({
             <Button
               onClick={onResetFilters}
               variant="outline"
-              className="w-full h-10 rounded-lg border-gray-300 hover:bg-gray-50"
+              className="w-full h-10 rounded-lg border-gray-300/60 bg-white/50 backdrop-blur-sm hover:bg-white/80 transition-all"
             >
               Reset Filtri
             </Button>
