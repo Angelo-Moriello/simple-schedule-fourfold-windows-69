@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -73,6 +74,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const timeSlots = generateTimeSlots();
 
   // Load stored services from localStorage
@@ -93,29 +95,21 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   const serviceCategories = getStoredServices();
 
-  // Load appointment data when dialog opens
+  // Effetto separato per determinare se siamo in modalità editing
   useEffect(() => {
-    console.log('DEBUG - MAIN EFFECT:', {
-      isOpen,
-      appointmentToEdit: appointmentToEdit ? {
-        id: appointmentToEdit.id,
-        client: appointmentToEdit.client,
-        email: appointmentToEdit.email,
-        phone: appointmentToEdit.phone,
-        employeeId: appointmentToEdit.employeeId,
-        time: appointmentToEdit.time,
-        serviceType: appointmentToEdit.serviceType,
-        clientId: appointmentToEdit.clientId
-      } : null,
-      employeeId,
-      time
-    });
+    console.log('DEBUG - Setting editing mode:', !!appointmentToEdit);
+    setIsEditing(!!appointmentToEdit);
+  }, [appointmentToEdit]);
 
+  // Effetto per inizializzare il form quando si apre il dialog
+  useEffect(() => {
     if (isOpen) {
-      if (appointmentToEdit) {
-        console.log('DEBUG - LOADING EDIT DATA:', appointmentToEdit);
+      console.log('DEBUG - Dialog opened, editing mode:', isEditing);
+      
+      if (isEditing && appointmentToEdit) {
+        console.log('DEBUG - Loading edit data:', appointmentToEdit);
         
-        const newFormData = {
+        const editFormData = {
           employeeId: appointmentToEdit.employeeId?.toString() || '',
           time: appointmentToEdit.time || '',
           title: appointmentToEdit.title || '',
@@ -129,11 +123,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           clientId: appointmentToEdit.clientId || ''
         };
         
-        console.log('DEBUG - SETTING EDIT FORM DATA:', newFormData);
-        setFormData(newFormData);
-      } else {
-        console.log('DEBUG - LOADING NEW APPOINTMENT DATA');
-        setFormData({
+        console.log('DEBUG - Setting edit form data:', editFormData);
+        setFormData(editFormData);
+      } else if (!isEditing) {
+        console.log('DEBUG - Loading new appointment data');
+        const newFormData = {
           employeeId: employeeId?.toString() || '',
           time: time || '',
           title: '',
@@ -145,11 +139,18 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           color: appointmentColors[0].value,
           serviceType: '',
           clientId: ''
-        });
+        };
+        
+        console.log('DEBUG - Setting new form data:', newFormData);
+        setFormData(newFormData);
       }
-    } else {
-      // Reset only when dialog closes
-      console.log('DEBUG - RESETTING ON CLOSE');
+    }
+  }, [isOpen, isEditing]); // Solo quando il dialog si apre o cambia modalità
+
+  // Effetto separato per il reset quando si chiude il dialog
+  useEffect(() => {
+    if (!isOpen) {
+      console.log('DEBUG - Dialog closed, resetting form');
       setFormData({
         employeeId: '',
         time: '',
@@ -163,8 +164,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         serviceType: '',
         clientId: ''
       });
+      setIsEditing(false);
     }
-  }, [isOpen, appointmentToEdit, employeeId, time]); // Removed hasLoadedData to prevent infinite loop
+  }, [isOpen]);
 
   // Debug: mostra quando formData cambia
   useEffect(() => {
