@@ -73,7 +73,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasLoadedData, setHasLoadedData] = useState(false);
   const timeSlots = generateTimeSlots();
 
   // Load stored services from localStorage
@@ -94,7 +93,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   const serviceCategories = getStoredServices();
 
-  // Load appointment data when dialog opens - USE A SINGLE EFFECT ONLY
+  // Load appointment data when dialog opens
   useEffect(() => {
     console.log('DEBUG - MAIN EFFECT:', {
       isOpen,
@@ -109,49 +108,44 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         clientId: appointmentToEdit.clientId
       } : null,
       employeeId,
-      time,
-      hasLoadedData
+      time
     });
 
     if (isOpen) {
-      // Only load data once when dialog opens
-      if (!hasLoadedData) {
-        if (appointmentToEdit) {
-          console.log('DEBUG - LOADING EDIT DATA:', appointmentToEdit);
-          
-          const newFormData = {
-            employeeId: appointmentToEdit.employeeId?.toString() || '',
-            time: appointmentToEdit.time || '',
-            title: appointmentToEdit.title || '',
-            client: appointmentToEdit.client || '',
-            duration: appointmentToEdit.duration?.toString() || '30',
-            notes: appointmentToEdit.notes || '',
-            email: appointmentToEdit.email || '',
-            phone: appointmentToEdit.phone || '',
-            color: appointmentToEdit.color || appointmentColors[0].value,
-            serviceType: appointmentToEdit.serviceType || '',
-            clientId: appointmentToEdit.clientId || ''
-          };
-          
-          console.log('DEBUG - SETTING EDIT FORM DATA:', newFormData);
-          setFormData(newFormData);
-        } else {
-          console.log('DEBUG - LOADING NEW APPOINTMENT DATA');
-          setFormData({
-            employeeId: employeeId?.toString() || '',
-            time: time || '',
-            title: '',
-            client: '',
-            duration: '30',
-            notes: '',
-            email: '',
-            phone: '',
-            color: appointmentColors[0].value,
-            serviceType: '',
-            clientId: ''
-          });
-        }
-        setHasLoadedData(true);
+      if (appointmentToEdit) {
+        console.log('DEBUG - LOADING EDIT DATA:', appointmentToEdit);
+        
+        const newFormData = {
+          employeeId: appointmentToEdit.employeeId?.toString() || '',
+          time: appointmentToEdit.time || '',
+          title: appointmentToEdit.title || '',
+          client: appointmentToEdit.client || '',
+          duration: appointmentToEdit.duration?.toString() || '30',
+          notes: appointmentToEdit.notes || '',
+          email: appointmentToEdit.email || '',
+          phone: appointmentToEdit.phone || '',
+          color: appointmentToEdit.color || appointmentColors[0].value,
+          serviceType: appointmentToEdit.serviceType || '',
+          clientId: appointmentToEdit.clientId || ''
+        };
+        
+        console.log('DEBUG - SETTING EDIT FORM DATA:', newFormData);
+        setFormData(newFormData);
+      } else {
+        console.log('DEBUG - LOADING NEW APPOINTMENT DATA');
+        setFormData({
+          employeeId: employeeId?.toString() || '',
+          time: time || '',
+          title: '',
+          client: '',
+          duration: '30',
+          notes: '',
+          email: '',
+          phone: '',
+          color: appointmentColors[0].value,
+          serviceType: '',
+          clientId: ''
+        });
       }
     } else {
       // Reset only when dialog closes
@@ -169,9 +163,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         serviceType: '',
         clientId: ''
       });
-      setHasLoadedData(false);
     }
-  }, [isOpen, appointmentToEdit, employeeId, time, hasLoadedData]);
+  }, [isOpen, appointmentToEdit, employeeId, time]); // Removed hasLoadedData to prevent infinite loop
 
   // Debug: mostra quando formData cambia
   useEffect(() => {
