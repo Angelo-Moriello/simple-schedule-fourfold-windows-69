@@ -48,75 +48,66 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
           </div>
         </div>
 
-        {/* Action Buttons - Organized in rows for better alignment */}
-        <div className="space-y-3">
-          {/* First row: Navigation and Calendar */}
-          <div className="flex flex-wrap gap-2">
-            <DateNavigator
-              selectedDate={selectedDate}
-              showFullCalendar={showFullCalendar}
-              onDateSelect={onDateSelect}
-              onShowFullCalendar={onShowFullCalendar}
-            />
-            
+        {/* Action Buttons - All in one horizontal line */}
+        <div className="flex flex-wrap items-center gap-2">
+          <DateNavigator
+            selectedDate={selectedDate}
+            showFullCalendar={false}
+            onDateSelect={onDateSelect}
+            onShowFullCalendar={() => {}}
+          />
+          
+          <Button
+            onClick={() => onShowFullCalendar(true)}
+            variant="outline"
+            className="border-purple-200 text-purple-700 hover:bg-purple-50"
+          >
+            <CalendarDays className="h-4 w-4 mr-2" />
+            Calendario Completo
+          </Button>
+
+          <Button
+            onClick={onOpenEmployeeForm}
+            variant="outline"
+            className="border-green-200 text-green-700 hover:bg-green-50"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Gestisci Dipendenti
+          </Button>
+
+          {onOpenClientManager && (
             <Button
-              onClick={() => onShowFullCalendar(true)}
+              onClick={onOpenClientManager}
               variant="outline"
-              className="border-purple-200 text-purple-700 hover:bg-purple-50"
+              className="border-blue-200 text-blue-700 hover:bg-blue-50"
             >
-              <CalendarDays className="h-4 w-4 mr-2" />
-              Calendario Completo
+              <Users className="h-4 w-4 mr-2" />
+              Gestisci Clienti
             </Button>
-          </div>
+          )}
 
-          {/* Second row: Management buttons */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={onOpenEmployeeForm}
-              variant="outline"
-              className="border-green-200 text-green-700 hover:bg-green-50"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Gestisci Dipendenti
-            </Button>
+          <VacationManager
+            employees={employees}
+            onUpdateEmployeeVacations={onUpdateEmployeeVacations}
+          />
 
-            {onOpenClientManager && (
-              <Button
-                onClick={onOpenClientManager}
-                variant="outline"
-                className="border-blue-200 text-blue-700 hover:bg-blue-50"
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Gestisci Clienti
-              </Button>
-            )}
+          <Button
+            onClick={onNavigateToHistory}
+            variant="outline"
+            className="border-orange-200 text-orange-700 hover:bg-orange-50"
+          >
+            <History className="h-4 w-4 mr-2" />
+            Storico
+          </Button>
 
-            <VacationManager
-              employees={employees}
-              onUpdateEmployeeVacations={onUpdateEmployeeVacations}
-            />
-          </div>
-
-          {/* Third row: Reports and history */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={onNavigateToHistory}
-              variant="outline"
-              className="border-orange-200 text-orange-700 hover:bg-orange-50"
-            >
-              <History className="h-4 w-4 mr-2" />
-              Storico
-            </Button>
-
-            <Button
-              onClick={onNavigateToStatistics}
-              variant="outline"
-              className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Statistiche
-            </Button>
-          </div>
+          <Button
+            onClick={onNavigateToStatistics}
+            variant="outline"
+            className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Statistiche
+          </Button>
         </div>
       </div>
 

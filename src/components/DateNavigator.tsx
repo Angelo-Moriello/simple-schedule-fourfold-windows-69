@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -16,10 +16,10 @@ interface DateNavigatorProps {
 
 const DateNavigator: React.FC<DateNavigatorProps> = ({
   selectedDate,
-  showFullCalendar,
-  onDateSelect,
-  onShowFullCalendar
+  onDateSelect
 }) => {
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   const handlePreviousDay = () => {
     const previousDay = subDays(selectedDate, 1);
     onDateSelect(previousDay);
@@ -28,6 +28,13 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
   const handleNextDay = () => {
     const nextDay = addDays(selectedDate, 1);
     onDateSelect(nextDay);
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      onDateSelect(date);
+      setShowDatePicker(false);
+    }
   };
 
   return (
@@ -41,7 +48,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
         <ChevronLeft className="h-4 w-4" />
       </Button>
       
-      <Popover open={showFullCalendar} onOpenChange={onShowFullCalendar}>
+      <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
         <PopoverTrigger asChild>
           <Button variant="outline" className="h-9 px-3 min-w-[140px] justify-start">
             <Calendar className="mr-2 h-4 w-4" />
@@ -54,8 +61,8 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
             captionLayout="dropdown"
             defaultMonth={selectedDate}
             selected={selectedDate}
-            onSelect={onDateSelect}
-            className="rounded-md border-0"
+            onSelect={handleDateSelect}
+            className="rounded-md border-0 pointer-events-auto"
             style={{ width: '100%' }}
           />
         </PopoverContent>
