@@ -1,35 +1,21 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { Appointment, Employee } from '@/types/appointment';
-import { 
-  loadEmployeesFromSupabase, 
-  loadAppointmentsFromSupabase,
-  addEmployeeToSupabase,
-  updateEmployeeInSupabase,
-  deleteEmployeeFromSupabase,
-  addAppointmentToSupabase,
-  updateAppointmentInSupabase,
-  deleteAppointmentFromSupabase,
-  migrateLocalStorageToSupabase
-} from '@/utils/supabaseStorage';
-import { supabase } from '@/integrations/supabase/client';
+import { Appointment } from '@/types/appointment';
 import AppointmentSchedulerHeader from './AppointmentSchedulerHeader';
 import AppointmentSchedulerControls from './AppointmentSchedulerControls';
 import EmployeeTimeSlotGrid from './EmployeeTimeSlotGrid';
 import AppointmentForm from './AppointmentForm';
 import EmployeeForm from './EmployeeForm';
 import ClientManager from './ClientManager';
-import { loadRecurringTreatmentsFromSupabase } from '@/utils/clientStorage';
-import { generateAppointmentsForDateRange } from '@/utils/recurringTreatmentUtils';
-import { addDays, subDays } from 'date-fns';
+import { useAppointmentData } from '@/hooks/useAppointmentData';
+import { useRealtimeSubscriptions } from '@/hooks/useRealtimeSubscriptions';
+import { useAppointmentActions } from '@/hooks/useAppointmentActions';
 
 const AppointmentScheduler = () => {
   const navigate = useNavigate();
   
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
   const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
   const [isClientManagerOpen, setIsClientManagerOpen] = useState(false);
@@ -37,235 +23,31 @@ const AppointmentScheduler = () => {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [showFullCalendar, setShowFullCalendar] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const { appointments, employees, isLoading, setAppointments, setEmployees } = useAppointmentData(selectedDate);
 
   // Force page refresh function
   const forcePageRefresh = () => {
     console.log('DEBUG - Forzando aggiornamento pagina...');
     setTimeout(() => {
       window.location.reload();
-    }, 1000); // Small delay to allow toast messages to show
+    }, 1000);
   };
 
-  // Load data from Supabase on component mount
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Check if we need to migrate from localStorage
-        const hasLocalData = localStorage.getItem('employees') || localStorage.getItem('appointments');
-        if (hasLocalData) {
-          toast.info('Migrazione dati in corso...');
-          const migrationSuccess = await migrateLocalStorageToSupabase();
-          if (migrationSuccess) {
-            localStorage.removeItem('employees');
-            localStorage.removeItem('appointments');
-            localStorage.removeItem('employeesTimestamp');
-            localStorage.removeItem('appointmentsTimestamp');
-            toast.success('Dati migrati con successo su Supabase!');
-          } else {
-            toast.error('Errore durante la migrazione dei dati');
-          }
-        }
-        
-        // Load current data from Supabase
-        const [loadedEmployees, loadedAppointments] = await Promise.all([
-          loadEmployeesFromSupabase(),
-          loadAppointmentsFromSupabase()
-        ]);
-        
-        console.log('DEBUG - Initial data load:', { 
-          employees: loadedEmployees.length, 
-          appointments: loadedAppointments.length,
-          appointmentDetails: loadedAppointments.map(apt => ({
-            id: apt.id,
-            employeeId: apt.employeeId,
-            date: apt.date,
-            time: apt.time,
-            client: apt.client
-          }))
-        });
-        
-        setEmployees(loadedEmployees);
-        setAppointments(loadedAppointments);
-        
-        // Dopo aver caricato i dati, genera appuntamenti ricorrenti per la settimana corrente
-        try {
-          const recurringTreatments = await loadRecurringTreatmentsFromSupabase();
-          const startDate = subDays(selectedDate, 3); // 3 giorni prima
-          const endDate = addDays(selectedDate, 30); // 30 giorni dopo
-          
-          await generateAppointmentsForDateRange(recurringTreatments, startDate, endDate);
-          console.log('Appuntamenti ricorrenti generati per il periodo');
-        } catch (recurringError) {
-          console.error('Errore nella generazione appuntamenti ricorrenti:', recurringError);
-        }
-        
-        // Ricarica gli appuntamenti dopo la generazione
-        const finalAppointments = await loadAppointmentsFromSupabase();
-        setAppointments(finalAppointments);
-        
-        toast.success(`Caricati ${loadedEmployees.length} dipendenti e ${finalAppointments.length} appuntamenti`);
-      } catch (error) {
-        console.error('Errore nel caricamento dei dati:', error);
-        toast.error('Errore nel caricamento dei dati da Supabase');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  useRealtimeSubscriptions({ setAppointments, setEmployees, forcePageRefresh });
 
-    loadData();
-  }, []);
+  const {
+    addAppointment,
+    updateAppointment,
+    deleteAppointment,
+    addEmployee,
+    updateEmployee,
+    deleteEmployee,
+    updateEmployeeName,
+    handleUpdateEmployeeVacations
+  } = useAppointmentActions({ appointments, forcePageRefresh });
 
-  // Setup realtime subscriptions
-  useEffect(() => {
-    console.log('DEBUG - Configurazione realtime subscriptions...');
-    
-    const appointmentsChannel = supabase
-      .channel('appointments-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'appointments'
-        },
-        (payload) => {
-          console.log('DEBUG - Realtime appointment change:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newAppointment: Appointment = {
-              id: payload.new.id,
-              employeeId: payload.new.employee_id,
-              date: payload.new.date,
-              time: payload.new.time,
-              title: payload.new.title || '',
-              client: payload.new.client,
-              duration: payload.new.duration,
-              notes: payload.new.notes || '',
-              email: payload.new.email || '',
-              phone: payload.new.phone || '',
-              color: payload.new.color,
-              serviceType: payload.new.service_type
-            };
-            
-            console.log('DEBUG - Nuovo appuntamento da realtime:', newAppointment);
-            
-            setAppointments(prev => {
-              const exists = prev.some(apt => apt.id === newAppointment.id);
-              console.log('DEBUG - Appuntamento già esistente?', exists);
-              
-              if (!exists) {
-                const updated = [...prev, newAppointment];
-                console.log('DEBUG - Appuntamenti dopo INSERT:', updated.length);
-                // Force page refresh after appointment addition
-                setTimeout(forcePageRefresh, 500);
-                return updated;
-              }
-              return prev;
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedAppointment: Appointment = {
-              id: payload.new.id,
-              employeeId: payload.new.employee_id,
-              date: payload.new.date,
-              time: payload.new.time,
-              title: payload.new.title || '',
-              client: payload.new.client,
-              duration: payload.new.duration,
-              notes: payload.new.notes || '',
-              email: payload.new.email || '',
-              phone: payload.new.phone || '',
-              color: payload.new.color,
-              serviceType: payload.new.service_type
-            };
-            
-            console.log('DEBUG - Appuntamento aggiornato da realtime:', updatedAppointment);
-            
-            setAppointments(prev => {
-              const updated = prev.map(apt =>
-                apt.id === updatedAppointment.id ? updatedAppointment : apt
-              );
-              console.log('DEBUG - Appuntamenti dopo UPDATE:', updated.length);
-              // Force page refresh after appointment update
-              setTimeout(forcePageRefresh, 500);
-              return updated;
-            });
-          } else if (payload.eventType === 'DELETE') {
-            console.log('DEBUG - Appuntamento eliminato da realtime:', payload.old.id);
-            
-            setAppointments(prev => {
-              const updated = prev.filter(apt => apt.id !== payload.old.id);
-              console.log('DEBUG - Appuntamenti dopo DELETE:', updated.length);
-              // Force page refresh after appointment deletion
-              setTimeout(forcePageRefresh, 500);
-              return updated;
-            });
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('DEBUG - Stato subscription appuntamenti:', status);
-      });
-
-    const employeesChannel = supabase
-      .channel('employees-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'employees'
-        },
-        (payload) => {
-          console.log('DEBUG - Realtime employee change:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newEmployee: Employee = {
-              id: payload.new.id,
-              name: payload.new.name,
-              color: payload.new.color,
-              specialization: payload.new.specialization as 'Parrucchiere' | 'Estetista',
-              vacations: payload.new.vacations || []
-            };
-            
-            setEmployees(prev => {
-              const exists = prev.some(emp => emp.id === newEmployee.id);
-              if (!exists) {
-                return [...prev, newEmployee];
-              }
-              return prev;
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedEmployee: Employee = {
-              id: payload.new.id,
-              name: payload.new.name,
-              color: payload.new.color,
-              specialization: payload.new.specialization as 'Parrucchiere' | 'Estetista',
-              vacations: payload.new.vacations || []
-            };
-            
-            setEmployees(prev => prev.map(emp =>
-              emp.id === updatedEmployee.id ? updatedEmployee : emp
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setEmployees(prev => prev.filter(emp => emp.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('DEBUG - Stato subscription dipendenti:', status);
-      });
-
-    return () => {
-      console.log('Pulizia subscriptions...');
-      supabase.removeChannel(appointmentsChannel);
-      supabase.removeChannel(employeesChannel);
-    };
-  }, []);
-
-  // Debug effect per monitorare i cambiamenti di stato
+  // Debug effects
   useEffect(() => {
     console.log('DEBUG - Stato appuntamenti cambiato:', {
       count: appointments.length,
@@ -288,86 +70,6 @@ const AppointmentScheduler = () => {
       setSelectedDate(date);
     }
     setShowFullCalendar(false);
-  };
-
-  const addAppointment = async (newAppointment: Appointment) => {
-    try {
-      console.log('DEBUG - Aggiunta appuntamento:', newAppointment);
-      await addAppointmentToSupabase(newAppointment);
-      setIsAppointmentFormOpen(false);
-      toast.success('Appuntamento aggiunto con successo!');
-      // Additional refresh trigger for add operation
-      setTimeout(forcePageRefresh, 200);
-    } catch (error) {
-      console.error('Errore nell\'aggiungere l\'appuntamento:', error);
-      toast.error('Errore nell\'aggiungere l\'appuntamento');
-    }
-  };
-
-  const updateAppointment = async (updatedAppointment: Appointment) => {
-    try {
-      console.log('DEBUG - Aggiornamento appuntamento:', updatedAppointment);
-      await updateAppointmentInSupabase(updatedAppointment);
-      setAppointmentToEdit(null);
-      setIsAppointmentFormOpen(false);
-      toast.success('Appuntamento modificato con successo!');
-      // Additional refresh trigger for update operation
-      setTimeout(forcePageRefresh, 200);
-    } catch (error) {
-      console.error('Errore nella modifica dell\'appuntamento:', error);
-      toast.error('Errore nella modifica dell\'appuntamento');
-    }
-  };
-
-  const deleteAppointment = async (appointmentId: string) => {
-    try {
-      console.log('DEBUG - Eliminazione appuntamento:', appointmentId);
-      await deleteAppointmentFromSupabase(appointmentId);
-      toast.success('Appuntamento eliminato con successo!');
-      // Additional refresh trigger for delete operation
-      setTimeout(forcePageRefresh, 200);
-    } catch (error) {
-      console.error('Errore nell\'eliminazione dell\'appuntamento:', error);
-      toast.error('Errore nell\'eliminazione dell\'appuntamento');
-    }
-  };
-
-  const addEmployee = async (newEmployee: Employee) => {
-    try {
-      await addEmployeeToSupabase(newEmployee);
-      setIsEmployeeFormOpen(false);
-      toast.success('Dipendente aggiunto con successo!');
-    } catch (error) {
-      console.error('Errore nell\'aggiungere il dipendente:', error);
-      toast.error('Errore nell\'aggiungere il dipendente');
-    }
-  };
-
-  const updateEmployee = async (updatedEmployee: Employee) => {
-    try {
-      await updateEmployeeInSupabase(updatedEmployee);
-      setIsEmployeeFormOpen(false);
-      toast.success('Dipendente modificato con successo!');
-    } catch (error) {
-      console.error('Errore nella modifica del dipendente:', error);
-      toast.error('Errore nella modifica del dipendente');
-    }
-  };
-
-  const deleteEmployee = async (employeeId: number) => {
-    try {
-      const employeeAppointments = appointments.filter(appointment => appointment.employeeId === employeeId);
-      for (const appointment of employeeAppointments) {
-        await deleteAppointmentFromSupabase(appointment.id);
-      }
-      
-      await deleteEmployeeFromSupabase(employeeId);
-      
-      toast.success('Dipendente eliminato con successo!');
-    } catch (error) {
-      console.error('Errore nell\'eliminazione del dipendente:', error);
-      toast.error('Errore nell\'eliminazione del dipendente');
-    }
   };
 
   const handleOpenAppointmentForm = (employeeId: number, time: string) => {
@@ -404,34 +106,6 @@ const AppointmentScheduler = () => {
     setIsClientManagerOpen(false);
   };
 
-  const updateEmployeeName = async (employeeId: number, newName: string) => {
-    try {
-      const employee = employees.find(emp => emp.id === employeeId);
-      if (employee) {
-        const updatedEmployee = { ...employee, name: newName };
-        await updateEmployeeInSupabase(updatedEmployee);
-        toast.success('Nome dipendente aggiornato con successo!');
-      }
-    } catch (error) {
-      console.error('Errore nell\'aggiornamento del nome:', error);
-      toast.error('Errore nell\'aggiornamento del nome');
-    }
-  };
-
-  const handleUpdateEmployeeVacations = async (employeeId: number, vacations: string[]) => {
-    try {
-      const employee = employees.find(emp => emp.id === employeeId);
-      if (employee) {
-        const updatedEmployee = { ...employee, vacations };
-        await updateEmployeeInSupabase(updatedEmployee);
-        toast.success('Ferie aggiornate con successo!');
-      }
-    } catch (error) {
-      console.error('Errore nell\'aggiornamento delle ferie:', error);
-      toast.error('Errore nell\'aggiornamento delle ferie');
-    }
-  };
-
   const handleNavigateToHistory = () => {
     navigate('/history');
   };
@@ -439,29 +113,6 @@ const AppointmentScheduler = () => {
   const handleNavigateToStatistics = () => {
     navigate('/statistics');
   };
-
-  // Aggiungi un effect per generare appuntamenti ricorrenti quando cambia la data selezionata
-  useEffect(() => {
-    const generateRecurringForDate = async () => {
-      try {
-        const recurringTreatments = await loadRecurringTreatmentsFromSupabase();
-        const startDate = subDays(selectedDate, 1);
-        const endDate = addDays(selectedDate, 7);
-        
-        await generateAppointmentsForDateRange(recurringTreatments, startDate, endDate);
-        
-        // Ricarica gli appuntamenti
-        const updatedAppointments = await loadAppointmentsFromSupabase();
-        setAppointments(updatedAppointments);
-      } catch (error) {
-        console.error('Errore nella generazione appuntamenti ricorrenti per data:', error);
-      }
-    };
-
-    if (!isLoading) {
-      generateRecurringForDate();
-    }
-  }, [selectedDate, isLoading]);
 
   if (isLoading) {
     return (
@@ -491,10 +142,11 @@ const AppointmentScheduler = () => {
           onDateSelect={handleDateSelect}
           onShowFullCalendar={setShowFullCalendar}
           onOpenEmployeeForm={handleOpenEmployeeForm}
-          onUpdateEmployeeVacations={handleUpdateEmployeeVacations}
+          onUpdateEmployeeVacations={(employeeId, vacations) => handleUpdateEmployeeVacations(employeeId, vacations, employees)}
           onNavigateToHistory={handleNavigateToHistory}
           onNavigateToStatistics={handleNavigateToStatistics}
           onOpenClientManager={handleOpenClientManager}
+          appointments={appointments}
         />
 
         <EmployeeTimeSlotGrid
@@ -504,7 +156,7 @@ const AppointmentScheduler = () => {
           onAddAppointment={handleOpenAppointmentForm}
           onEditAppointment={handleEditAppointment}
           onDeleteAppointment={deleteAppointment}
-          onUpdateEmployeeName={updateEmployeeName}
+          onUpdateEmployeeName={(employeeId, newName) => updateEmployeeName(employeeId, newName, employees)}
         />
 
         <AppointmentForm
