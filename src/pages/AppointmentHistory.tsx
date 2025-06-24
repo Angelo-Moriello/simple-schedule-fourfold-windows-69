@@ -1,229 +1,38 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { User, Briefcase, ArrowLeft, BarChart3, Calendar, Clock, Mail, Phone, CalendarDays, Scissors } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { it } from 'date-fns/locale';
+import { Card } from '@/components/ui/card';
+import { BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Appointment, Employee } from '@/types/appointment';
-import { loadAppointmentsFromSupabase, loadEmployeesFromSupabase } from '@/utils/supabaseStorage';
 import Statistics from '@/components/Statistics';
 import SimpleHeader from '@/components/SimpleHeader';
-import { toast } from 'sonner';
-
-type DateFilter = 'all' | 'today' | 'week' | 'month' | 'custom';
+import AppointmentFilters from '@/components/appointment-history/AppointmentFilters';
+import ClientSearchBar from '@/components/appointment-history/ClientSearchBar';
+import AppointmentHistoryCard from '@/components/appointment-history/AppointmentHistoryCard';
+import { useAppointmentHistoryData } from '@/hooks/useAppointmentHistoryData';
 
 const AppointmentHistory = () => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
   const [showStatistics, setShowStatistics] = useState(false);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Carica i dati da Supabase
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        console.log('Caricamento dati storico da Supabase...');
-        
-        const [loadedAppointments, loadedEmployees] = await Promise.all([
-          loadAppointmentsFromSupabase(),
-          loadEmployeesFromSupabase()
-        ]);
-        
-        console.log('Storico - Appuntamenti caricati:', loadedAppointments);
-        console.log('Storico - Dipendenti caricati:', loadedEmployees);
-        
-        setAppointments(Array.isArray(loadedAppointments) ? loadedAppointments : []);
-        setEmployees(Array.isArray(loadedEmployees) ? loadedEmployees : []);
-        
-      } catch (error) {
-        console.error('Errore nel caricamento storico:', error);
-        toast.error('Errore nel caricamento dello storico');
-        setAppointments([]);
-        setEmployees([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // Ottieni tutti i nomi clienti unici per i suggerimenti
-  const uniqueClients = useMemo(() => {
-    try {
-      if (!Array.isArray(appointments) || appointments.length === 0) {
-        return [];
-      }
-      
-      const validAppointments = appointments.filter(app => 
-        app && 
-        typeof app === 'object' && 
-        app.client && 
-        typeof app.client === 'string' && 
-        app.client.trim().length > 0
-      );
-      
-      if (validAppointments.length === 0) {
-        return [];
-      }
-      
-      const clientsSet = new Set<string>();
-      validAppointments.forEach(app => {
-        if (app.client) {
-          clientsSet.add(app.client.trim());
-        }
-      });
-      
-      const allUniqueClients = Array.from(clientsSet);
-      
-      if (!searchTerm || searchTerm.trim().length === 0) {
-        return allUniqueClients;
-      }
-      
-      const searchTermLower = searchTerm.toLowerCase().trim();
-      return allUniqueClients.filter(client => 
-        client && 
-        typeof client === 'string' && 
-        client.toLowerCase().includes(searchTermLower)
-      );
-      
-    } catch (error) {
-      console.error('Errore nella generazione dei clienti unici:', error);
-      return [];
-    }
-  }, [appointments, searchTerm]);
-
-  // Enhanced filtering with date filter con controlli di sicurezza
-  const filteredAppointments = useMemo(() => {
-    try {
-      if (!Array.isArray(appointments) || appointments.length === 0) {
-        return [];
-      }
-
-      let dateFilteredAppointments = [...appointments];
-
-      // Apply date filter
-      if (dateFilter !== 'all') {
-        const today = new Date();
-        let startDate: Date;
-        let endDate: Date;
-
-        switch (dateFilter) {
-          case 'today':
-            startDate = new Date(today);
-            startDate.setHours(0, 0, 0, 0);
-            endDate = new Date(today);
-            endDate.setHours(23, 59, 59, 999);
-            break;
-          case 'week':
-            startDate = startOfWeek(today, { weekStartsOn: 1 });
-            endDate = endOfWeek(today, { weekStartsOn: 1 });
-            break;
-          case 'month':
-            startDate = startOfMonth(today);
-            endDate = endOfMonth(today);
-            break;
-          case 'custom':
-            if (customStartDate && customEndDate) {
-              startDate = new Date(customStartDate);
-              endDate = new Date(customEndDate);
-              endDate.setHours(23, 59, 59, 999);
-            } else {
-              startDate = new Date(0);
-              endDate = new Date();
-            }
-            break;
-          default:
-            startDate = new Date(0);
-            endDate = new Date();
-        }
-
-        dateFilteredAppointments = appointments.filter(appointment => {
-          if (!appointment || !appointment.date) return false;
-          try {
-            const appointmentDate = new Date(appointment.date);
-            return isWithinInterval(appointmentDate, { start: startDate, end: endDate });
-          } catch (error) {
-            console.error('Errore nel parsing della data:', appointment.date, error);
-            return false;
-          }
-        });
-      }
-
-      // Apply search filter
-      const searchTermLower = searchTerm.toLowerCase().trim();
-      return dateFilteredAppointments
-        .filter(appointment => 
-          appointment && 
-          appointment.client && 
-          typeof appointment.client === 'string' &&
-          (searchTermLower === '' || appointment.client.toLowerCase().includes(searchTermLower))
-        )
-        .sort((a, b) => {
-          try {
-            if (!a.date || !a.time || !b.date || !b.time) return 0;
-            const dateA = new Date(a.date + ' ' + a.time);
-            const dateB = new Date(b.date + ' ' + b.time);
-            return dateB.getTime() - dateA.getTime();
-          } catch (error) {
-            console.error('Errore nel sorting degli appuntamenti:', error);
-            return 0;
-          }
-        });
-    } catch (error) {
-      console.error('Errore nel filtro degli appuntamenti:', error);
-      return [];
-    }
-  }, [appointments, searchTerm, dateFilter, customStartDate, customEndDate]);
-
-  const getEmployeeName = (employeeId: number) => {
-    try {
-      if (!Array.isArray(employees) || employees.length === 0) {
-        return 'Dipendente non trovato';
-      }
-      const employee = employees.find(emp => emp && emp.id === employeeId);
-      return employee ? employee.name : 'Dipendente non trovato';
-    } catch (error) {
-      console.error('Errore nel trovare il dipendente:', error);
-      return 'Dipendente non trovato';
-    }
-  };
-
-  const getEmployeeSpecialization = (employeeId: number) => {
-    try {
-      if (!Array.isArray(employees) || employees.length === 0) {
-        return '';
-      }
-      const employee = employees.find(emp => emp && emp.id === employeeId);
-      return employee ? employee.specialization : '';
-    } catch (error) {
-      console.error('Errore nel trovare la specializzazione:', error);
-      return '';
-    }
-  };
-
-  const formatDate = (dateStr: string) => {
-    try {
-      if (!dateStr || typeof dateStr !== 'string') return 'Data non valida';
-      return format(new Date(dateStr), 'dd MMMM yyyy', { locale: it });
-    } catch (error) {
-      console.error('Errore nel formatting della data:', dateStr, error);
-      return dateStr || 'Data non valida';
-    }
-  };
+  const {
+    appointments,
+    employees,
+    isLoading,
+    searchTerm,
+    setSearchTerm,
+    dateFilter,
+    setDateFilter,
+    customStartDate,
+    setCustomStartDate,
+    customEndDate,
+    setCustomEndDate,
+    uniqueClients,
+    filteredAppointments,
+    getEmployeeName,
+    getEmployeeSpecialization,
+  } = useAppointmentHistoryData();
 
   if (isLoading) {
     return (
@@ -265,98 +74,23 @@ const AppointmentHistory = () => {
           </Button>
         </SimpleHeader>
 
-        {/* Enhanced filters */}
         <div className="space-y-4 mb-6">
-          {/* Date Filter */}
-          <Card className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="date-filter" className="text-sm font-medium mb-2 block">
-                  Filtra per periodo
-                </Label>
-                <Select value={dateFilter} onValueChange={(value: DateFilter) => setDateFilter(value)}>
-                  <SelectTrigger id="date-filter" className="h-10">
-                    <CalendarDays className="h-4 w-4 mr-2" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tutti gli appuntamenti</SelectItem>
-                    <SelectItem value="today">Oggi</SelectItem>
-                    <SelectItem value="week">Questa settimana</SelectItem>
-                    <SelectItem value="month">Questo mese</SelectItem>
-                    <SelectItem value="custom">Periodo personalizzato</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <AppointmentFilters
+            dateFilter={dateFilter}
+            setDateFilter={setDateFilter}
+            customStartDate={customStartDate}
+            setCustomStartDate={setCustomStartDate}
+            customEndDate={customEndDate}
+            setCustomEndDate={setCustomEndDate}
+          />
 
-              {dateFilter === 'custom' && (
-                <>
-                  <div>
-                    <Label htmlFor="start-date" className="text-sm font-medium mb-2 block">
-                      Data inizio
-                    </Label>
-                    <input
-                      id="start-date"
-                      type="date"
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="h-10 w-full px-3 border border-gray-300 rounded-md text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="end-date" className="text-sm font-medium mb-2 block">
-                      Data fine
-                    </Label>
-                    <input
-                      id="end-date"
-                      type="date"
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="h-10 w-full px-3 border border-gray-300 rounded-md text-sm"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-          </Card>
-
-          {/* Simple Search Bar with suggestions */}
-          <div className="relative w-full">
-            <Card className="relative">
-              <div className="p-1">
-                <div className="flex items-center gap-2 px-3 py-2">
-                  <User className="h-4 w-4 text-gray-500" />
-                  <Input
-                    placeholder="Cerca per nome cliente..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onFocus={() => setShowSearchSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
-                    className="border-0 shadow-none focus-visible:ring-0 text-base"
-                  />
-                </div>
-                
-                {/* Suggestions dropdown */}
-                {showSearchSuggestions && uniqueClients.length > 0 && searchTerm.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
-                    {uniqueClients.slice(0, 10).map((client, index) => (
-                      <button
-                        key={`suggestion-${index}-${client}`}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0"
-                        onClick={() => {
-                          setSearchTerm(client);
-                          setShowSearchSuggestions(false);
-                        }}
-                      >
-                        <User className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm">{client}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
+          <ClientSearchBar
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            uniqueClients={uniqueClients}
+            showSuggestions={showSearchSuggestions}
+            setShowSuggestions={setShowSearchSuggestions}
+          />
         </div>
 
         <div className="space-y-4">
@@ -368,64 +102,12 @@ const AppointmentHistory = () => {
             </Card>
           ) : (
             filteredAppointments.map((appointment) => (
-              <Card key={appointment.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-blue-600 shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-gray-800 text-sm sm:text-base truncate">{appointment.client || 'Cliente sconosciuto'}</p>
-                          <p className="text-xs sm:text-sm text-gray-600 truncate">
-                            {getEmployeeName(appointment.employeeId)} ({getEmployeeSpecialization(appointment.employeeId)})
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-green-600 shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-gray-800 text-sm sm:text-base">{formatDate(appointment.date)}</p>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3 text-gray-500" />
-                            <p className="text-xs sm:text-sm text-gray-600">{appointment.time} ({appointment.duration} min)</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Scissors className="h-4 w-4 text-purple-600 shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{appointment.serviceType || 'Non specificato'}</p>
-                          <p className="text-xs sm:text-sm text-gray-600 truncate">{appointment.title || 'Senza titolo'}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      {appointment.email && (
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3 w-3 text-gray-500 shrink-0" />
-                          <p className="text-xs sm:text-sm text-gray-600 truncate">{appointment.email}</p>
-                        </div>
-                      )}
-                      {appointment.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-3 w-3 text-gray-500 shrink-0" />
-                          <p className="text-xs sm:text-sm text-gray-600 truncate">{appointment.phone}</p>
-                        </div>
-                      )}
-                      {appointment.notes && (
-                        <p className="text-xs text-gray-500 truncate">Note: {appointment.notes}</p>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <AppointmentHistoryCard
+                key={appointment.id}
+                appointment={appointment}
+                getEmployeeName={getEmployeeName}
+                getEmployeeSpecialization={getEmployeeSpecialization}
+              />
             ))
           )}
         </div>
