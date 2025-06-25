@@ -50,9 +50,13 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="h-10 px-3 gap-2 text-sm">
-          <Settings className="h-4 w-4" />
-          Gestisci Servizi
+        <Button 
+          variant="secondary"
+          size="lg"
+          className="w-full gap-2"
+        >
+          <span className="text-base">⚙️</span>
+          <span className="hidden sm:inline">Servizi</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

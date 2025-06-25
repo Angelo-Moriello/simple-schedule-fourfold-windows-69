@@ -132,11 +132,12 @@ const VacationManager: React.FC<VacationManagerProps> = ({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
-          variant="outline" 
-          className="h-11 px-4 rounded-full border-2 border-cyan-200 text-cyan-700 hover:bg-cyan-50 hover:border-cyan-300 transition-all duration-200 shadow-sm hover:shadow-md"
+          variant="warning"
+          size="lg"
+          className="w-full gap-2"
         >
-          <span className="text-lg mr-2">🏖️</span>
-          <span className="font-medium">Ferie</span>
+          <span className="text-base">🏖️</span>
+          <span className="hidden sm:inline">Ferie</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
