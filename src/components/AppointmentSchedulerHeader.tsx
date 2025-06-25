@@ -1,44 +1,44 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, Users } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Employee, Appointment } from '@/types/appointment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+
 interface AppointmentSchedulerHeaderProps {
   selectedDate: Date;
   employees: Employee[];
   appointments: Appointment[];
-  onDateSelect: (date: Date | undefined) => void;
 }
+
 const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
   selectedDate,
   employees,
-  appointments,
-  onDateSelect
+  appointments
 }) => {
-  const {
-    signOut,
-    user
-  } = useAuth();
+  const { signOut, user } = useAuth();
+
   const handleLogout = async () => {
     try {
       await signOut();
+      // Force clear localStorage and reload page for mobile
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = '/auth';
       toast.success('Logout effettuato con successo');
     } catch (error) {
+      console.error('Errore logout:', error);
       toast.error('Errore durante il logout');
     }
   };
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      onDateSelect(date);
-    }
-  };
+
   const todayAppointments = appointments.filter(app => app.date === format(selectedDate, 'yyyy-MM-dd'));
-  return <div className="relative overflow-hidden bg-gradient-to-br from-slate-300 via-purple-300 to-slate-300 rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
+
+  return (
+    <div className="relative overflow-hidden bg-gradient-to-br from-slate-300 via-purple-300 to-slate-300 rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
       {/* Background decorative elements */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-200/20 via-purple-200/20 to-pink-200/20"></div>
       <div className="absolute top-0 left-0 w-full h-full bg-stone-100">
@@ -50,7 +50,11 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 lg:gap-8 mb-6 lg:mb-8">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 lg:gap-8 w-full lg:w-auto">
             <div className="relative">
-              <img src="/lovable-uploads/e3330001-9a6b-4c26-a431-89d19870edfe.png" alt="Da Capo a Piedi" className="h-32 w-32 sm:h-40 sm:w-40 lg:h-48 lg:w-48 xl:h-56 xl:w-56 object-contain rounded-3xl shadow-2xl bg-white/30 backdrop-blur-sm p-3 lg:p-4 border-2 border-white/40" />
+              <img 
+                src="/lovable-uploads/e3330001-9a6b-4c26-a431-89d19870edfe.png" 
+                alt="Da Capo a Piedi" 
+                className="h-32 w-32 sm:h-40 sm:w-40 lg:h-48 lg:w-48 xl:h-56 xl:w-56 object-contain rounded-3xl shadow-2xl bg-white/30 backdrop-blur-sm p-3 lg:p-4 border-2 border-white/40" 
+              />
               <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-3 border-white shadow-lg animate-pulse"></div>
             </div>
             <div className="text-center sm:text-left w-full sm:w-auto">
@@ -58,18 +62,6 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
                 Sistema Appuntamenti
               </h1>
               <p className="text-slate-700 text-lg sm:text-xl font-medium mb-2 sm:mb-3">Da Capo a Piedi</p>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="text-purple-700 text-base sm:text-lg hover:text-slate-800 transition-colors duration-300 cursor-pointer underline decoration-purple-500 hover:decoration-slate-800">
-                    {format(selectedDate, 'EEEE d MMMM yyyy', {
-                    locale: it
-                  })}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-white shadow-xl border-0 rounded-xl z-50" align="start">
-                  <CalendarComponent mode="single" selected={selectedDate} onSelect={handleDateSelect} initialFocus className="p-3 pointer-events-auto bg-white rounded-xl" locale={it} />
-                </PopoverContent>
-              </Popover>
             </div>
           </div>
 
@@ -117,6 +109,8 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default AppointmentSchedulerHeader;
