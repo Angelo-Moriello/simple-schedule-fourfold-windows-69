@@ -44,12 +44,12 @@ const AppointmentSchedulerLayout: React.FC<AppointmentSchedulerLayoutProps> = ({
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Background decorative elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-60 sm:w-80 h-60 sm:h-80 bg-blue-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-60 sm:w-80 h-60 sm:h-80 bg-purple-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 sm:w-96 h-72 sm:h-96 bg-indigo-400/10 rounded-full blur-3xl"></div>
+        <div className="absolute -top-40 -right-40 w-40 sm:w-60 lg:w-80 h-40 sm:h-60 lg:h-80 bg-blue-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-40 sm:w-60 lg:w-80 h-40 sm:h-60 lg:h-80 bg-purple-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 sm:w-72 lg:w-96 h-48 sm:h-72 lg:h-96 bg-indigo-400/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-2 sm:py-4 lg:py-6">
         
         <AppointmentSchedulerHeader />
 
@@ -67,7 +67,7 @@ const AppointmentSchedulerLayout: React.FC<AppointmentSchedulerLayoutProps> = ({
           appointments={appointments} 
         />
 
-        <div className="backdrop-blur-lg rounded-2xl shadow-xl border border-white/50 p-3 sm:p-4 lg:p-6 bg-stone-100">
+        <div className="backdrop-blur-lg rounded-2xl shadow-xl border border-white/50 p-2 sm:p-4 lg:p-6 bg-stone-100">
           <EmployeeTimeSlotGrid 
             employees={employees} 
             appointments={appointments} 
