@@ -28,18 +28,23 @@ const AppointmentFormActions: React.FC<AppointmentFormActionsProps> = ({
         <Button
           type="button"
           variant="outline"
+          size="lg"
           onClick={handleClose}
           disabled={isSubmitting}
-          className="w-full sm:w-auto h-12 px-6 sm:px-8 rounded-xl border-gray-300 hover:bg-gray-50 transition-all duration-200"
+          className="w-full sm:w-auto gap-2"
         >
-          Annulla
+          <span className="text-base">❌</span>
+          <span>Annulla</span>
         </Button>
         <Button 
           type="submit"
+          variant="success"
+          size="lg"
           disabled={isSubmitting}
-          className="w-full sm:w-auto h-12 px-6 sm:px-8 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full sm:w-auto gap-2"
         >
-          {isSubmitting ? 'Salvataggio...' : (appointmentToEdit ? 'Salva Modifiche' : 'Crea Appuntamento')}
+          <span className="text-base">{appointmentToEdit ? '💾' : '✅'}</span>
+          <span>{isSubmitting ? 'Salvataggio...' : (appointmentToEdit ? 'Salva Modifiche' : 'Crea Appuntamento')}</span>
         </Button>
       </div>
     </form>

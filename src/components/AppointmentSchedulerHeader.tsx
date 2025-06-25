@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, LogOut } from 'lucide-react';
+import { Calendar, Users } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -42,9 +42,6 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
 
   const todayAppointments = appointments.filter(app => app.date === format(selectedDate, 'yyyy-MM-dd'));
 
-  // Unified button styles
-  const buttonStyles = "h-12 px-4 text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border-0";
-
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
       {/* Background decorative elements */}
@@ -56,14 +53,14 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
       
       <div className="relative z-10">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 lg:gap-8 mb-6 lg:mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 lg:gap-8 w-full lg:w-auto">
-            <div className="relative mx-auto sm:mx-0">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 lg:gap-8 w-full lg:w-auto">
+            <div className="relative">
               <img 
                 src="/lovable-uploads/e3330001-9a6b-4c26-a431-89d19870edfe.png" 
                 alt="Da Capo a Piedi" 
-                className="h-24 w-24 sm:h-32 sm:w-32 lg:h-40 lg:w-40 object-contain rounded-3xl shadow-2xl bg-white/20 backdrop-blur-sm p-3 lg:p-4 border-2 border-white/30"
+                className="h-32 w-32 sm:h-40 sm:w-40 lg:h-48 lg:w-48 xl:h-56 xl:w-56 object-contain rounded-3xl shadow-2xl bg-white/20 backdrop-blur-sm p-3 lg:p-4 border-2 border-white/30"
               />
-              <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 bg-green-500 rounded-full border-2 sm:border-3 border-white shadow-lg animate-pulse"></div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-3 border-white shadow-lg animate-pulse"></div>
             </div>
             <div className="text-center sm:text-left w-full sm:w-auto">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-1 sm:mb-2">
@@ -97,10 +94,12 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
             </div>
             <Button 
               onClick={handleLogout}
-              className={`${buttonStyles} bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white gap-2 sm:gap-3 w-full sm:w-auto`}
+              variant="destructive"
+              size="lg"
+              className="w-full sm:w-auto gap-2"
             >
-              <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="text-xs sm:text-sm">Logout</span>
+              <span className="text-base">🚪</span>
+              <span className="text-sm">Logout</span>
             </Button>
           </div>
         </div>
