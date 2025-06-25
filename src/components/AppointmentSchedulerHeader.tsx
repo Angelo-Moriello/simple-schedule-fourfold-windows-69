@@ -45,8 +45,8 @@ const AppointmentSchedulerHeader: React.FC = () => {
           <div className="flex items-center justify-center mb-2 w-full">
             <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3 animate-pulse"></div>
             <h1 className="text-2xl xl:text-3xl font-bold text-gray-800 leading-tight">
-              Sistema Gestione<br />
-              Appuntamenti
+              Gestione Agenda<br />
+              Professionale
             </h1>
             <div className="w-2 h-2 bg-emerald-500 rounded-full ml-3 animate-pulse"></div>
           </div>
@@ -57,7 +57,7 @@ const AppointmentSchedulerHeader: React.FC = () => {
           <div className="flex items-center justify-center mb-1">
             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></div>
             <h1 className="text-lg sm:text-xl font-bold text-gray-800">
-              Sistema Gestione Appuntamenti
+              Gestione Agenda Professionale
             </h1>
             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full ml-2 animate-pulse"></div>
           </div>
