@@ -27,45 +27,42 @@ const AppointmentSchedulerHeader: React.FC = () => {
   };
 
   return (
-    <div className="rounded-2xl shadow-lg border border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6 bg-stone-100">
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-0">
-        {/* Logo Section */}
-        <div className="flex items-center justify-center lg:justify-start w-full lg:w-auto">
-          <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-400">
+    <div className="rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6 bg-gradient-to-r from-gray-50 to-white">
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-6">
+        
+        {/* Left Section - Logo and Title */}
+        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-6 w-full lg:w-auto">
+          {/* Logo Container */}
+          <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-300">
             <img 
               src="/lovable-uploads/01e5b397-b7ba-48e1-a891-b2bc1d71f3ba.png" 
               alt="Da Capo a Piedi - Estetica & Parrucchieri" 
-              className="h-16 sm:h-20 lg:h-28 w-auto object-contain" 
+              className="h-16 sm:h-20 lg:h-24 w-auto object-contain" 
             />
           </div>
-        </div>
 
-        {/* Center Title - Hidden on mobile, visible on larger screens */}
-        <div className="hidden lg:flex flex-1 text-center">
-          <div className="flex items-center justify-center mb-2 w-full">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3 animate-pulse"></div>
-            <h1 className="text-2xl xl:text-3xl font-bold text-gray-800 leading-tight">
-              Gestione Agenda<br />
-              Professionale
-            </h1>
-            <div className="w-2 h-2 bg-emerald-500 rounded-full ml-3 animate-pulse"></div>
+          {/* Title Section */}
+          <div className="flex flex-col justify-center text-center lg:text-left">
+            {/* Main Title */}
+            <div className="flex items-center justify-center lg:justify-start mb-1">
+              <div className="w-3 h-3 bg-emerald-400 rounded-full mr-3 animate-pulse"></div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 tracking-tight">
+                Sistema
+              </h1>
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 tracking-tight mb-2 lg:mb-3">
+              Appuntamenti
+            </h2>
+            
+            {/* Subtitle */}
+            <p className="text-gray-600 text-sm sm:text-base lg:text-lg font-medium">
+              Da Capo a Piedi
+            </p>
           </div>
         </div>
 
-        {/* Mobile Title - Visible only on mobile */}
-        <div className="flex lg:hidden flex-col items-center text-center w-full">
-          <div className="flex items-center justify-center mb-1">
-            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></div>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-800">
-              Gestione Agenda Professionale
-            </h1>
-            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full ml-2 animate-pulse"></div>
-          </div>
-          <p className="text-gray-600 text-xs sm:text-sm font-medium">Gestione professionale clienti e servizi By AM Design</p>
-        </div>
-
-        {/* User Section */}
-        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full lg:w-auto">
+        {/* Right Section - User Info and Actions */}
+        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full lg:w-auto lg:min-w-fit">
           <div className="text-center sm:text-right bg-gradient-to-br from-slate-50 to-white rounded-xl p-2 sm:p-3 shadow-sm border border-gray-100">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Benvenuto</p>
             <p className="font-semibold text-gray-800 text-xs sm:text-sm">{user?.email || 'angelo_moriello@hotmail.it'}</p>
@@ -82,11 +79,6 @@ const AppointmentSchedulerHeader: React.FC = () => {
             🚪 Esci
           </Button>
         </div>
-      </div>
-
-      {/* Subtitle for larger screens */}
-      <div className="hidden lg:block text-center mt-2">
-        <p className="text-gray-600 text-base font-medium">Gestione professionale clienti e servizi By AM Design</p>
       </div>
     </div>
   );
