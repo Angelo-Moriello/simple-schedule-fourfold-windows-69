@@ -2,6 +2,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, Users, LogOut } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Employee, Appointment } from '@/types/appointment';
@@ -32,20 +34,15 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
     }
   };
 
-  const handleDateClick = () => {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    
-    // Cicla tra oggi, domani e poi torna a oggi
-    if (format(selectedDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')) {
-      onDateSelect(tomorrow);
-    } else {
-      onDateSelect(today);
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      onDateSelect(date);
     }
   };
 
   const todayAppointments = appointments.filter(app => app.date === format(selectedDate, 'yyyy-MM-dd'));
+
+  const buttonStyles = "h-12 px-6 text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border-0";
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-2xl shadow-2xl p-8 mb-8">
@@ -58,12 +55,12 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
       
       <div className="relative z-10">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-8">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-8">
             <div className="relative">
               <img 
                 src="/lovable-uploads/e3330001-9a6b-4c26-a431-89d19870edfe.png" 
                 alt="Da Capo a Piedi" 
-                className="h-24 w-24 object-contain rounded-3xl shadow-2xl bg-white/20 backdrop-blur-sm p-3 border-2 border-white/30"
+                className="h-36 w-36 object-contain rounded-3xl shadow-2xl bg-white/20 backdrop-blur-sm p-4 border-2 border-white/30"
               />
               <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-3 border-white shadow-lg animate-pulse"></div>
             </div>
@@ -71,13 +68,24 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
               <h1 className="text-4xl lg:text-5xl font-bold text-white mb-2">
                 Sistema Appuntamenti
               </h1>
-              <p className="text-blue-200 text-xl font-medium mb-1">Da Capo a Piedi</p>
-              <button 
-                onClick={handleDateClick}
-                className="text-purple-200 text-lg hover:text-white transition-colors duration-300 cursor-pointer underline decoration-purple-300 hover:decoration-white"
-              >
-                {format(selectedDate, 'EEEE d MMMM yyyy', { locale: it })}
-              </button>
+              <p className="text-blue-200 text-xl font-medium mb-3">Da Capo a Piedi</p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="text-purple-200 text-lg hover:text-white transition-colors duration-300 cursor-pointer underline decoration-purple-300 hover:decoration-white">
+                    {format(selectedDate, 'EEEE d MMMM yyyy', { locale: it })}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-white shadow-xl border-0 rounded-xl" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    initialFocus
+                    className="p-3 pointer-events-auto bg-white rounded-xl"
+                    locale={it}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
@@ -88,9 +96,7 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
             </div>
             <Button 
               onClick={handleLogout}
-              variant="outline"
-              size="lg"
-              className="gap-3 h-12 px-6 bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:border-white/50 transition-all duration-300 rounded-xl"
+              className={`${buttonStyles} bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:border-white/50 gap-3`}
             >
               <LogOut className="h-5 w-5" />
               Logout
