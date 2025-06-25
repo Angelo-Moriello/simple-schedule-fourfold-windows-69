@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Employee, Appointment } from '@/types/appointment';
@@ -6,6 +7,7 @@ import ServiceCategoryManager from './ServiceCategoryManager';
 import DateNavigator from './DateNavigator';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+
 interface AppointmentSchedulerControlsProps {
   selectedDate: Date;
   employees: Employee[];
@@ -19,6 +21,7 @@ interface AppointmentSchedulerControlsProps {
   onOpenClientManager: () => void;
   appointments: Appointment[];
 }
+
 const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> = ({
   selectedDate,
   onDateSelect,
@@ -34,29 +37,34 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
   const todayAppointments = appointments.filter(apt => apt.date === selectedDateString);
   const appointmentCount = todayAppointments.length;
-  return <div className="backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6 bg-stone-100">
-      {/* Date Navigator Section */}
-      <div className="flex justify-center mb-4 sm:mb-6">
-        <DateNavigator selectedDate={selectedDate} onDateSelect={onDateSelect} />
-      </div>
 
-      {/* Appointment Counter */}
-      <div className="flex justify-center mb-4 sm:mb-6">
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-3 sm:p-4 shadow-sm border border-blue-200">
-          <div className="text-center">
-            <div className="text-xs sm:text-sm text-gray-600 font-medium mb-1 capitalize ">
-              {format(selectedDate, 'EEEE d MMMM', {
-              locale: it
-            })}
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-lg sm:text-xl">📅</span>
-              <span className="text-xl sm:text-2xl font-bold text-blue-600">
-                {appointmentCount}
-              </span>
-              <span className="text-xs sm:text-sm text-gray-600 font-medium capitalize ">
-                {appointmentCount === 1 ? 'appuntamento' : 'appuntamenti'}
-              </span>
+  return (
+    <div className="backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6 bg-stone-100">
+      {/* Date Navigator Section with Appointment Counter */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-center gap-4 mb-4 sm:mb-6">
+        {/* Date Navigator */}
+        <div className="flex justify-center">
+          <DateNavigator selectedDate={selectedDate} onDateSelect={onDateSelect} />
+        </div>
+
+        {/* Appointment Counter - Mobile: centered below, Desktop: right of date */}
+        <div className="flex justify-center lg:justify-start">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-3 sm:p-4 shadow-sm border border-blue-200">
+            <div className="text-center lg:text-left">
+              <div className="text-xs sm:text-sm text-gray-600 font-medium mb-1 capitalize">
+                {format(selectedDate, 'EEEE d MMMM', {
+                  locale: it
+                })}
+              </div>
+              <div className="flex items-center justify-center lg:justify-start gap-2">
+                <span className="text-lg sm:text-xl">📅</span>
+                <span className="text-xl sm:text-2xl font-bold text-blue-600">
+                  {appointmentCount}
+                </span>
+                <span className="text-xs sm:text-sm text-gray-600 font-medium capitalize">
+                  {appointmentCount === 1 ? 'appuntamento' : 'appuntamenti'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -92,6 +100,8 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
           <span className="text-xs sm:text-sm">Stats</span>
         </Button>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default AppointmentSchedulerControls;
