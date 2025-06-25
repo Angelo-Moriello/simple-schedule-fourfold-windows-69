@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import PasswordProtection from "@/components/PasswordProtection";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AppointmentHistory from "./pages/AppointmentHistory";
@@ -25,9 +24,7 @@ const App = () => (
               path="/" 
               element={
                 <ProtectedRoute>
-                  <PasswordProtection>
-                    <Index />
-                  </PasswordProtection>
+                  <Index />
                 </ProtectedRoute>
               } 
             />
@@ -35,9 +32,7 @@ const App = () => (
               path="/history" 
               element={
                 <ProtectedRoute>
-                  <PasswordProtection>
-                    <AppointmentHistory />
-                  </PasswordProtection>
+                  <AppointmentHistory />
                 </ProtectedRoute>
               } 
             />
@@ -45,9 +40,7 @@ const App = () => (
               path="/statistics" 
               element={
                 <ProtectedRoute>
-                  <PasswordProtection>
-                    <StatisticsPage />
-                  </PasswordProtection>
+                  <StatisticsPage />
                 </ProtectedRoute>
               } 
             />
