@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,7 +26,7 @@ const AppointmentSchedulerHeader: React.FC = () => {
         {/* Logo Section */}
         <div className="flex items-center">
           <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-4 shadow-sm border border-gray-100 mr-8">
-            <img src="/lovable-uploads/01e5b397-b7ba-48e1-a891-b2bc1d71f3ba.png" alt="Da Capo a Piedi - Estetica & Parrucchieri" className="h-16 w-auto object-contain" />
+            <img src="/lovable-uploads/01e5b397-b7ba-48e1-a891-b2bc1d71f3ba.png" alt="Da Capo a Piedi - Estetica & Parrucchieri" className="h-28 w-auto object-contain" />
           </div>
         </div>
 
