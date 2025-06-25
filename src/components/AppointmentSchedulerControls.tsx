@@ -5,6 +5,8 @@ import { Employee, Appointment } from '@/types/appointment';
 import VacationManager from './VacationManager';
 import ServiceCategoryManager from './ServiceCategoryManager';
 import DateNavigator from './DateNavigator';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 
 interface AppointmentSchedulerControlsProps {
   selectedDate: Date;
@@ -28,8 +30,14 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
   onUpdateEmployeeVacations,
   onNavigateToHistory,
   onNavigateToStatistics,
-  onOpenClientManager
+  onOpenClientManager,
+  appointments
 }) => {
+  // Calcola gli appuntamenti per la giornata selezionata
+  const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
+  const todayAppointments = appointments.filter(apt => apt.date === selectedDateString);
+  const appointmentCount = todayAppointments.length;
+
   return (
     <div className="backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6 bg-stone-100">
       {/* Date Navigator Section */}
@@ -38,6 +46,26 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
           selectedDate={selectedDate}
           onDateSelect={onDateSelect}
         />
+      </div>
+
+      {/* Appointment Counter */}
+      <div className="flex justify-center mb-4 sm:mb-6">
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-3 sm:p-4 shadow-sm border border-blue-200">
+          <div className="text-center">
+            <div className="text-xs sm:text-sm text-gray-600 font-medium mb-1">
+              {format(selectedDate, 'EEEE d MMMM', { locale: it })}
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-lg sm:text-xl">📅</span>
+              <span className="text-xl sm:text-2xl font-bold text-blue-600">
+                {appointmentCount}
+              </span>
+              <span className="text-xs sm:text-sm text-gray-600 font-medium">
+                {appointmentCount === 1 ? 'appuntamento' : 'appuntamenti'}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Controls Grid */}
