@@ -22,49 +22,47 @@ const AppointmentSchedulerHeader: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 mb-6">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
       <div className="flex items-center justify-between">
         {/* Logo Section */}
         <div className="flex items-center">
-          <div className="bg-white rounded-2xl p-4 shadow-md border border-gray-100 mr-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800 leading-tight">
-                DA CAPO<br />
-                A PIEDI
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                ESTETICA & PARRUCCHIERI
-              </div>
-            </div>
+          <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-4 shadow-sm border border-gray-100 mr-8">
+            <img 
+              src="/lovable-uploads/01e5b397-b7ba-48e1-a891-b2bc1d71f3ba.png" 
+              alt="Da Capo a Piedi - Estetica & Parrucchieri" 
+              className="h-16 w-auto object-contain"
+            />
           </div>
         </div>
 
         {/* Center Title */}
         <div className="flex-1 text-center">
           <div className="flex items-center justify-center mb-2">
-            <div className="w-3 h-3 bg-green-400 rounded-full mr-3"></div>
-            <h1 className="text-4xl font-bold text-gray-800">
-              Sistema<br />
+            <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3 animate-pulse"></div>
+            <h1 className="text-3xl font-bold text-gray-800 leading-tight">
+              Sistema Gestione<br />
               Appuntamenti
             </h1>
+            <div className="w-2 h-2 bg-emerald-500 rounded-full ml-3 animate-pulse"></div>
           </div>
-          <p className="text-gray-600 text-lg">Da Capo a Piedi</p>
+          <p className="text-gray-600 text-base font-medium">Gestione professionale clienti e servizi</p>
         </div>
 
         {/* User Section */}
         <div className="flex items-center space-x-4">
-          <div className="text-right">
-            <p className="text-sm text-gray-600">Benvenuto</p>
-            <p className="font-medium text-gray-800">{user?.email || 'angelo_moriello@hotmail.it'}</p>
+          <div className="text-right bg-gradient-to-br from-slate-50 to-white rounded-xl p-3 shadow-sm border border-gray-100">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Benvenuto</p>
+            <p className="font-semibold text-gray-800 text-sm">{user?.email || 'angelo_moriello@hotmail.it'}</p>
           </div>
           
           <BackupManager />
           
           <Button
             onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium"
+            variant="destructive"
+            className="px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
           >
-            🚪 Logout
+            🚪 Esci
           </Button>
         </div>
       </div>
