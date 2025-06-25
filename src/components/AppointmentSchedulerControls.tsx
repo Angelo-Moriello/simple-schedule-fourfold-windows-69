@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Employee, Appointment } from '@/types/appointment';
@@ -7,7 +6,6 @@ import ServiceCategoryManager from './ServiceCategoryManager';
 import DateNavigator from './DateNavigator';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-
 interface AppointmentSchedulerControlsProps {
   selectedDate: Date;
   employees: Employee[];
@@ -21,7 +19,6 @@ interface AppointmentSchedulerControlsProps {
   onOpenClientManager: () => void;
   appointments: Appointment[];
 }
-
 const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> = ({
   selectedDate,
   onDateSelect,
@@ -37,15 +34,10 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
   const todayAppointments = appointments.filter(apt => apt.date === selectedDateString);
   const appointmentCount = todayAppointments.length;
-
-  return (
-    <div className="backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6 bg-stone-100">
+  return <div className="backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6 bg-stone-100">
       {/* Date Navigator Section */}
       <div className="flex justify-center mb-4 sm:mb-6">
-        <DateNavigator
-          selectedDate={selectedDate}
-          onDateSelect={onDateSelect}
-        />
+        <DateNavigator selectedDate={selectedDate} onDateSelect={onDateSelect} />
       </div>
 
       {/* Appointment Counter */}
@@ -53,14 +45,16 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-3 sm:p-4 shadow-sm border border-blue-200">
           <div className="text-center">
             <div className="text-xs sm:text-sm text-gray-600 font-medium mb-1">
-              {format(selectedDate, 'EEEE d MMMM', { locale: it })}
+              {format(selectedDate, 'EEEE d MMMM', {
+              locale: it
+            })}
             </div>
             <div className="flex items-center justify-center gap-2">
               <span className="text-lg sm:text-xl">📅</span>
               <span className="text-xl sm:text-2xl font-bold text-blue-600">
                 {appointmentCount}
               </span>
-              <span className="text-xs sm:text-sm text-gray-600 font-medium">
+              <span className="text-xs sm:text-sm text-gray-600 font-medium capitalize ">
                 {appointmentCount === 1 ? 'appuntamento' : 'appuntamenti'}
               </span>
             </div>
@@ -98,8 +92,6 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
           <span className="text-xs sm:text-sm">Stats</span>
         </Button>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AppointmentSchedulerControls;
