@@ -74,7 +74,7 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full lg:w-auto">
-            <div className="text-center sm:text-right bg-white/20 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/30 w-full sm:w-auto">
+            <div className="text-center sm:text-right backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/30 w-full sm:w-auto bg-white">
               <p className="text-xs sm:text-sm text-slate-700 mb-1">Benvenuto</p>
               <p className="font-bold text-slate-800 text-sm sm:text-lg break-all sm:break-normal">{user?.email}</p>
             </div>
