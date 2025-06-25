@@ -1,12 +1,12 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import BackupManager from './BackupManager';
-
 const AppointmentSchedulerHeader: React.FC = () => {
-  const { signOut, user } = useAuth();
-
+  const {
+    signOut,
+    user
+  } = useAuth();
   const handleLogout = async () => {
     console.log('DEBUG - Tentativo di logout...');
     try {
@@ -20,18 +20,12 @@ const AppointmentSchedulerHeader: React.FC = () => {
       console.error('Errore durante il logout:', error);
     }
   };
-
-  return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
+  return <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
       <div className="flex items-center justify-between">
         {/* Logo Section */}
         <div className="flex items-center">
           <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-4 shadow-sm border border-gray-100 mr-8">
-            <img 
-              src="/lovable-uploads/01e5b397-b7ba-48e1-a891-b2bc1d71f3ba.png" 
-              alt="Da Capo a Piedi - Estetica & Parrucchieri" 
-              className="h-16 w-auto object-contain"
-            />
+            <img src="/lovable-uploads/01e5b397-b7ba-48e1-a891-b2bc1d71f3ba.png" alt="Da Capo a Piedi - Estetica & Parrucchieri" className="h-16 w-auto object-contain" />
           </div>
         </div>
 
@@ -45,7 +39,7 @@ const AppointmentSchedulerHeader: React.FC = () => {
             </h1>
             <div className="w-2 h-2 bg-emerald-500 rounded-full ml-3 animate-pulse"></div>
           </div>
-          <p className="text-gray-600 text-base font-medium">Gestione professionale clienti e servizi</p>
+          <p className="text-gray-600 text-base font-medium">Gestione professionale clienti e servizi By AM Design</p>
         </div>
 
         {/* User Section */}
@@ -57,17 +51,11 @@ const AppointmentSchedulerHeader: React.FC = () => {
           
           <BackupManager />
           
-          <Button
-            onClick={handleLogout}
-            variant="destructive"
-            className="px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
-          >
+          <Button onClick={handleLogout} variant="destructive" className="px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200">
             🚪 Esci
           </Button>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AppointmentSchedulerHeader;
