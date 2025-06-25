@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, LogOut, TrendingUp } from 'lucide-react';
+import { Calendar, Users, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Employee, Appointment } from '@/types/appointment';
@@ -12,12 +12,14 @@ interface AppointmentSchedulerHeaderProps {
   selectedDate: Date;
   employees: Employee[];
   appointments: Appointment[];
+  onDateSelect: (date: Date | undefined) => void;
 }
 
 const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
   selectedDate,
   employees,
-  appointments
+  appointments,
+  onDateSelect
 }) => {
   const { signOut, user } = useAuth();
 
@@ -30,25 +32,23 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
     }
   };
 
+  const handleDateClick = () => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    
+    // Cicla tra oggi, domani e poi torna a oggi
+    if (format(selectedDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')) {
+      onDateSelect(tomorrow);
+    } else {
+      onDateSelect(today);
+    }
+  };
+
   const todayAppointments = appointments.filter(app => app.date === format(selectedDate, 'yyyy-MM-dd'));
-  const totalRevenue = todayAppointments.reduce((sum, app) => {
-    const serviceTypePrices: { [key: string]: number } = {
-      'Taglio': 30,
-      'Piega': 25,
-      'Colore': 60,
-      'Trattamento': 40,
-      'Manicure': 20,
-      'Pedicure': 25,
-      'Ceretta': 15,
-      'Pulizia viso': 35,
-      'Massaggio': 50,
-      'Altro': 30
-    };
-    return sum + (serviceTypePrices[app.serviceType] || 30);
-  }, 0);
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-2xl shadow-2xl p-6 mb-8">
+    <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-2xl shadow-2xl p-8 mb-8">
       {/* Background decorative elements */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10"></div>
       <div className="absolute top-0 left-0 w-full h-full">
@@ -57,28 +57,31 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
       </div>
       
       <div className="relative z-10">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-8">
+          <div className="flex items-center gap-6">
             <div className="relative">
               <img 
                 src="/lovable-uploads/e3330001-9a6b-4c26-a431-89d19870edfe.png" 
                 alt="Da Capo a Piedi" 
-                className="h-16 w-16 object-contain rounded-2xl shadow-lg bg-white/10 backdrop-blur-sm p-2"
+                className="h-24 w-24 object-contain rounded-3xl shadow-2xl bg-white/20 backdrop-blur-sm p-3 border-2 border-white/30"
               />
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-3 border-white shadow-lg animate-pulse"></div>
             </div>
             <div>
-              <h1 className="text-3xl lg:text-4xl font-bold text-white mb-1">
+              <h1 className="text-4xl lg:text-5xl font-bold text-white mb-2">
                 Sistema Appuntamenti
               </h1>
-              <p className="text-blue-200 text-lg font-medium">Da Capo a Piedi</p>
-              <p className="text-purple-200 text-sm">
+              <p className="text-blue-200 text-xl font-medium mb-1">Da Capo a Piedi</p>
+              <button 
+                onClick={handleDateClick}
+                className="text-purple-200 text-lg hover:text-white transition-colors duration-300 cursor-pointer underline decoration-purple-300 hover:decoration-white"
+              >
                 {format(selectedDate, 'EEEE d MMMM yyyy', { locale: it })}
-              </p>
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <div className="text-right bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
               <p className="text-sm text-blue-200 mb-1">Benvenuto</p>
               <p className="font-bold text-white text-lg">{user?.email}</p>
@@ -87,7 +90,7 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
               onClick={handleLogout}
               variant="outline"
               size="lg"
-              className="gap-2 bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:border-white/50 transition-all duration-300"
+              className="gap-3 h-12 px-6 bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:border-white/50 transition-all duration-300 rounded-xl"
             >
               <LogOut className="h-5 w-5" />
               Logout
@@ -95,7 +98,7 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="group bg-gradient-to-br from-blue-500/20 to-blue-600/30 backdrop-blur-sm rounded-2xl p-6 border border-blue-400/30 hover:border-blue-400/50 transition-all duration-300 hover:transform hover:scale-105">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -109,19 +112,6 @@ const AppointmentSchedulerHeader: React.FC<AppointmentSchedulerHeaderProps> = ({
             <p className="text-blue-200 text-sm">
               {todayAppointments.length === 1 ? 'appuntamento programmato' : 'appuntamenti programmati'}
             </p>
-          </div>
-
-          <div className="group bg-gradient-to-br from-emerald-500/20 to-emerald-600/30 backdrop-blur-sm rounded-2xl p-6 border border-emerald-400/30 hover:border-emerald-400/50 transition-all duration-300 hover:transform hover:scale-105">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-emerald-500/30 rounded-xl">
-                  <TrendingUp className="h-6 w-6 text-emerald-200" />
-                </div>
-                <span className="font-bold text-emerald-100 text-lg">Ricavi Stimati</span>
-              </div>
-            </div>
-            <p className="text-4xl font-bold text-white mb-2">€{totalRevenue}</p>
-            <p className="text-emerald-200 text-sm">per la giornata odierna</p>
           </div>
 
           <div className="group bg-gradient-to-br from-purple-500/20 to-purple-600/30 backdrop-blur-sm rounded-2xl p-6 border border-purple-400/30 hover:border-purple-400/50 transition-all duration-300 hover:transform hover:scale-105">

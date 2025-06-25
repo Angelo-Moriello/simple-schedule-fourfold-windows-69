@@ -141,6 +141,7 @@ const AppointmentScheduler = () => {
           selectedDate={selectedDate}
           employees={employees}
           appointments={appointments}
+          onDateSelect={handleDateSelect}
         />
 
         <AppointmentSchedulerControls
