@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { useAppointmentData } from '@/hooks/useAppointmentData';
 import { useRealtimeSubscriptions } from '@/hooks/useRealtimeSubscriptions';
 import { useAppointmentActions } from '@/hooks/useAppointmentActions';
-import { useAppointmentScheduler } from '@/hooks/useAppointmentScheduler';
+import { useAppointmentSchedulerState } from '@/hooks/useAppointmentSchedulerState';
 import AppointmentSchedulerLayout from './AppointmentSchedulerLayout';
 import AppointmentModals from './AppointmentModals';
 
@@ -28,7 +28,7 @@ const AppointmentScheduler = () => {
     handleCloseClientManager,
     handleNavigateToHistory,
     handleNavigateToStatistics
-  } = useAppointmentScheduler();
+  } = useAppointmentSchedulerState();
 
   const { appointments, employees, isLoading, setAppointments, setEmployees } = useAppointmentData(selectedDate);
 
