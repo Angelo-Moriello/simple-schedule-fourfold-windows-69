@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, History, BarChart3, UserPlus } from 'lucide-react';
+import { Calendar, UserPlus, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Employee, Appointment } from '@/types/appointment';
@@ -38,72 +38,83 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
   appointments
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/50 p-6 mb-8">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <Calendar className="h-6 w-6 text-blue-600" />
-            <h2 className="text-xl font-bold text-gray-800">
-              {format(selectedDate, 'EEEE d MMMM yyyy', { locale: it })}
-            </h2>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">
+              <CalendarDays className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-1">
+                {format(selectedDate, 'EEEE d MMMM', { locale: it })}
+              </h2>
+              <p className="text-gray-600 text-sm">{format(selectedDate, 'yyyy', { locale: it })}</p>
+            </div>
           </div>
           
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="h-10 px-3 gap-2 text-sm">
-                📅 Cambia Data
+              <Button 
+                variant="outline" 
+                className="h-12 px-6 gap-3 text-sm bg-white/70 backdrop-blur-sm border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 rounded-xl shadow-md"
+              >
+                <Calendar className="h-4 w-4" />
+                Cambia Data
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0 bg-white/95 backdrop-blur-lg border-2" align="start">
               <CalendarComponent
                 mode="single"
                 selected={selectedDate}
                 onSelect={onDateSelect}
                 initialFocus
+                className="rounded-xl"
               />
             </PopoverContent>
           </Popover>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <Button 
           onClick={onOpenEmployeeForm}
-          className="h-12 bg-blue-600 hover:bg-blue-700 text-white gap-2 text-sm"
+          className="h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-3 text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
         >
-          <UserPlus className="h-4 w-4" />
-          👨‍💼 Dipendenti
+          <UserPlus className="h-5 w-5" />
+          <span className="hidden sm:inline">Gestisci</span> Staff
         </Button>
 
-        <VacationManager 
-          employees={employees}
-          onUpdateEmployeeVacations={onUpdateEmployeeVacations}
-        />
+        <div className="h-14">
+          <VacationManager 
+            employees={employees}
+            onUpdateEmployeeVacations={onUpdateEmployeeVacations}
+          />
+        </div>
 
-        <ServiceCategoryManager />
+        <div className="h-14">
+          <ServiceCategoryManager />
+        </div>
 
         <Button 
           onClick={onOpenClientManager}
-          variant="outline" 
-          className="h-12 px-3 gap-2 text-sm border-green-200 text-green-700 hover:bg-green-50"
+          className="h-14 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white gap-3 text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
         >
-          👥 Clienti
+          👥 <span className="hidden sm:inline">Gestisci</span> Clienti
         </Button>
 
         <Button 
           onClick={onNavigateToHistory}
-          variant="outline" 
-          className="h-12 px-3 gap-2 text-sm border-purple-200 text-purple-700 hover:bg-purple-50"
+          className="h-14 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white gap-3 text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
         >
-          📚 Storico
+          📚 <span className="hidden sm:inline">Visualizza</span> Storico
         </Button>
 
         <Button 
           onClick={onNavigateToStatistics}
-          variant="outline" 
-          className="h-12 px-3 gap-2 text-sm border-orange-200 text-orange-700 hover:bg-orange-50"
+          className="h-14 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white gap-3 text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
         >
-          📊 Statistiche
+          📊 <span className="hidden sm:inline">Visualizza</span> Stats
         </Button>
       </div>
     </div>
