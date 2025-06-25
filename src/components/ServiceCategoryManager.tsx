@@ -56,7 +56,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
           className="w-full gap-2"
         >
           <span className="text-base">⚙️</span>
-          <span className="hidden sm:inline">Servizi</span>
+          <span className="text-xs sm:text-sm">Servizi</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

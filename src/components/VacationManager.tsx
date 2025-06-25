@@ -137,7 +137,7 @@ const VacationManager: React.FC<VacationManagerProps> = ({
           className="w-full gap-2"
         >
           <span className="text-base">🏖️</span>
-          <span className="hidden sm:inline">Ferie</span>
+          <span className="text-xs sm:text-sm">Ferie</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
