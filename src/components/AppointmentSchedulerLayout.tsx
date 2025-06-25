@@ -1,0 +1,91 @@
+
+import React from 'react';
+import { Appointment, Employee } from '@/types/appointment';
+import AppointmentSchedulerHeader from './AppointmentSchedulerHeader';
+import AppointmentSchedulerControls from './AppointmentSchedulerControls';
+import EmployeeTimeSlotGrid from './EmployeeTimeSlotGrid';
+
+interface AppointmentSchedulerLayoutProps {
+  selectedDate: Date;
+  employees: Employee[];
+  appointments: Appointment[];
+  showFullCalendar: boolean;
+  onDateSelect: (date: Date | undefined) => void;
+  onShowFullCalendar: (show: boolean) => void;
+  onOpenEmployeeForm: () => void;
+  onUpdateEmployeeVacations: (employeeId: number, vacations: string[]) => void;
+  onNavigateToHistory: () => void;
+  onNavigateToStatistics: () => void;
+  onOpenClientManager: () => void;
+  onAddAppointment: (employeeId: number, time: string) => void;
+  onEditAppointment: (appointment: Appointment) => void;
+  onDeleteAppointment: (appointmentId: string) => void;
+  onUpdateEmployeeName: (employeeId: number, newName: string) => void;
+}
+
+const AppointmentSchedulerLayout: React.FC<AppointmentSchedulerLayoutProps> = ({
+  selectedDate,
+  employees,
+  appointments,
+  showFullCalendar,
+  onDateSelect,
+  onShowFullCalendar,
+  onOpenEmployeeForm,
+  onUpdateEmployeeVacations,
+  onNavigateToHistory,
+  onNavigateToStatistics,
+  onOpenClientManager,
+  onAddAppointment,
+  onEditAppointment,
+  onDeleteAppointment,
+  onUpdateEmployeeName
+}) => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Background decorative elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-60 sm:w-80 h-60 sm:h-80 bg-blue-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-60 sm:w-80 h-60 sm:h-80 bg-purple-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 sm:w-96 h-72 sm:h-96 bg-indigo-400/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8">
+        
+        <AppointmentSchedulerHeader
+          selectedDate={selectedDate}
+          employees={employees}
+          appointments={appointments}
+          onDateSelect={onDateSelect}
+        />
+
+        <AppointmentSchedulerControls
+          selectedDate={selectedDate}
+          employees={employees}
+          showFullCalendar={showFullCalendar}
+          onDateSelect={onDateSelect}
+          onShowFullCalendar={onShowFullCalendar}
+          onOpenEmployeeForm={onOpenEmployeeForm}
+          onUpdateEmployeeVacations={onUpdateEmployeeVacations}
+          onNavigateToHistory={onNavigateToHistory}
+          onNavigateToStatistics={onNavigateToStatistics}
+          onOpenClientManager={onOpenClientManager}
+          appointments={appointments}
+        />
+
+        <div className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/50 p-3 sm:p-4 lg:p-6">
+          <EmployeeTimeSlotGrid
+            employees={employees}
+            appointments={appointments}
+            selectedDate={selectedDate}
+            onAddAppointment={onAddAppointment}
+            onEditAppointment={onEditAppointment}
+            onDeleteAppointment={onDeleteAppointment}
+            onUpdateEmployeeName={onUpdateEmployeeName}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AppointmentSchedulerLayout;
