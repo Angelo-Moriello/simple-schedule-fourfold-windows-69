@@ -132,7 +132,7 @@ const VacationManager: React.FC<VacationManagerProps> = ({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
-          variant="warning"
+          variant="secondary"
           size="lg"
           className="w-full gap-2"
         >

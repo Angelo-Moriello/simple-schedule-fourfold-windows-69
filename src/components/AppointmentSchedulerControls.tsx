@@ -32,7 +32,7 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <Button 
           onClick={onOpenEmployeeForm}
-          variant="default"
+          variant="secondary"
           size="lg"
           className="w-full gap-2"
         >
@@ -53,7 +53,7 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
 
         <Button 
           onClick={onOpenClientManager}
-          variant="emerald"
+          variant="secondary"
           size="lg"
           className="w-full gap-2"
         >
@@ -63,7 +63,7 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
 
         <Button 
           onClick={onNavigateToHistory}
-          variant="purple"
+          variant="secondary"
           size="lg"
           className="w-full gap-2"
         >
@@ -73,7 +73,7 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
 
         <Button 
           onClick={onNavigateToStatistics}
-          variant="warning"
+          variant="secondary"
           size="lg"
           className="w-full gap-2"
         >
