@@ -51,11 +51,7 @@ const AppointmentSchedulerLayout: React.FC<AppointmentSchedulerLayoutProps> = ({
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8">
         
-        <AppointmentSchedulerHeader 
-          selectedDate={selectedDate} 
-          employees={employees} 
-          appointments={appointments} 
-        />
+        <AppointmentSchedulerHeader />
 
         <AppointmentSchedulerControls 
           selectedDate={selectedDate} 
