@@ -3,7 +3,6 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import BackupManager from './BackupManager';
-import LocalBackupManager from './LocalBackupManager';
 
 const AppointmentSchedulerHeader: React.FC = () => {
   const { signOut } = useAuth();
@@ -38,7 +37,6 @@ const AppointmentSchedulerHeader: React.FC = () => {
         </div>
         <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
           <BackupManager />
-          <LocalBackupManager />
           <Button
             variant="outline"
             onClick={handleLogout}
