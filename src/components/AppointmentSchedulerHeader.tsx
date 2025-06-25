@@ -22,7 +22,7 @@ const AppointmentSchedulerHeader: React.FC = () => {
       console.error('Errore durante il logout:', error);
     }
   };
-  return <div className="rounded-2xl shadow-lg border border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6 bg-stone-200">
+  return <div className="rounded-2xl shadow-lg border border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6 bg-stone-100">
       <div className="flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-0">
         {/* Logo Section */}
         <div className="flex items-center justify-center lg:justify-start w-full lg:w-auto">
