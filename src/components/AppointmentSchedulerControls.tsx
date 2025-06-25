@@ -44,7 +44,7 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
       <div className="flex justify-center mb-4 sm:mb-6">
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-3 sm:p-4 shadow-sm border border-blue-200">
           <div className="text-center">
-            <div className="text-xs sm:text-sm text-gray-600 font-medium mb-1">
+            <div className="text-xs sm:text-sm text-gray-600 font-medium mb-1 capitalize ">
               {format(selectedDate, 'EEEE d MMMM', {
               locale: it
             })}
