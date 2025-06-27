@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -24,19 +25,45 @@ const LocalBackupManager: React.FC = () => {
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
   const [backupInterval, setBackupInterval] = useState(8);
   const [isConfiguring, setIsConfiguring] = useState(false);
+  const [browserError, setBrowserError] = useState<string | null>(null);
   const { toast } = useToast()
+
+  // Check browser compatibility on mount
+  useEffect(() => {
+    try {
+      if (typeof localStorage === 'undefined') {
+        setBrowserError('Il tuo browser non supporta localStorage');
+        return;
+      }
+      if (typeof setInterval === 'undefined') {
+        setBrowserError('Il tuo browser non supporta setInterval');
+        return;
+      }
+      setBrowserError(null);
+    } catch (error) {
+      setBrowserError('Errore di compatibilità del browser');
+      console.error('Browser compatibility error:', error);
+    }
+  }, []);
 
   const loadBackupHistory = async () => {
     try {
+      if (browserError) return;
       const history = await getBackupHistory();
       setBackupHistory(history);
     } catch (error) {
       console.error('Errore nel caricamento cronologia backup:', error);
+      toast({
+        variant: "destructive",
+        title: "Errore",
+        description: "Errore nel caricamento della cronologia backup",
+      });
     }
   };
 
   const loadLastBackupTime = async () => {
     try {
+      if (browserError) return;
       const lastTime = await getLastBackupTime();
       setLastBackup(lastTime);
     } catch (error) {
@@ -46,6 +73,7 @@ const LocalBackupManager: React.FC = () => {
 
   const loadAutoBackupInterval = async () => {
     try {
+      if (browserError) return;
       const interval = await getAutoBackupInterval();
       if (interval !== null && interval > 0) {
         setAutoBackupEnabled(true);
@@ -59,15 +87,15 @@ const LocalBackupManager: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !browserError) {
       loadBackupHistory();
       loadLastBackupTime();
       loadAutoBackupInterval();
     }
-  }, [isOpen]);
+  }, [isOpen, browserError]);
 
   const handleAutoBackupToggle = async (enabled: boolean) => {
-    if (isConfiguring) return;
+    if (isConfiguring || browserError) return;
     
     setIsConfiguring(true);
     try {
@@ -92,7 +120,7 @@ const LocalBackupManager: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Errore",
-        description: "Errore nella configurazione del backup automatico",
+        description: error instanceof Error ? error.message : "Errore nella configurazione del backup automatico",
       });
     } finally {
       setIsConfiguring(false);
@@ -101,7 +129,7 @@ const LocalBackupManager: React.FC = () => {
 
   const handleIntervalChange = async (value: string) => {
     const numValue = parseInt(value, 10);
-    if (isNaN(numValue) || numValue <= 0 || numValue > 168) {
+    if (isNaN(numValue) || numValue <= 0 || numValue > 168 || browserError) {
       return;
     }
     
@@ -118,16 +146,16 @@ const LocalBackupManager: React.FC = () => {
       } catch (error) {
         console.error('Errore nell\'aggiornamento intervallo:', error);
         toast({
-          variant: "destructive",
+          variant: "destructive", 
           title: "Errore",
-          description: "Errore nell'aggiornamento dell'intervallo",
+          description: error instanceof Error ? error.message : "Errore nell'aggiornamento dell'intervallo",
         });
       }
     }
   };
 
   const createManualBackup = async () => {
-    if (isCreatingBackup) return;
+    if (isCreatingBackup || browserError) return;
     
     setIsCreatingBackup(true);
     try {
@@ -143,7 +171,7 @@ const LocalBackupManager: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Errore",
-        description: "Errore durante la creazione del backup",
+        description: error instanceof Error ? error.message : "Errore durante la creazione del backup",
       })
     } finally {
       setIsCreatingBackup(false);
@@ -152,6 +180,15 @@ const LocalBackupManager: React.FC = () => {
 
   const downloadBackup = async (backup: BackupEntry) => {
     try {
+      if (browserError) {
+        toast({
+          variant: "destructive",
+          title: "Errore",
+          description: browserError,
+        });
+        return;
+      }
+      
       await downloadBackupFile(backup);
       toast({
         title: "Download Backup",
@@ -162,10 +199,46 @@ const LocalBackupManager: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Errore",
-        description: "Errore durante il download del backup",
+        description: error instanceof Error ? error.message : "Errore durante il download del backup",
       })
     }
   };
+
+  if (browserError) {
+    return (
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button 
+            variant="outline" 
+            className="h-11 px-4 rounded-full border-2 border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300 transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            <span className="text-lg mr-2">⚠️</span>
+            <span className="font-medium">Backup</span>
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-lg">⚠️</span>
+              Errore Browser
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-800">
+                <span className="text-base mr-1">❌</span>
+                {browserError}
+              </p>
+              <p className="text-xs text-red-600 mt-2">
+                Prova ad aggiornare il browser o utilizzare un browser diverso (Firefox, Edge, Safari).
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

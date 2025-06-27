@@ -13,23 +13,60 @@ interface BackupData {
 // Global variable to store the current interval ID
 let currentAutoBackupInterval: NodeJS.Timeout | null = null;
 
+// Browser compatibility check
+const isBrowserSupported = (): boolean => {
+  try {
+    return typeof localStorage !== 'undefined' && 
+           typeof setInterval !== 'undefined' && 
+           typeof clearInterval !== 'undefined';
+  } catch (error) {
+    console.error('Browser compatibility check failed:', error);
+    return false;
+  }
+};
+
+const safeLocalStorageGet = (key: string, fallback: string = '[]'): string => {
+  try {
+    if (!isBrowserSupported()) return fallback;
+    return localStorage.getItem(key) || fallback;
+  } catch (error) {
+    console.error(`Error accessing localStorage for key ${key}:`, error);
+    return fallback;
+  }
+};
+
+const safeLocalStorageSet = (key: string, value: string): boolean => {
+  try {
+    if (!isBrowserSupported()) return false;
+    localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    console.error(`Error setting localStorage for key ${key}:`, error);
+    return false;
+  }
+};
+
 // Simulate backup functionality using localStorage
 export const createBackup = async (type: 'manual' | 'automatic'): Promise<void> => {
   try {
+    if (!isBrowserSupported()) {
+      throw new Error('Browser non supportato per i backup');
+    }
+
     const timestamp = new Date().toISOString();
     const backupData = {
       date: timestamp,
       type,
       data: {
-        appointments: JSON.parse(localStorage.getItem('appointments') || '[]'),
-        employees: JSON.parse(localStorage.getItem('employees') || '[]'),
-        clients: JSON.parse(localStorage.getItem('clients') || '[]'),
-        services: JSON.parse(localStorage.getItem('services') || '{}')
+        appointments: JSON.parse(safeLocalStorageGet('appointments')),
+        employees: JSON.parse(safeLocalStorageGet('employees')),
+        clients: JSON.parse(safeLocalStorageGet('clients')),
+        services: JSON.parse(safeLocalStorageGet('services', '{}'))
       }
     };
 
-    // Store backup in localStorage
-    const backups: BackupData[] = JSON.parse(localStorage.getItem('local-backups') || '[]');
+    // Store backup in localStorage with enhanced error handling
+    const backups: BackupData[] = JSON.parse(safeLocalStorageGet('local-backups'));
     backups.push({
       date: timestamp,
       type,
@@ -44,19 +81,27 @@ export const createBackup = async (type: 'manual' | 'automatic'): Promise<void> 
       new Date(backup.date) >= thirtyDaysAgo
     );
 
-    localStorage.setItem('local-backups', JSON.stringify(filteredBackups));
-    localStorage.setItem('last-backup-time', timestamp);
+    const success = safeLocalStorageSet('local-backups', JSON.stringify(filteredBackups));
+    if (!success) {
+      throw new Error('Impossibile salvare il backup');
+    }
+
+    safeLocalStorageSet('last-backup-time', timestamp);
     
     console.log('Backup creato con successo:', type);
   } catch (error) {
     console.error('Errore nella creazione backup:', error);
-    throw new Error('Impossibile creare il backup');
+    throw new Error('Impossibile creare il backup: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
   }
 };
 
 export const getBackupHistory = async (): Promise<BackupEntry[]> => {
   try {
-    const backups: BackupData[] = JSON.parse(localStorage.getItem('local-backups') || '[]');
+    if (!isBrowserSupported()) {
+      return [];
+    }
+    
+    const backups: BackupData[] = JSON.parse(safeLocalStorageGet('local-backups'));
     return backups.map((backup: BackupData) => ({
       date: new Date(backup.date).toLocaleString('it-IT'),
       type: backup.type
@@ -69,7 +114,11 @@ export const getBackupHistory = async (): Promise<BackupEntry[]> => {
 
 export const downloadBackupFile = async (backup: BackupEntry): Promise<void> => {
   try {
-    const backups: BackupData[] = JSON.parse(localStorage.getItem('local-backups') || '[]');
+    if (!isBrowserSupported()) {
+      throw new Error('Browser non supportato per il download');
+    }
+
+    const backups: BackupData[] = JSON.parse(safeLocalStorageGet('local-backups'));
     const targetBackup = backups.find((b: BackupData) => 
       new Date(b.date).toLocaleString('it-IT') === backup.date && b.type === backup.type
     );
@@ -78,32 +127,54 @@ export const downloadBackupFile = async (backup: BackupEntry): Promise<void> => 
       throw new Error('Backup non trovato');
     }
 
+    // Enhanced browser compatibility checks for download
+    if (!window.URL || !window.URL.createObjectURL) {
+      throw new Error('Browser non supportato per il download dei file');
+    }
+
+    if (!document.createElement) {
+      throw new Error('DOM non disponibile per il download');
+    }
+
     // Create and download file with better error handling
     const blob = new Blob([targetBackup.data], { type: 'application/json' });
-    
-    // Check if the browser supports URL.createObjectURL
-    if (!window.URL || !window.URL.createObjectURL) {
-      throw new Error('Browser non supportato per il download');
-    }
-    
     const url = URL.createObjectURL(blob);
+    
     const a = document.createElement('a');
     a.href = url;
     a.download = `backup-${backup.date.replace(/[/:, ]/g, '-')}.json`;
     a.style.display = 'none';
     
+    // Chrome-specific fix: ensure element is in DOM before clicking
     document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
     
-    // Clean up the URL object after a delay
+    // Use setTimeout to ensure DOM updates complete
     setTimeout(() => {
       try {
-        URL.revokeObjectURL(url);
-      } catch (e) {
-        console.warn('Errore nella pulizia URL:', e);
+        a.click();
+        // Clean up immediately after click
+        setTimeout(() => {
+          try {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          } catch (cleanupError) {
+            console.warn('Errore nella pulizia:', cleanupError);
+          }
+        }, 100);
+      } catch (clickError) {
+        console.error('Errore nel click del download:', clickError);
+        // Fallback: try to trigger download differently
+        window.open(url, '_blank');
+        setTimeout(() => {
+          try {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          } catch (cleanupError) {
+            console.warn('Errore nella pulizia fallback:', cleanupError);
+          }
+        }, 1000);
       }
-    }, 1000);
+    }, 10);
     
   } catch (error) {
     console.error('Errore nel download backup:', error);
@@ -113,7 +184,11 @@ export const downloadBackupFile = async (backup: BackupEntry): Promise<void> => 
 
 export const getLastBackupTime = async (): Promise<string | null> => {
   try {
-    const lastBackup = localStorage.getItem('last-backup-time');
+    if (!isBrowserSupported()) {
+      return null;
+    }
+    
+    const lastBackup = safeLocalStorageGet('last-backup-time', '');
     return lastBackup ? new Date(lastBackup).toLocaleString('it-IT') : null;
   } catch (error) {
     console.error('Errore nel recupero ultimo backup:', error);
@@ -123,38 +198,52 @@ export const getLastBackupTime = async (): Promise<string | null> => {
 
 export const setAutoBackupInterval = (hours: number | null): void => {
   try {
+    if (!isBrowserSupported()) {
+      throw new Error('Browser non supportato per il backup automatico');
+    }
+
     console.log('Configurazione backup automatico:', hours);
     
-    // Clear existing interval
+    // Clear existing interval with enhanced error handling
     if (currentAutoBackupInterval) {
-      clearInterval(currentAutoBackupInterval);
-      currentAutoBackupInterval = null;
-      console.log('Intervallo precedente cancellato');
+      try {
+        clearInterval(currentAutoBackupInterval);
+        currentAutoBackupInterval = null;
+        console.log('Intervallo precedente cancellato');
+      } catch (clearError) {
+        console.warn('Errore nella cancellazione intervallo:', clearError);
+        currentAutoBackupInterval = null;
+      }
     }
-    
-    // Remove old localStorage interval tracking
-    localStorage.removeItem('auto-backup-interval-id');
 
     if (hours && hours > 0 && hours <= 168) {
-      localStorage.setItem('auto-backup-interval-hours', hours.toString());
+      const success = safeLocalStorageSet('auto-backup-interval-hours', hours.toString());
+      if (!success) {
+        throw new Error('Impossibile salvare le impostazioni di backup automatico');
+      }
       
-      // Set up new interval with better error handling
-      const intervalMs = hours * 60 * 60 * 1000; // Convert hours to milliseconds
+      // Set up new interval with Chrome-specific handling
+      const intervalMs = hours * 60 * 60 * 1000;
       console.log('Impostazione intervallo ogni', intervalMs, 'ms');
       
-      currentAutoBackupInterval = setInterval(async () => {
-        try {
-          console.log('Esecuzione backup automatico...');
-          await createBackup('automatic');
-          console.log('Backup automatico completato');
-        } catch (error) {
-          console.error('Errore nel backup automatico:', error);
-        }
-      }, intervalMs);
-      
-      console.log('Backup automatico configurato per ogni', hours, 'ore');
+      try {
+        currentAutoBackupInterval = setInterval(async () => {
+          try {
+            console.log('Esecuzione backup automatico...');
+            await createBackup('automatic');
+            console.log('Backup automatico completato');
+          } catch (error) {
+            console.error('Errore nel backup automatico:', error);
+          }
+        }, intervalMs);
+        
+        console.log('Backup automatico configurato per ogni', hours, 'ore');
+      } catch (intervalError) {
+        console.error('Errore nella creazione intervallo:', intervalError);
+        throw new Error('Impossibile configurare l\'intervallo di backup automatico');
+      }
     } else {
-      localStorage.removeItem('auto-backup-interval-hours');
+      safeLocalStorageSet('auto-backup-interval-hours', '');
       console.log('Backup automatico disabilitato');
     }
   } catch (error) {
@@ -165,8 +254,12 @@ export const setAutoBackupInterval = (hours: number | null): void => {
 
 export const getAutoBackupInterval = async (): Promise<number | null> => {
   try {
-    const hours = localStorage.getItem('auto-backup-interval-hours');
-    const result = hours ? parseInt(hours, 10) : null;
+    if (!isBrowserSupported()) {
+      return null;
+    }
+    
+    const hours = safeLocalStorageGet('auto-backup-interval-hours', '');
+    const result = hours && hours !== '' ? parseInt(hours, 10) : null;
     console.log('Intervallo backup recuperato:', result);
     return result;
   } catch (error) {
@@ -178,6 +271,11 @@ export const getAutoBackupInterval = async (): Promise<number | null> => {
 // Initialize auto backup on module load if previously configured
 export const initializeAutoBackup = async (): Promise<void> => {
   try {
+    if (!isBrowserSupported()) {
+      console.warn('Browser non supportato per l\'inizializzazione backup automatico');
+      return;
+    }
+    
     const savedInterval = await getAutoBackupInterval();
     if (savedInterval) {
       console.log('Ripristino backup automatico:', savedInterval, 'ore');
