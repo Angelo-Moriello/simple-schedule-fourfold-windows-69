@@ -1,8 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast"
 import {
   createBackup,
@@ -10,13 +9,13 @@ import {
   downloadBackupFile,
   getLastBackupTime,
   setAutoBackupInterval,
-  getAutoBackupInterval
+  getAutoBackupInterval,
+  isBrowserSupported
 } from '@/lib/local-backup';
-
-interface BackupEntry {
-  date: string;
-  type: 'manual' | 'automatic';
-}
+import { BackupEntry } from '@/lib/backup/types';
+import BackupHistoryList from './backup/BackupHistoryList';
+import AutoBackupSettings from './backup/AutoBackupSettings';
+import CustomFileNameInput from './backup/CustomFileNameInput';
 
 const LocalBackupManager: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,15 +29,10 @@ const LocalBackupManager: React.FC = () => {
   const [customFileName, setCustomFileName] = useState('');
   const { toast } = useToast()
 
-  // Check browser compatibility on mount
   useEffect(() => {
     try {
-      if (typeof localStorage === 'undefined') {
-        setBrowserError('Il tuo browser non supporta localStorage');
-        return;
-      }
-      if (typeof setInterval === 'undefined') {
-        setBrowserError('Il tuo browser non supporta setInterval');
+      if (!isBrowserSupported()) {
+        setBrowserError('Il tuo browser non supporta tutte le funzionalità necessarie');
         return;
       }
       setBrowserError(null);
@@ -49,8 +43,8 @@ const LocalBackupManager: React.FC = () => {
   }, []);
 
   const loadBackupHistory = async () => {
+    if (browserError) return;
     try {
-      if (browserError) return;
       const history = await getBackupHistory();
       setBackupHistory(history);
     } catch (error) {
@@ -64,8 +58,8 @@ const LocalBackupManager: React.FC = () => {
   };
 
   const loadLastBackupTime = async () => {
+    if (browserError) return;
     try {
-      if (browserError) return;
       const lastTime = await getLastBackupTime();
       setLastBackup(lastTime);
     } catch (error) {
@@ -74,8 +68,8 @@ const LocalBackupManager: React.FC = () => {
   };
 
   const loadAutoBackupInterval = async () => {
+    if (browserError) return;
     try {
-      if (browserError) return;
       const interval = await getAutoBackupInterval();
       if (interval !== null && interval > 0) {
         setAutoBackupEnabled(true);
@@ -120,7 +114,7 @@ const LocalBackupManager: React.FC = () => {
       }
     } catch (error) {
       console.error('Errore nella configurazione backup automatico:', error);
-      setAutoBackupEnabled(!enabled); // Revert state
+      setAutoBackupEnabled(!enabled);
       toast({
         variant: "destructive",
         title: "Errore",
@@ -139,7 +133,6 @@ const LocalBackupManager: React.FC = () => {
     
     setBackupInterval(numValue);
     
-    // If auto backup is enabled, update the interval immediately
     if (autoBackupEnabled && !isConfiguring) {
       try {
         await setAutoBackupInterval(numValue);
@@ -270,7 +263,7 @@ const LocalBackupManager: React.FC = () => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-800">
               <span className="text-base mr-1">ℹ️</span>
-              I backup vengono salvati localmente e non interferiscono con Supabase.
+              I backup vengono salvati localmente e vengono eliminati automaticamente dopo 30 giorni.
             </p>
           </div>
 
@@ -284,100 +277,24 @@ const LocalBackupManager: React.FC = () => {
               {isCreatingBackup ? 'Creazione backup...' : 'Backup Manuale'}
             </Button>
 
-            <div className="border rounded-lg p-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium flex items-center gap-2">
-                  <span className="text-base">⚙️</span>
-                  Backup Automatico
-                </span>
-                <div className="flex items-center space-x-2">
-                  <label htmlFor="auto-backup" className="text-sm">
-                    {autoBackupEnabled ? '🟢' : '🔴'}
-                  </label>
-                  <input
-                    id="auto-backup"
-                    type="checkbox"
-                    checked={autoBackupEnabled}
-                    onChange={(e) => handleAutoBackupToggle(e.target.checked)}
-                    disabled={isConfiguring}
-                    className="rounded"
-                  />
-                  {isConfiguring && <span className="text-xs">⏳</span>}
-                </div>
-              </div>
-              
-              {autoBackupEnabled && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium mb-1 flex items-center gap-1">
-                      <span className="text-sm">⏰</span>
-                      Frequenza
-                    </label>
-                    <select
-                      value={backupInterval}
-                      onChange={(e) => handleIntervalChange(e.target.value)}
-                      disabled={isConfiguring}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    >
-                      <option value={5/3600}>Ogni 5 secondi</option>
-                      <option value={30/3600}>Ogni 30 secondi</option>
-                      <option value={1/60}>Ogni minuto</option>
-                      <option value={5/60}>Ogni 5 minuti</option>
-                      <option value={1}>Ogni ora</option>
-                      <option value={2}>Ogni 2 ore</option>
-                      <option value={6}>Ogni 6 ore</option>
-                      <option value={12}>Ogni 12 ore</option>
-                      <option value={24}>Ogni giorno</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
+            <AutoBackupSettings
+              autoBackupEnabled={autoBackupEnabled}
+              backupInterval={backupInterval}
+              isConfiguring={isConfiguring}
+              onToggle={handleAutoBackupToggle}
+              onIntervalChange={handleIntervalChange}
+            />
 
-            <div className="border rounded-lg p-3 space-y-3">
-              <label className="block text-sm font-medium flex items-center gap-1">
-                <span className="text-sm">📁</span>
-                Nome file personalizzato (opzionale)
-              </label>
-              <Input
-                type="text"
-                placeholder="backup-personalizzato.json"
-                value={customFileName}
-                onChange={(e) => setCustomFileName(e.target.value)}
-                className="text-sm"
-              />
-              <p className="text-xs text-gray-500">
-                Se lasci vuoto, verrà usato il nome automatico
-              </p>
-            </div>
+            <CustomFileNameInput
+              customFileName={customFileName}
+              onChange={setCustomFileName}
+            />
           </div>
 
-          {backupHistory.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                <span className="text-base">📋</span>
-                Cronologia Backup ({backupHistory.length})
-              </h4>
-              <div className="max-h-32 overflow-y-auto space-y-1">
-                {backupHistory.map((backup, index) => (
-                  <div key={index} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
-                    <span className="flex items-center gap-1">
-                      <span className="text-sm">{backup.type === 'manual' ? '👆' : '🤖'}</span>
-                      {backup.date}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => downloadBackup(backup)}
-                      className="h-6 w-6 p-0 rounded-full hover:bg-gray-200"
-                    >
-                      <span className="text-xs">⬇️</span>
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <BackupHistoryList
+            backupHistory={backupHistory}
+            onDownload={downloadBackup}
+          />
 
           {lastBackup && (
             <div className="text-xs text-gray-500 text-center bg-gray-50 p-2 rounded">
