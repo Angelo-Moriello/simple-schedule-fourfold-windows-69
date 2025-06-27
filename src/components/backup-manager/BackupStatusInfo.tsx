@@ -16,7 +16,7 @@ const BackupStatusInfo: React.FC<BackupStatusInfoProps> = ({
 
   return (
     <p className="text-xs text-gray-500">
-      Ultimo backup: {format(lastBackupTime, 'dd/MM/yyyy alle HH:mm', { locale: it })}
+      Ultimo backup: {format(lastBackupTime, "dd/MM/yyyy 'alle' HH:mm", { locale: it })}
     </p>
   );
 };

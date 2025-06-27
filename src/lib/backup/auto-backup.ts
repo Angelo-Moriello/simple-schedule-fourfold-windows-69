@@ -38,7 +38,7 @@ export const setAutoBackupInterval = (hours: number | null): void => {
           try {
             console.log('Esecuzione backup automatico...');
             await createBackup('automatic');
-            console.log('Backup automatico completato senza refresh della pagina');
+            console.log('Backup automatico completato');
           } catch (error) {
             console.error('Errore nel backup automatico:', error);
           }
