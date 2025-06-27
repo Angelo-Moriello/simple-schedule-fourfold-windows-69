@@ -1,3 +1,4 @@
+
 import { BackupData } from './types';
 import { safeLocalStorageGet, safeLocalStorageSet, isBrowserSupported } from './browser-compatibility';
 
@@ -15,7 +16,9 @@ export const createBackup = async (type: 'manual' | 'automatic'): Promise<void> 
         appointments: JSON.parse(safeLocalStorageGet('appointments')),
         employees: JSON.parse(safeLocalStorageGet('employees')),
         clients: JSON.parse(safeLocalStorageGet('clients')),
-        services: JSON.parse(safeLocalStorageGet('services', '{}'))
+        services: JSON.parse(safeLocalStorageGet('services', '{}')),
+        recurringTreatments: JSON.parse(safeLocalStorageGet('recurringTreatments')),
+        vacations: JSON.parse(safeLocalStorageGet('vacations'))
       }
     };
 
@@ -40,7 +43,7 @@ export const createBackup = async (type: 'manual' | 'automatic'): Promise<void> 
     }
 
     safeLocalStorageSet('last-backup-time', timestamp);
-    console.log('Backup creato con successo:', type);
+    console.log('Backup creato con successo:', type, 'con dati:', Object.keys(backupData.data));
   } catch (error) {
     console.error('Errore nella creazione backup:', error);
     throw new Error('Impossibile creare il backup: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));

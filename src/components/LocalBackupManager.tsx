@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -23,7 +22,7 @@ const LocalBackupManager: React.FC = () => {
   const [isCreatingBackup, setIsCreatingBackup] = useState(false);
   const [lastBackup, setLastBackup] = useState<string | null>(null);
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
-  const [backupInterval, setBackupInterval] = useState(8);
+  const [backupInterval, setBackupInterval] = useState(5/3600); // Default: 5 secondi
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [browserError, setBrowserError] = useState<string | null>(null);
   const [customFileName, setCustomFileName] = useState('');
@@ -163,7 +162,7 @@ const LocalBackupManager: React.FC = () => {
       await loadLastBackupTime();
       toast({
         title: "Backup Manuale Creato",
-        description: "Backup creato con successo",
+        description: "Backup creato con successo (include appuntamenti, dipendenti, clienti, servizi e attività)",
       })
     } catch (error) {
       console.error('Errore nella creazione backup:', error);
@@ -263,7 +262,7 @@ const LocalBackupManager: React.FC = () => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-800">
               <span className="text-base mr-1">ℹ️</span>
-              I backup vengono salvati localmente e vengono eliminati automaticamente dopo 30 giorni.
+              I backup includono appuntamenti, dipendenti, clienti, servizi e attività. Vengono eliminati automaticamente dopo 30 giorni.
             </p>
           </div>
 
