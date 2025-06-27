@@ -29,8 +29,8 @@ export const setAutoBackupInterval = (hours: number | null): void => {
         throw new Error('Impossibile salvare le impostazioni di backup automatico');
       }
       
-      // Convert hours to milliseconds, with special handling for small values
-      const intervalMs = hours >= 1 ? hours * 60 * 60 * 1000 : hours * 1000;
+      // Convert hours to milliseconds, with special handling for small values (seconds)
+      const intervalMs = hours >= 1 ? hours * 60 * 60 * 1000 : hours * 3600 * 1000;
       console.log('Impostazione intervallo ogni', intervalMs, 'ms');
       
       try {
