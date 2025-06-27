@@ -45,7 +45,7 @@ const AppointmentSchedulerLayout: React.FC<AppointmentSchedulerLayoutProps> = ({
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 sm:w-72 lg:w-96 h-48 sm:h-72 lg:h-96 bg-indigo-400/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-2 sm:py-4 lg:py-6 bg-zinc-600 rounded-md">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-2 sm:py-4 lg:py-6 bg-zinc-600 rounded-2xl">
         
         <AppointmentSchedulerHeader />
 
