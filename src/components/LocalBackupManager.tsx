@@ -162,7 +162,7 @@ const LocalBackupManager: React.FC = () => {
       await loadLastBackupTime();
       toast({
         title: "Backup Manuale Creato",
-        description: "Backup creato con successo (include appuntamenti, dipendenti, clienti, servizi e attività)",
+        description: "Backup creato con successo (include appuntamenti, dipendenti, clienti, servizi, ferie, trattamenti ricorrenti e statistiche)",
       })
     } catch (error) {
       console.error('Errore nella creazione backup:', error);
@@ -262,7 +262,7 @@ const LocalBackupManager: React.FC = () => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-800">
               <span className="text-base mr-1">ℹ️</span>
-              I backup includono appuntamenti, dipendenti, clienti, servizi e attività. Vengono eliminati automaticamente dopo 30 giorni.
+              I backup includono: appuntamenti, dipendenti, clienti, servizi, ferie, trattamenti ricorrenti, storico e statistiche. Vengono eliminati automaticamente dopo 30 giorni.
             </p>
           </div>
 

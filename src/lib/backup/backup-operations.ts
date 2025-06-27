@@ -9,20 +9,43 @@ export const createBackup = async (type: 'manual' | 'automatic'): Promise<void> 
     }
 
     const timestamp = new Date().toISOString();
+    
+    // Collect all data from localStorage and Supabase data
     const backupData = {
       date: timestamp,
       type,
       data: {
-        appointments: JSON.parse(safeLocalStorageGet('appointments')),
-        employees: JSON.parse(safeLocalStorageGet('employees')),
-        clients: JSON.parse(safeLocalStorageGet('clients')),
+        // Appuntamenti
+        appointments: JSON.parse(safeLocalStorageGet('appointments', '[]')),
+        // Dipendenti (incluse le ferie)
+        employees: JSON.parse(safeLocalStorageGet('employees', '[]')),
+        // Clienti
+        clients: JSON.parse(safeLocalStorageGet('clients', '[]')),
+        // Servizi
         services: JSON.parse(safeLocalStorageGet('services', '{}')),
-        recurringTreatments: JSON.parse(safeLocalStorageGet('recurringTreatments')),
-        vacations: JSON.parse(safeLocalStorageGet('vacations'))
+        // Trattamenti ricorrenti (attività/storico)
+        recurringTreatments: JSON.parse(safeLocalStorageGet('recurringTreatments', '[]')),
+        // Ferie (separate dai dipendenti per compatibilità legacy)
+        vacations: JSON.parse(safeLocalStorageGet('vacations', '[]')),
+        // Statistiche (se presenti)
+        statistics: JSON.parse(safeLocalStorageGet('statistics', '{}')),
+        // Storico appuntamenti (se presente)
+        appointmentHistory: JSON.parse(safeLocalStorageGet('appointmentHistory', '[]')),
+        // Impostazioni dell'app
+        appSettings: JSON.parse(safeLocalStorageGet('appSettings', '{}')),
+        // Categorie servizi
+        serviceCategories: JSON.parse(safeLocalStorageGet('serviceCategories', '[]')),
+        // Metadati del backup
+        metadata: {
+          version: '2.0',
+          created: timestamp,
+          type: type,
+          dataTypes: ['appointments', 'employees', 'clients', 'services', 'recurringTreatments', 'vacations', 'statistics', 'appointmentHistory']
+        }
       }
     };
 
-    const backups: BackupData[] = JSON.parse(safeLocalStorageGet('local-backups'));
+    const backups: BackupData[] = JSON.parse(safeLocalStorageGet('local-backups', '[]'));
     backups.push({
       date: timestamp,
       type,
@@ -44,6 +67,7 @@ export const createBackup = async (type: 'manual' | 'automatic'): Promise<void> 
 
     safeLocalStorageSet('last-backup-time', timestamp);
     console.log('Backup creato con successo:', type, 'con dati:', Object.keys(backupData.data));
+    console.log('Dettagli backup - Clienti:', backupData.data.clients?.length || 0, 'Appuntamenti:', backupData.data.appointments?.length || 0);
   } catch (error) {
     console.error('Errore nella creazione backup:', error);
     throw new Error('Impossibile creare il backup: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
