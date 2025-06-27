@@ -74,6 +74,33 @@ export const updateClientInSupabase = async (client: Client): Promise<void> => {
 export const deleteClientFromSupabase = async (clientId: string): Promise<void> => {
   try {
     console.log('Eliminazione cliente da Supabase:', clientId);
+    
+    // Prima elimina tutti gli appuntamenti collegati al cliente
+    console.log('Eliminazione appuntamenti collegati al cliente...');
+    const { error: appointmentsError } = await supabase
+      .from('appointments')
+      .delete()
+      .eq('client_id', clientId);
+      
+    if (appointmentsError) {
+      console.error('Errore nell\'eliminazione appuntamenti:', appointmentsError);
+      throw new Error('Errore nell\'eliminazione degli appuntamenti collegati: ' + appointmentsError.message);
+    }
+    
+    // Poi elimina tutti i trattamenti ricorrenti collegati al cliente
+    console.log('Eliminazione trattamenti ricorrenti collegati al cliente...');
+    const { error: treatmentsError } = await supabase
+      .from('recurring_treatments')
+      .delete()
+      .eq('client_id', clientId);
+      
+    if (treatmentsError) {
+      console.error('Errore nell\'eliminazione trattamenti ricorrenti:', treatmentsError);
+      throw new Error('Errore nell\'eliminazione dei trattamenti ricorrenti: ' + treatmentsError.message);
+    }
+    
+    // Infine elimina il cliente
+    console.log('Eliminazione cliente...');
     const { error } = await supabase
       .from('clients')
       .delete()
@@ -84,7 +111,7 @@ export const deleteClientFromSupabase = async (clientId: string): Promise<void> 
       throw error;
     }
     
-    console.log('Cliente eliminato con successo');
+    console.log('Cliente e dati collegati eliminati con successo');
   } catch (error) {
     console.error('Errore nell\'eliminare cliente da Supabase:', error);
     throw error;
