@@ -23,49 +23,73 @@ const LocalBackupManager: React.FC = () => {
   const [isCreatingBackup, setIsCreatingBackup] = useState(false);
   const [lastBackup, setLastBackup] = useState<string | null>(null);
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
-  const [backupInterval, setBackupInterval] = useState(8); // Default to 8 hours
+  const [backupInterval, setBackupInterval] = useState(8);
   const { toast } = useToast()
 
   const loadBackupHistory = async () => {
-    const history = await getBackupHistory();
-    setBackupHistory(history);
+    try {
+      const history = await getBackupHistory();
+      setBackupHistory(history);
+    } catch (error) {
+      console.error('Errore nel caricamento cronologia backup:', error);
+    }
   };
 
   const loadLastBackupTime = async () => {
-    const lastTime = await getLastBackupTime();
-    setLastBackup(lastTime);
+    try {
+      const lastTime = await getLastBackupTime();
+      setLastBackup(lastTime);
+    } catch (error) {
+      console.error('Errore nel caricamento ultimo backup:', error);
+    }
   };
 
   const loadAutoBackupInterval = async () => {
-    const interval = await getAutoBackupInterval();
-    if (interval !== null) {
-      setAutoBackupEnabled(true);
-      setBackupInterval(interval);
-    } else {
-      setAutoBackupEnabled(false);
+    try {
+      const interval = await getAutoBackupInterval();
+      if (interval !== null) {
+        setAutoBackupEnabled(true);
+        setBackupInterval(interval);
+      } else {
+        setAutoBackupEnabled(false);
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento impostazioni auto backup:', error);
     }
   };
 
   useEffect(() => {
-    loadBackupHistory();
-    loadLastBackupTime();
-    loadAutoBackupInterval();
-  }, []);
+    if (isOpen) {
+      loadBackupHistory();
+      loadLastBackupTime();
+      loadAutoBackupInterval();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
-    // Set up automatic backups when the component mounts
-    if (autoBackupEnabled) {
-      setAutoBackupInterval(backupInterval);
+    try {
+      if (autoBackupEnabled) {
+        setAutoBackupInterval(backupInterval);
+        toast({
+          title: "Backup Automatico Abilitato",
+          description: `Backup ogni ${backupInterval} ore`,
+        })
+      } else {
+        setAutoBackupInterval(null);
+      }
+    } catch (error) {
+      console.error('Errore nella configurazione backup automatico:', error);
       toast({
-        title: "Backup Automatico Abilitato",
-        description: `Backup ogni ${backupInterval} ore`,
+        variant: "destructive",
+        title: "Errore",
+        description: "Errore nella configurazione del backup automatico",
       })
-    } else {
-      setAutoBackupInterval(null);
     }
   }, [autoBackupEnabled, backupInterval, toast]);
 
   const createManualBackup = async () => {
+    if (isCreatingBackup) return;
+    
     setIsCreatingBackup(true);
     try {
       await createBackup('manual');
@@ -76,6 +100,7 @@ const LocalBackupManager: React.FC = () => {
         description: "Backup creato con successo",
       })
     } catch (error) {
+      console.error('Errore nella creazione backup:', error);
       toast({
         variant: "destructive",
         title: "Errore",
@@ -94,11 +119,19 @@ const LocalBackupManager: React.FC = () => {
         description: "Il download del backup è iniziato",
       })
     } catch (error) {
-       toast({
+      console.error('Errore nel download backup:', error);
+      toast({
         variant: "destructive",
         title: "Errore",
         description: "Errore durante il download del backup",
       })
+    }
+  };
+
+  const handleIntervalChange = (value: string) => {
+    const numValue = parseInt(value);
+    if (!isNaN(numValue) && numValue > 0 && numValue <= 168) {
+      setBackupInterval(numValue);
     }
   };
 
@@ -170,7 +203,7 @@ const LocalBackupManager: React.FC = () => {
                     min="1"
                     max="168"
                     value={backupInterval}
-                    onChange={(e) => setBackupInterval(parseInt(e.target.value))}
+                    onChange={(e) => handleIntervalChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                   />
                 </div>
