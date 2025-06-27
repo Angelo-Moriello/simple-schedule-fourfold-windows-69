@@ -1,3 +1,4 @@
+
 interface BackupEntry {
   date: string;
   type: 'manual' | 'automatic';
@@ -8,6 +9,9 @@ interface BackupData {
   type: 'manual' | 'automatic';
   data: string;
 }
+
+// Global variable to store the current interval ID
+let currentAutoBackupInterval: NodeJS.Timeout | null = null;
 
 // Simulate backup functionality using localStorage
 export const createBackup = async (type: 'manual' | 'automatic'): Promise<void> => {
@@ -42,6 +46,8 @@ export const createBackup = async (type: 'manual' | 'automatic'): Promise<void> 
 
     localStorage.setItem('local-backups', JSON.stringify(filteredBackups));
     localStorage.setItem('last-backup-time', timestamp);
+    
+    console.log('Backup creato con successo:', type);
   } catch (error) {
     console.error('Errore nella creazione backup:', error);
     throw new Error('Impossibile creare il backup');
@@ -68,28 +74,40 @@ export const downloadBackupFile = async (backup: BackupEntry): Promise<void> => 
       new Date(b.date).toLocaleString('it-IT') === backup.date && b.type === backup.type
     );
 
-    if (targetBackup) {
-      const blob = new Blob([targetBackup.data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `backup-${backup.date.replace(/[/:]/g, '-')}.json`;
-      a.style.display = 'none';
-      
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      
-      // Clean up the URL object
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 1000);
-    } else {
+    if (!targetBackup) {
       throw new Error('Backup non trovato');
     }
+
+    // Create and download file with better error handling
+    const blob = new Blob([targetBackup.data], { type: 'application/json' });
+    
+    // Check if the browser supports URL.createObjectURL
+    if (!window.URL || !window.URL.createObjectURL) {
+      throw new Error('Browser non supportato per il download');
+    }
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup-${backup.date.replace(/[/:, ]/g, '-')}.json`;
+    a.style.display = 'none';
+    
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    // Clean up the URL object after a delay
+    setTimeout(() => {
+      try {
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.warn('Errore nella pulizia URL:', e);
+      }
+    }, 1000);
+    
   } catch (error) {
     console.error('Errore nel download backup:', error);
-    throw new Error('Impossibile scaricare il backup');
+    throw new Error('Impossibile scaricare il backup: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
   }
 };
 
@@ -105,39 +123,67 @@ export const getLastBackupTime = async (): Promise<string | null> => {
 
 export const setAutoBackupInterval = (hours: number | null): void => {
   try {
+    console.log('Configurazione backup automatico:', hours);
+    
     // Clear existing interval
-    const existingInterval = localStorage.getItem('auto-backup-interval-id');
-    if (existingInterval) {
-      clearInterval(parseInt(existingInterval));
-      localStorage.removeItem('auto-backup-interval-id');
+    if (currentAutoBackupInterval) {
+      clearInterval(currentAutoBackupInterval);
+      currentAutoBackupInterval = null;
+      console.log('Intervallo precedente cancellato');
     }
+    
+    // Remove old localStorage interval tracking
+    localStorage.removeItem('auto-backup-interval-id');
 
-    if (hours && hours > 0) {
+    if (hours && hours > 0 && hours <= 168) {
       localStorage.setItem('auto-backup-interval-hours', hours.toString());
       
-      // Set up new interval
-      const intervalId = setInterval(() => {
-        createBackup('automatic').catch(error => {
-          console.error('Errore nel backup automatico:', error);
-        });
-      }, hours * 60 * 60 * 1000); // Convert hours to milliseconds
+      // Set up new interval with better error handling
+      const intervalMs = hours * 60 * 60 * 1000; // Convert hours to milliseconds
+      console.log('Impostazione intervallo ogni', intervalMs, 'ms');
       
-      localStorage.setItem('auto-backup-interval-id', intervalId.toString());
+      currentAutoBackupInterval = setInterval(async () => {
+        try {
+          console.log('Esecuzione backup automatico...');
+          await createBackup('automatic');
+          console.log('Backup automatico completato');
+        } catch (error) {
+          console.error('Errore nel backup automatico:', error);
+        }
+      }, intervalMs);
+      
+      console.log('Backup automatico configurato per ogni', hours, 'ore');
     } else {
       localStorage.removeItem('auto-backup-interval-hours');
+      console.log('Backup automatico disabilitato');
     }
   } catch (error) {
     console.error('Errore nella configurazione backup automatico:', error);
-    throw new Error('Impossibile configurare il backup automatico');
+    throw new Error('Impossibile configurare il backup automatico: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
   }
 };
 
 export const getAutoBackupInterval = async (): Promise<number | null> => {
   try {
     const hours = localStorage.getItem('auto-backup-interval-hours');
-    return hours ? parseInt(hours) : null;
+    const result = hours ? parseInt(hours, 10) : null;
+    console.log('Intervallo backup recuperato:', result);
+    return result;
   } catch (error) {
     console.error('Errore nel recupero intervallo backup:', error);
     return null;
+  }
+};
+
+// Initialize auto backup on module load if previously configured
+export const initializeAutoBackup = async (): Promise<void> => {
+  try {
+    const savedInterval = await getAutoBackupInterval();
+    if (savedInterval) {
+      console.log('Ripristino backup automatico:', savedInterval, 'ore');
+      setAutoBackupInterval(savedInterval);
+    }
+  } catch (error) {
+    console.error('Errore nell\'inizializzazione backup automatico:', error);
   }
 };

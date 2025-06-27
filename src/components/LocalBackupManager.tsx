@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -24,6 +23,7 @@ const LocalBackupManager: React.FC = () => {
   const [lastBackup, setLastBackup] = useState<string | null>(null);
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
   const [backupInterval, setBackupInterval] = useState(8);
+  const [isConfiguring, setIsConfiguring] = useState(false);
   const { toast } = useToast()
 
   const loadBackupHistory = async () => {
@@ -47,7 +47,7 @@ const LocalBackupManager: React.FC = () => {
   const loadAutoBackupInterval = async () => {
     try {
       const interval = await getAutoBackupInterval();
-      if (interval !== null) {
+      if (interval !== null && interval > 0) {
         setAutoBackupEnabled(true);
         setBackupInterval(interval);
       } else {
@@ -66,26 +66,65 @@ const LocalBackupManager: React.FC = () => {
     }
   }, [isOpen]);
 
-  useEffect(() => {
+  const handleAutoBackupToggle = async (enabled: boolean) => {
+    if (isConfiguring) return;
+    
+    setIsConfiguring(true);
     try {
-      if (autoBackupEnabled) {
-        setAutoBackupInterval(backupInterval);
+      setAutoBackupEnabled(enabled);
+      
+      if (enabled) {
+        await setAutoBackupInterval(backupInterval);
         toast({
           title: "Backup Automatico Abilitato",
           description: `Backup ogni ${backupInterval} ore`,
-        })
+        });
       } else {
-        setAutoBackupInterval(null);
+        await setAutoBackupInterval(null);
+        toast({
+          title: "Backup Automatico Disabilitato",
+          description: "Il backup automatico è stato disattivato",
+        });
       }
     } catch (error) {
       console.error('Errore nella configurazione backup automatico:', error);
+      setAutoBackupEnabled(!enabled); // Revert state
       toast({
         variant: "destructive",
         title: "Errore",
         description: "Errore nella configurazione del backup automatico",
-      })
+      });
+    } finally {
+      setIsConfiguring(false);
     }
-  }, [autoBackupEnabled, backupInterval, toast]);
+  };
+
+  const handleIntervalChange = async (value: string) => {
+    const numValue = parseInt(value, 10);
+    if (isNaN(numValue) || numValue <= 0 || numValue > 168) {
+      return;
+    }
+    
+    setBackupInterval(numValue);
+    
+    // If auto backup is enabled, update the interval immediately
+    if (autoBackupEnabled && !isConfiguring) {
+      try {
+        await setAutoBackupInterval(numValue);
+        toast({
+          title: "Intervallo Aggiornato",
+          description: `Backup ogni ${numValue} ore`,
+        });
+      } catch (error) {
+        console.error('Errore nell\'aggiornamento intervallo:', error);
+        toast({
+          variant: "destructive",
+          title: "Errore",
+          description: "Errore nell'aggiornamento dell'intervallo",
+        });
+      }
+    }
+  };
 
   const createManualBackup = async () => {
     if (isCreatingBackup) return;
@@ -125,13 +164,6 @@ const LocalBackupManager: React.FC = () => {
         title: "Errore",
         description: "Errore durante il download del backup",
       })
-    }
-  };
-
-  const handleIntervalChange = (value: string) => {
-    const numValue = parseInt(value);
-    if (!isNaN(numValue) && numValue > 0 && numValue <= 168) {
-      setBackupInterval(numValue);
     }
   };
 
@@ -186,9 +218,11 @@ const LocalBackupManager: React.FC = () => {
                     id="auto-backup"
                     type="checkbox"
                     checked={autoBackupEnabled}
-                    onChange={(e) => setAutoBackupEnabled(e.target.checked)}
+                    onChange={(e) => handleAutoBackupToggle(e.target.checked)}
+                    disabled={isConfiguring}
                     className="rounded"
                   />
+                  {isConfiguring && <span className="text-xs">⏳</span>}
                 </div>
               </div>
               
@@ -204,6 +238,7 @@ const LocalBackupManager: React.FC = () => {
                     max="168"
                     value={backupInterval}
                     onChange={(e) => handleIntervalChange(e.target.value)}
+                    disabled={isConfiguring}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                   />
                 </div>
