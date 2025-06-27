@@ -1,7 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast"
 import {
   createBackup,
@@ -26,6 +27,7 @@ const LocalBackupManager: React.FC = () => {
   const [backupInterval, setBackupInterval] = useState(8);
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [browserError, setBrowserError] = useState<string | null>(null);
+  const [customFileName, setCustomFileName] = useState('');
   const { toast } = useToast()
 
   // Check browser compatibility on mount
@@ -103,9 +105,11 @@ const LocalBackupManager: React.FC = () => {
       
       if (enabled) {
         await setAutoBackupInterval(backupInterval);
+        const unit = backupInterval >= 1 ? 'ore' : 'secondi';
+        const value = backupInterval >= 1 ? backupInterval : backupInterval * 3600;
         toast({
           title: "Backup Automatico Abilitato",
-          description: `Backup ogni ${backupInterval} ore`,
+          description: `Backup ogni ${value} ${unit}`,
         });
       } else {
         await setAutoBackupInterval(null);
@@ -128,8 +132,8 @@ const LocalBackupManager: React.FC = () => {
   };
 
   const handleIntervalChange = async (value: string) => {
-    const numValue = parseInt(value, 10);
-    if (isNaN(numValue) || numValue <= 0 || numValue > 168 || browserError) {
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue <= 0 || browserError) {
       return;
     }
     
@@ -139,9 +143,11 @@ const LocalBackupManager: React.FC = () => {
     if (autoBackupEnabled && !isConfiguring) {
       try {
         await setAutoBackupInterval(numValue);
+        const unit = numValue >= 1 ? 'ore' : 'secondi';
+        const displayValue = numValue >= 1 ? numValue : numValue * 3600;
         toast({
           title: "Intervallo Aggiornato",
-          description: `Backup ogni ${numValue} ore`,
+          description: `Backup ogni ${displayValue} ${unit}`,
         });
       } catch (error) {
         console.error('Errore nell\'aggiornamento intervallo:', error);
@@ -189,7 +195,8 @@ const LocalBackupManager: React.FC = () => {
         return;
       }
       
-      await downloadBackupFile(backup);
+      const fileName = customFileName || undefined;
+      await downloadBackupFile(backup, fileName);
       toast({
         title: "Download Backup",
         description: "Il download del backup è iniziato",
@@ -300,22 +307,48 @@ const LocalBackupManager: React.FC = () => {
               </div>
               
               {autoBackupEnabled && (
-                <div>
-                  <label className="block text-sm font-medium mb-1 flex items-center gap-1">
-                    <span className="text-sm">⏰</span>
-                    Intervallo (ore)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="168"
-                    value={backupInterval}
-                    onChange={(e) => handleIntervalChange(e.target.value)}
-                    disabled={isConfiguring}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  />
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1 flex items-center gap-1">
+                      <span className="text-sm">⏰</span>
+                      Frequenza
+                    </label>
+                    <select
+                      value={backupInterval}
+                      onChange={(e) => handleIntervalChange(e.target.value)}
+                      disabled={isConfiguring}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    >
+                      <option value={5/3600}>Ogni 5 secondi</option>
+                      <option value={30/3600}>Ogni 30 secondi</option>
+                      <option value={1/60}>Ogni minuto</option>
+                      <option value={5/60}>Ogni 5 minuti</option>
+                      <option value={1}>Ogni ora</option>
+                      <option value={2}>Ogni 2 ore</option>
+                      <option value={6}>Ogni 6 ore</option>
+                      <option value={12}>Ogni 12 ore</option>
+                      <option value={24}>Ogni giorno</option>
+                    </select>
+                  </div>
                 </div>
               )}
+            </div>
+
+            <div className="border rounded-lg p-3 space-y-3">
+              <label className="block text-sm font-medium flex items-center gap-1">
+                <span className="text-sm">📁</span>
+                Nome file personalizzato (opzionale)
+              </label>
+              <Input
+                type="text"
+                placeholder="backup-personalizzato.json"
+                value={customFileName}
+                onChange={(e) => setCustomFileName(e.target.value)}
+                className="text-sm"
+              />
+              <p className="text-xs text-gray-500">
+                Se lasci vuoto, verrà usato il nome automatico
+              </p>
             </div>
           </div>
 

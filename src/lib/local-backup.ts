@@ -1,4 +1,3 @@
-
 interface BackupEntry {
   date: string;
   type: 'manual' | 'automatic';
@@ -112,7 +111,7 @@ export const getBackupHistory = async (): Promise<BackupEntry[]> => {
   }
 };
 
-export const downloadBackupFile = async (backup: BackupEntry): Promise<void> => {
+export const downloadBackupFile = async (backup: BackupEntry, customPath?: string): Promise<void> => {
   try {
     if (!isBrowserSupported()) {
       throw new Error('Browser non supportato per il download');
@@ -140,9 +139,11 @@ export const downloadBackupFile = async (backup: BackupEntry): Promise<void> => 
     const blob = new Blob([targetBackup.data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     
+    const fileName = customPath || `backup-${backup.date.replace(/[/:, ]/g, '-')}.json`;
+    
     const a = document.createElement('a');
     a.href = url;
-    a.download = `backup-${backup.date.replace(/[/:, ]/g, '-')}.json`;
+    a.download = fileName;
     a.style.display = 'none';
     
     // Chrome-specific fix: ensure element is in DOM before clicking
@@ -216,14 +217,14 @@ export const setAutoBackupInterval = (hours: number | null): void => {
       }
     }
 
-    if (hours && hours > 0 && hours <= 168) {
+    if (hours && hours > 0) {
       const success = safeLocalStorageSet('auto-backup-interval-hours', hours.toString());
       if (!success) {
         throw new Error('Impossibile salvare le impostazioni di backup automatico');
       }
       
       // Set up new interval with Chrome-specific handling
-      const intervalMs = hours * 60 * 60 * 1000;
+      const intervalMs = hours >= 1 ? hours * 60 * 60 * 1000 : hours * 1000;
       console.log('Impostazione intervallo ogni', intervalMs, 'ms');
       
       try {
@@ -237,7 +238,7 @@ export const setAutoBackupInterval = (hours: number | null): void => {
           }
         }, intervalMs);
         
-        console.log('Backup automatico configurato per ogni', hours, 'ore');
+        console.log('Backup automatico configurato per ogni', hours, hours >= 1 ? 'ore' : 'secondi');
       } catch (intervalError) {
         console.error('Errore nella creazione intervallo:', intervalError);
         throw new Error('Impossibile configurare l\'intervallo di backup automatico');
