@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Settings, Trash2 } from 'lucide-react';
-import { serviceCategories } from '@/types/appointment';
+import { serviceCategories, ServiceCategory } from '@/types/appointment';
 import { toast } from 'sonner';
 
 interface ServiceCategoryManagerProps {
@@ -21,7 +21,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   const [newService, setNewService] = useState('');
   
   // Load services from localStorage or use defaults
-  const loadStoredServices = () => {
+  const loadStoredServices = (): Record<'Parrucchiere' | 'Estetista', ServiceCategory> => {
     try {
       const stored = localStorage.getItem('services');
       return stored ? JSON.parse(stored) : {
@@ -51,7 +51,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   const [customCategories, setCustomCategories] = useState(loadStoredServices);
 
   // Save services to localStorage
-  const saveServicesToStorage = (categories: typeof serviceCategories) => {
+  const saveServicesToStorage = (categories: Record<'Parrucchiere' | 'Estetista', ServiceCategory>) => {
     try {
       localStorage.setItem('services', JSON.stringify(categories));
       console.log('Servizi salvati in localStorage:', categories);
@@ -138,7 +138,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
             </div>
           </div>
 
-          {Object.entries(customCategories).map(([categoryKey, category]) => (
+          {(Object.entries(customCategories) as [string, ServiceCategory][]).map(([categoryKey, category]) => (
             <div key={categoryKey} className="space-y-3">
               <h3 className="font-semibold text-lg">{category.name}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
