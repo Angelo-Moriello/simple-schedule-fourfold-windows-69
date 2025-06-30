@@ -55,6 +55,7 @@ export const useAppointmentForm = ({
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [serviceCategories, setServiceCategories] = useState(getStoredServices());
   const [multipleEvents, setMultipleEvents] = useState<MultipleEvent[]>([]);
+  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
 
   // Listen for service updates
   useEffect(() => {
@@ -154,6 +155,7 @@ export const useAppointmentForm = ({
         clientId: ''
       });
       setMultipleEvents([]);
+      setSelectedDates([]);
     }
   }, [isOpen]);
 
@@ -167,6 +169,7 @@ export const useAppointmentForm = ({
     
     console.log('DEBUG - Submit con formData:', formData);
     console.log('DEBUG - Submit con eventi multipli:', multipleEvents);
+    console.log('DEBUG - Submit con date multiple:', selectedDates);
     
     if (!formData.client.trim()) {
       toast.error('Il nome del cliente è obbligatorio');
@@ -278,7 +281,51 @@ export const useAppointmentForm = ({
         clientId: finalClientId
       }));
 
+      // Create recurring appointments for selected dates
+      const recurringAppointments: Appointment[] = selectedDates.flatMap(selectedDate => {
+        const baseRecurringAppointment = {
+          id: generateUUID(),
+          employeeId: parseInt(formData.employeeId),
+          date: format(selectedDate, 'yyyy-MM-dd'),
+          time: formData.time,
+          title: formData.title.trim() || `${formData.serviceType} - ${formData.client}`,
+          client: formData.client.trim(),
+          duration: parseInt(formData.duration),
+          notes: formData.notes.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+          color: formData.color,
+          serviceType: formData.serviceType,
+          clientId: finalClientId
+        };
+
+        // Include main service on each selected date
+        const appointments = [baseRecurringAppointment];
+
+        // Include additional events on each selected date
+        multipleEvents.forEach(event => {
+          appointments.push({
+            id: generateUUID(),
+            employeeId: parseInt(event.employeeId),
+            date: format(selectedDate, 'yyyy-MM-dd'),
+            time: event.time,
+            title: event.title.trim() || `${event.serviceType} - ${formData.client}`,
+            client: formData.client.trim(),
+            duration: parseInt(event.duration),
+            notes: event.notes.trim(),
+            email: formData.email.trim(),
+            phone: formData.phone.trim(),
+            color: formData.color,
+            serviceType: event.serviceType,
+            clientId: finalClientId
+          });
+        });
+
+        return appointments;
+      });
+
       console.log('DEBUG - Salvataggio appuntamenti aggiuntivi:', additionalAppointments);
+      console.log('DEBUG - Salvataggio appuntamenti ricorrenti:', recurringAppointments);
 
       if (appointmentToEdit && updateAppointment) {
         await updateAppointment(mainAppointment);
@@ -287,13 +334,26 @@ export const useAppointmentForm = ({
         // Save main appointment
         await addAppointment(mainAppointment);
         
-        // Save additional appointments
+        // Save additional appointments for same day
         for (const additionalAppointment of additionalAppointments) {
           await addAppointment(additionalAppointment);
         }
+
+        // Save recurring appointments for selected dates
+        for (const recurringAppointment of recurringAppointments) {
+          await addAppointment(recurringAppointment);
+        }
         
-        const totalEvents = 1 + additionalAppointments.length;
-        toast.success(`${totalEvents} appuntament${totalEvents > 1 ? 'i creati' : 'o creato'} con successo!`);
+        const totalMainEvents = 1 + additionalAppointments.length;
+        const totalRecurringEvents = recurringAppointments.length;
+        const totalEvents = totalMainEvents + totalRecurringEvents;
+        
+        let successMessage = `${totalMainEvents} appuntament${totalMainEvents > 1 ? 'i creati' : 'o creato'} con successo!`;
+        if (totalRecurringEvents > 0) {
+          successMessage += ` Inoltre ${totalRecurringEvents} appuntament${totalRecurringEvents > 1 ? 'i ricorrenti creati' : 'o ricorrente creato'} per le date selezionate.`;
+        }
+        
+        toast.success(successMessage);
       }
 
       onClose();
@@ -328,7 +388,9 @@ export const useAppointmentForm = ({
     handleGoogleCalendarSync,
     serviceCategories,
     multipleEvents,
-    setMultipleEvents
+    setMultipleEvents,
+    selectedDates,
+    setSelectedDates
   };
 };
 

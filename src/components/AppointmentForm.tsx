@@ -37,7 +37,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     handleGoogleCalendarSync,
     serviceCategories,
     multipleEvents,
-    setMultipleEvents
+    setMultipleEvents,
+    selectedDates,
+    setSelectedDates
   } = useAppointmentForm({
     isOpen,
     appointmentToEdit,
@@ -65,7 +67,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     availableServices: availableServices.length,
     serviceCategories: Object.keys(serviceCategories),
     formDataEmployeeId: formData.employeeId,
-    multipleEvents: multipleEvents.length
+    multipleEvents: multipleEvents.length,
+    selectedDates: selectedDates.length
   });
 
   return (
@@ -85,6 +88,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         appointmentToEdit={appointmentToEdit}
         multipleEvents={multipleEvents}
         onMultipleEventsChange={setMultipleEvents}
+        selectedDates={selectedDates}
+        onSelectedDatesChange={setSelectedDates}
+        mainDate={date}
       />
 
       <AppointmentFormActions

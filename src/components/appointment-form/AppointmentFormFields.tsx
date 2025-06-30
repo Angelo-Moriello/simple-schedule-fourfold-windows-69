@@ -7,6 +7,7 @@ import ClientColorFields from './fields/ClientColorFields';
 import ContactFields from './fields/ContactFields';
 import DurationNotesFields from './fields/DurationNotesFields';
 import MultipleEventsManager from './MultipleEventsManager';
+import MultiDateSelector from './fields/MultiDateSelector';
 import { Separator } from '@/components/ui/separator';
 
 interface MultipleEvent {
@@ -30,6 +31,9 @@ interface AppointmentFormFieldsProps {
   appointmentToEdit: any;
   multipleEvents?: MultipleEvent[];
   onMultipleEventsChange?: (events: MultipleEvent[]) => void;
+  selectedDates?: Date[];
+  onSelectedDatesChange?: (dates: Date[]) => void;
+  mainDate?: Date;
 }
 
 const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
@@ -42,9 +46,11 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
   selectedEmployee,
   appointmentToEdit,
   multipleEvents = [],
-  onMultipleEventsChange
+  onMultipleEventsChange,
+  selectedDates = [],
+  onSelectedDatesChange,
+  mainDate = new Date()
 }) => {
-  // Debug log per verificare i servizi disponibili
   console.log('DEBUG - Servizi disponibili nel form:', {
     selectedEmployee,
     specialization: selectedEmployee?.specialization,
@@ -90,6 +96,18 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
           />
         </div>
       </div>
+
+      {/* Multi-Date Selector - Only show for new appointments */}
+      {!appointmentToEdit && onSelectedDatesChange && (
+        <>
+          <Separator className="my-6" />
+          <MultiDateSelector
+            selectedDates={selectedDates}
+            onDatesChange={onSelectedDatesChange}
+            mainDate={mainDate}
+          />
+        </>
+      )}
 
       {/* Multiple Events Section - Only show for new appointments */}
       {!appointmentToEdit && onMultipleEventsChange && (
