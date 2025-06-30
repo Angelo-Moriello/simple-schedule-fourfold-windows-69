@@ -16,13 +16,13 @@ const ContactFields: React.FC<ContactFieldsProps> = ({
   appointmentToEdit
 }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-      <div className="space-y-2">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-3">
         <Label htmlFor="email" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <Mail className="h-4 w-4" />
+          <Mail className="h-4 w-4 text-blue-600" />
           Email Cliente
           {!appointmentToEdit && (
-            <span className="text-xs text-blue-600 font-normal">(collegherà il cliente esistente o ne creerà uno nuovo)</span>
+            <span className="text-xs text-blue-600 font-normal bg-blue-50 px-2 py-1 rounded-full">auto-link</span>
           )}
         </Label>
         <Input
@@ -31,16 +31,16 @@ const ContactFields: React.FC<ContactFieldsProps> = ({
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           placeholder="email@esempio.com"
-          className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+          className="h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm"
         />
       </div>
       
-      <div className="space-y-2">
+      <div className="space-y-3">
         <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <Phone className="h-4 w-4" />
+          <Phone className="h-4 w-4 text-blue-600" />
           Telefono Cliente
           {!appointmentToEdit && (
-            <span className="text-xs text-blue-600 font-normal">(collegherà il cliente esistente o ne crearà uno nuovo)</span>
+            <span className="text-xs text-blue-600 font-normal bg-blue-50 px-2 py-1 rounded-full">auto-link</span>
           )}
         </Label>
         <Input
@@ -49,7 +49,7 @@ const ContactFields: React.FC<ContactFieldsProps> = ({
           value={formData.phone}
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           placeholder="+39 123 456 7890"
-          className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
+          className="h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm"
         />
       </div>
     </div>

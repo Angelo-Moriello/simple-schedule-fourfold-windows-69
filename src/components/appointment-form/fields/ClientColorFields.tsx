@@ -17,30 +17,30 @@ const ClientColorFields: React.FC<ClientColorFieldsProps> = ({
   appointmentColors
 }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <ClientAutocomplete
         formData={formData}
         setFormData={setFormData}
       />
       
-      <div className="space-y-2">
+      <div className="space-y-3">
         <Label htmlFor="color" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <Palette className="h-4 w-4" />
+          <Palette className="h-4 w-4 text-pink-600" />
           Colore Etichetta
         </Label>
         <Select
           value={formData.color}
           onValueChange={(value) => setFormData({ ...formData, color: value })}
         >
-          <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
+          <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all duration-200 bg-white shadow-sm">
             <SelectValue placeholder="Seleziona colore" />
           </SelectTrigger>
-          <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+          <SelectContent className="bg-white border border-gray-200 shadow-xl z-50 rounded-xl">
             {appointmentColors.map(color => (
-              <SelectItem key={color.value} value={color.value}>
-                <div className="flex items-center gap-2">
-                  <div className={`w-4 h-4 rounded-full ${color.value}`}></div>
-                  {color.label}
+              <SelectItem key={color.value} value={color.value} className="cursor-pointer hover:bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className={`w-4 h-4 rounded-full ${color.value} ring-2 ring-gray-200`}></div>
+                  <span>{color.label}</span>
                 </div>
               </SelectItem>
             ))}

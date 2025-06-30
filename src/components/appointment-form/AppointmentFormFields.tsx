@@ -59,9 +59,16 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
   });
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
+    <div className="space-y-8">
+      {/* Main Form Section */}
+      <div className="bg-gradient-to-br from-blue-50/50 to-purple-50/50 rounded-2xl p-6 border border-blue-100">
+        <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+          <span className="text-blue-600">📅</span>
+          Dettagli Appuntamento
+        </h3>
+        
+        <div className="space-y-6">
+          {/* Employee and Time Row */}
           <EmployeeTimeFields
             formData={formData}
             setFormData={setFormData}
@@ -69,27 +76,15 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
             timeSlots={timeSlots}
           />
 
+          {/* Service and Title Row */}
           <ServiceTitleFields
             formData={formData}
             setFormData={setFormData}
             availableServices={availableServices}
             selectedEmployee={selectedEmployee}
           />
-        </div>
 
-        <div className="space-y-4">
-          <ClientColorFields
-            formData={formData}
-            setFormData={setFormData}
-            appointmentColors={appointmentColors}
-          />
-
-          <ContactFields
-            formData={formData}
-            setFormData={setFormData}
-            appointmentToEdit={appointmentToEdit}
-          />
-
+          {/* Duration and Notes Row */}
           <DurationNotesFields
             formData={formData}
             setFormData={setFormData}
@@ -97,22 +92,52 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
         </div>
       </div>
 
+      {/* Client Information Section */}
+      <div className="bg-gradient-to-br from-green-50/50 to-emerald-50/50 rounded-2xl p-6 border border-green-100">
+        <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+          <span className="text-green-600">👤</span>
+          Informazioni Cliente
+        </h3>
+        
+        <div className="space-y-6">
+          {/* Client and Color Row */}
+          <ClientColorFields
+            formData={formData}
+            setFormData={setFormData}
+            appointmentColors={appointmentColors}
+          />
+
+          {/* Contact Information Row */}
+          <ContactFields
+            formData={formData}
+            setFormData={setFormData}
+            appointmentToEdit={appointmentToEdit}
+          />
+        </div>
+      </div>
+
       {/* Multi-Date Selector - Only show for new appointments */}
       {!appointmentToEdit && onSelectedDatesChange && (
-        <>
-          <Separator className="my-6" />
+        <div className="bg-gradient-to-br from-orange-50/50 to-amber-50/50 rounded-2xl p-6 border border-orange-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+            <span className="text-orange-600">📆</span>
+            Date Multiple
+          </h3>
           <MultiDateSelector
             selectedDates={selectedDates}
             onDatesChange={onSelectedDatesChange}
             mainDate={mainDate}
           />
-        </>
+        </div>
       )}
 
       {/* Multiple Events Section - Only show for new appointments */}
       {!appointmentToEdit && onMultipleEventsChange && (
-        <>
-          <Separator className="my-6" />
+        <div className="bg-gradient-to-br from-purple-50/50 to-pink-50/50 rounded-2xl p-6 border border-purple-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+            <span className="text-purple-600">📋</span>
+            Eventi Multipli
+          </h3>
           <MultipleEventsManager
             events={multipleEvents}
             onEventsChange={onMultipleEventsChange}
@@ -123,7 +148,7 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
             mainEmployeeId={formData.employeeId}
             mainTime={formData.time}
           />
-        </>
+        </div>
       )}
     </div>
   );
