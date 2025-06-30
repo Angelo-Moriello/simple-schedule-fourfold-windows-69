@@ -5,8 +5,7 @@ import { Appointment, Employee } from '@/types/appointment';
 import { 
   loadEmployeesFromSupabase, 
   loadAppointmentsFromSupabase,
-  migrateLocalStorageToSupabase,
-  clearAllVacationsFromSupabase
+  migrateLocalStorageToSupabase
 } from '@/utils/supabaseStorage';
 import { loadRecurringTreatmentsFromSupabase } from '@/utils/clientStorage';
 import { generateAppointmentsForDateRange } from '@/utils/recurringTreatmentUtils';
@@ -21,9 +20,6 @@ export const useAppointmentData = (selectedDate: Date) => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        
-        // Clear all vacations first
-        await clearAllVacationsFromSupabase();
         
         // Check if we need to migrate from localStorage
         const hasLocalData = localStorage.getItem('employees') || localStorage.getItem('appointments');
@@ -89,9 +85,6 @@ export const useAppointmentData = (selectedDate: Date) => {
 
     loadData();
   }, []);
-
-  // Removed the automatic recurring appointment generation on date change
-  // This was causing sync issues on mobile devices
 
   return {
     appointments,

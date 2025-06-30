@@ -19,7 +19,7 @@ export const saveEmployeesToSupabase = async (employees: Employee[]) => {
           name: emp.name,
           color: emp.color,
           specialization: emp.specialization,
-          vacations: [] // Always empty vacations
+          vacations: emp.vacations || [] // Mantiene le ferie esistenti
         }))
       );
       if (insertError) {
@@ -52,7 +52,7 @@ export const loadEmployeesFromSupabase = async (): Promise<Employee[]> => {
       name: emp.name,
       color: emp.color,
       specialization: emp.specialization as 'Parrucchiere' | 'Estetista',
-      vacations: [] // Always empty vacations
+      vacations: emp.vacations || [] // Carica le ferie dal database
     })) || [];
     
     console.log('Dipendenti caricati:', employees);
@@ -71,7 +71,7 @@ export const addEmployeeToSupabase = async (employee: Employee) => {
       name: employee.name,
       color: employee.color,
       specialization: employee.specialization,
-      vacations: [] // Always empty vacations
+      vacations: employee.vacations || [] // Mantiene le ferie del dipendente
     });
     if (error) {
       console.error('Errore SQL nell\'aggiunta dipendente:', error);
@@ -93,7 +93,7 @@ export const updateEmployeeInSupabase = async (employee: Employee) => {
         name: employee.name,
         color: employee.color,
         specialization: employee.specialization,
-        vacations: [] // Always empty vacations
+        vacations: employee.vacations || [] // Aggiorna le ferie del dipendente
       })
       .eq('id', employee.id);
     if (error) {
@@ -121,27 +121,6 @@ export const deleteEmployeeFromSupabase = async (employeeId: number) => {
     console.log('Dipendente eliminato con successo');
   } catch (error) {
     console.error('Errore nell\'eliminare dipendente da Supabase:', error);
-    throw error;
-  }
-};
-
-// Function to clear all vacations from all employees
-export const clearAllVacationsFromSupabase = async () => {
-  try {
-    console.log('Rimozione di tutte le ferie da tutti i dipendenti...');
-    const { error } = await supabase
-      .from('employees')
-      .update({ vacations: [] })
-      .neq('id', 0); // Update all employees
-    
-    if (error) {
-      console.error('Errore nella rimozione delle ferie:', error);
-      throw error;
-    }
-    
-    console.log('Tutte le ferie sono state rimosse con successo');
-  } catch (error) {
-    console.error('Errore nella rimozione delle ferie:', error);
     throw error;
   }
 };
