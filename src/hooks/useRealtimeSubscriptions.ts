@@ -30,135 +30,16 @@ const getClientInfo = async (clientId: string) => {
   }
 };
 
-// Mobile detection helper
-const isMobile = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
-
-// Network status helper
-const isOnline = () => {
-  return navigator.onLine;
-};
-
 export const useRealtimeSubscriptions = ({ 
   setAppointments, 
   setEmployees, 
   forcePageRefresh 
 }: UseRealtimeSubscriptionsProps) => {
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
-  const isReconnectingRef = useRef(false);
-  const lastSyncRef = useRef<number>(Date.now());
-
-  // Enhanced sync function for mobile
-  const performFullSync = async () => {
-    try {
-      console.log('DEBUG - Eseguendo sincronizzazione completa...');
-      
-      // Force reload appointments and employees from server
-      const [appointmentsResponse, employeesResponse] = await Promise.all([
-        supabase.from('appointments').select('*').order('date', { ascending: false }),
-        supabase.from('employees').select('*').order('id')
-      ]);
-
-      if (appointmentsResponse.data) {
-        const appointments = await Promise.all(appointmentsResponse.data.map(async (app) => {
-          let clientName = app.client;
-          let clientEmail = app.email || '';
-          let clientPhone = app.phone || '';
-          
-          if ((!clientName || clientName.trim() === '') && app.client_id) {
-            const clientInfo = await getClientInfo(app.client_id);
-            if (clientInfo) {
-              clientName = clientInfo.name;
-              clientEmail = clientInfo.email || app.email || '';
-              clientPhone = clientInfo.phone || app.phone || '';
-            }
-          }
-          
-          return {
-            id: app.id,
-            employeeId: app.employee_id,
-            date: app.date,
-            time: app.time,
-            title: app.title || '',
-            client: clientName || '',
-            duration: app.duration,
-            notes: app.notes || '',
-            email: clientEmail,
-            phone: clientPhone,
-            color: app.color,
-            serviceType: app.service_type,
-            clientId: app.client_id
-          };
-        }));
-        
-        setAppointments(appointments);
-        console.log('DEBUG - Appuntamenti sincronizzati:', appointments.length);
-      }
-
-      if (employeesResponse.data) {
-        const employees = employeesResponse.data.map(emp => ({
-          id: emp.id,
-          name: emp.name,
-          color: emp.color,
-          specialization: emp.specialization as 'Parrucchiere' | 'Estetista',
-          vacations: emp.vacations || []
-        }));
-        
-        setEmployees(employees);
-        console.log('DEBUG - Dipendenti sincronizzati:', employees.length);
-      }
-
-      lastSyncRef.current = Date.now();
-    } catch (error) {
-      console.error('Errore durante sincronizzazione completa:', error);
-    }
-  };
-
-  // Enhanced reconnection logic for mobile
-  const handleReconnection = async () => {
-    if (isReconnectingRef.current) return;
-    
-    isReconnectingRef.current = true;
-    console.log('DEBUG - Tentativo di riconnessione...');
-    
-    try {
-      // Wait for network to be available
-      if (!isOnline()) {
-        console.log('DEBUG - Rete non disponibile, attendo...');
-        await new Promise(resolve => {
-          const checkNetwork = () => {
-            if (isOnline()) {
-              resolve(true);
-            } else {
-              setTimeout(checkNetwork, 1000);
-            }
-          };
-          checkNetwork();
-        });
-      }
-
-      // Perform full sync
-      await performFullSync();
-      
-      // Force refresh on mobile for better reliability
-      if (isMobile()) {
-        setTimeout(() => {
-          forcePageRefresh();
-        }, 1000);
-      }
-      
-    } catch (error) {
-      console.error('Errore durante riconnessione:', error);
-    } finally {
-      isReconnectingRef.current = false;
-    }
-  };
 
   useEffect(() => {
-    console.log('DEBUG - Configurazione realtime subscriptions con supporto mobile migliorato...');
+    console.log('DEBUG - Configurazione realtime subscriptions...');
     
-    // Enhanced appointment subscription with better error handling
+    // Appointment subscription
     const appointmentsChannel = supabase
       .channel('appointments-changes')
       .on(
@@ -206,14 +87,7 @@ export const useRealtimeSubscriptions = ({
               setAppointments(prev => {
                 const exists = prev.some(apt => apt.id === newAppointment.id);
                 if (!exists) {
-                  const updated = [...prev, newAppointment];
-                  
-                  // On mobile, be more aggressive with refresh
-                  if (isMobile()) {
-                    setTimeout(forcePageRefresh, 500);
-                  }
-                  
-                  return updated;
+                  return [...prev, newAppointment];
                 }
                 return prev;
               });
@@ -248,46 +122,23 @@ export const useRealtimeSubscriptions = ({
                 clientId: payload.new.client_id
               };
               
-              setAppointments(prev => {
-                const updated = prev.map(apt =>
-                  apt.id === updatedAppointment.id ? updatedAppointment : apt
-                );
-                
-                if (isMobile()) {
-                  setTimeout(forcePageRefresh, 500);
-                }
-                
-                return updated;
-              });
+              setAppointments(prev => prev.map(apt =>
+                apt.id === updatedAppointment.id ? updatedAppointment : apt
+              ));
               
             } else if (payload.eventType === 'DELETE') {
-              setAppointments(prev => {
-                const updated = prev.filter(apt => apt.id !== payload.old.id);
-                
-                if (isMobile()) {
-                  setTimeout(forcePageRefresh, 500);
-                }
-                
-                return updated;
-              });
+              setAppointments(prev => prev.filter(apt => apt.id !== payload.old.id));
             }
           } catch (error) {
             console.error('Errore nel processare cambiamento realtime appuntamento:', error);
-            // Fallback to full sync on error
-            handleReconnection();
           }
         }
       )
       .subscribe((status) => {
         console.log('DEBUG - Stato subscription appuntamenti:', status);
-        
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.log('DEBUG - Errore o timeout nella subscription, tentando riconnessione...');
-          handleReconnection();
-        }
       });
 
-    // Enhanced employee subscription
+    // Employee subscription
     const employeesChannel = supabase
       .channel('employees-changes')
       .on(
@@ -343,59 +194,10 @@ export const useRealtimeSubscriptions = ({
         console.log('DEBUG - Stato subscription dipendenti:', status);
       });
 
-    // Network status monitoring for mobile
-    const handleOnline = () => {
-      console.log('DEBUG - Rete disponibile, sincronizzando...');
-      handleReconnection();
-    };
-
-    const handleOffline = () => {
-      console.log('DEBUG - Rete non disponibile');
-    };
-
-    // Visibility change handling for mobile apps
-    const handleVisibilityChange = () => {
-      if (!document.hidden && isMobile()) {
-        console.log('DEBUG - App tornata in primo piano, verificando sincronizzazione...');
-        const timeSinceLastSync = Date.now() - lastSyncRef.current;
-        
-        // If more than 30 seconds since last sync, perform full sync
-        if (timeSinceLastSync > 30000) {
-          handleReconnection();
-        }
-      }
-    };
-
-    // Add event listeners for mobile reliability
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Periodic sync check for mobile (every 2 minutes)
-    const syncInterval = setInterval(() => {
-      if (isMobile() && isOnline()) {
-        const timeSinceLastSync = Date.now() - lastSyncRef.current;
-        if (timeSinceLastSync > 120000) { // 2 minutes
-          console.log('DEBUG - Sincronizzazione periodica mobile...');
-          performFullSync();
-        }
-      }
-    }, 60000); // Check every minute
-
     return () => {
       console.log('Pulizia subscriptions...');
       supabase.removeChannel(appointmentsChannel);
       supabase.removeChannel(employeesChannel);
-      
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      
-      clearInterval(syncInterval);
-      
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
     };
   }, [setAppointments, setEmployees, forcePageRefresh]);
 };

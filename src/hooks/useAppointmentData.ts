@@ -90,28 +90,8 @@ export const useAppointmentData = (selectedDate: Date) => {
     loadData();
   }, []);
 
-  // Generate recurring appointments when date changes
-  useEffect(() => {
-    const generateRecurringForDate = async () => {
-      try {
-        const recurringTreatments = await loadRecurringTreatmentsFromSupabase();
-        const startDate = subDays(selectedDate, 1);
-        const endDate = addDays(selectedDate, 7);
-        
-        await generateAppointmentsForDateRange(recurringTreatments, startDate, endDate);
-        
-        // Reload appointments
-        const updatedAppointments = await loadAppointmentsFromSupabase();
-        setAppointments(updatedAppointments);
-      } catch (error) {
-        console.error('Errore nella generazione appuntamenti ricorrenti per data:', error);
-      }
-    };
-
-    if (!isLoading) {
-      generateRecurringForDate();
-    }
-  }, [selectedDate, isLoading]);
+  // Removed the automatic recurring appointment generation on date change
+  // This was causing sync issues on mobile devices
 
   return {
     appointments,
