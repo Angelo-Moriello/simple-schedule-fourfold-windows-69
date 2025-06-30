@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Appointment } from '@/types/appointment';
 import { toast } from 'sonner';
@@ -6,6 +5,16 @@ import { addClientToSupabase, loadClientsFromSupabase } from '@/utils/clientStor
 import { format } from 'date-fns';
 import { appointmentColors, generateUUID } from '@/utils/appointmentFormUtils';
 import { getStoredServices, refreshServices } from '@/utils/serviceStorage';
+
+interface MultipleEvent {
+  id: string;
+  employeeId: string;
+  time: string;
+  serviceType: string;
+  title: string;
+  duration: string;
+  notes: string;
+}
 
 interface UseAppointmentFormProps {
   isOpen: boolean;
@@ -45,6 +54,7 @@ export const useAppointmentForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [serviceCategories, setServiceCategories] = useState(getStoredServices());
+  const [multipleEvents, setMultipleEvents] = useState<MultipleEvent[]>([]);
 
   // Listen for service updates
   useEffect(() => {
@@ -143,6 +153,7 @@ export const useAppointmentForm = ({
         serviceType: '',
         clientId: ''
       });
+      setMultipleEvents([]);
     }
   }, [isOpen]);
 
@@ -155,6 +166,7 @@ export const useAppointmentForm = ({
     e.preventDefault();
     
     console.log('DEBUG - Submit con formData:', formData);
+    console.log('DEBUG - Submit con eventi multipli:', multipleEvents);
     
     if (!formData.client.trim()) {
       toast.error('Il nome del cliente è obbligatorio');
@@ -166,12 +178,24 @@ export const useAppointmentForm = ({
       return;
     }
 
+    // Validate multiple events
+    for (const event of multipleEvents) {
+      if (!event.serviceType.trim()) {
+        toast.error('Tutti gli eventi aggiuntivi devono avere un tipo di servizio');
+        return;
+      }
+      if (!event.time.trim()) {
+        toast.error('Tutti gli eventi aggiuntivi devono avere un orario');
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
       
       let finalClientId = formData.clientId;
       
-      // Solo se non stiamo modificando un appuntamento esistente e non abbiamo già un clientId
+      // Handle client creation/finding logic (same as before)
       if (!appointmentToEdit && !finalClientId) {
         console.log('DEBUG - Tentativo di trovare o creare cliente:', {
           name: formData.client,
@@ -218,7 +242,8 @@ export const useAppointmentForm = ({
         }
       }
 
-      const appointmentData: Appointment = {
+      // Create main appointment
+      const mainAppointment: Appointment = {
         id: appointmentToEdit?.id || generateUUID(),
         employeeId: parseInt(formData.employeeId),
         date: format(date, 'yyyy-MM-dd'),
@@ -234,14 +259,41 @@ export const useAppointmentForm = ({
         clientId: finalClientId
       };
 
-      console.log('DEBUG - Salvataggio appuntamento:', appointmentData);
+      console.log('DEBUG - Salvataggio appuntamento principale:', mainAppointment);
+
+      // Create additional appointments for multiple events
+      const additionalAppointments: Appointment[] = multipleEvents.map(event => ({
+        id: generateUUID(),
+        employeeId: parseInt(event.employeeId),
+        date: format(date, 'yyyy-MM-dd'),
+        time: event.time,
+        title: event.title.trim() || `${event.serviceType} - ${formData.client}`,
+        client: formData.client.trim(),
+        duration: parseInt(event.duration),
+        notes: event.notes.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        color: formData.color,
+        serviceType: event.serviceType,
+        clientId: finalClientId
+      }));
+
+      console.log('DEBUG - Salvataggio appuntamenti aggiuntivi:', additionalAppointments);
 
       if (appointmentToEdit && updateAppointment) {
-        await updateAppointment(appointmentData);
+        await updateAppointment(mainAppointment);
         toast.success('Appuntamento modificato con successo!');
       } else if (addAppointment) {
-        await addAppointment(appointmentData);
-        toast.success('Appuntamento creato con successo!');
+        // Save main appointment
+        await addAppointment(mainAppointment);
+        
+        // Save additional appointments
+        for (const additionalAppointment of additionalAppointments) {
+          await addAppointment(additionalAppointment);
+        }
+        
+        const totalEvents = 1 + additionalAppointments.length;
+        toast.success(`${totalEvents} appuntament${totalEvents > 1 ? 'i creati' : 'o creato'} con successo!`);
       }
 
       onClose();
@@ -274,7 +326,9 @@ export const useAppointmentForm = ({
     isSubmitting,
     handleSubmit,
     handleGoogleCalendarSync,
-    serviceCategories
+    serviceCategories,
+    multipleEvents,
+    setMultipleEvents
   };
 };
 

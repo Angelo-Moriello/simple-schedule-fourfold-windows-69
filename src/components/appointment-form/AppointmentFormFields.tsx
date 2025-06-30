@@ -6,6 +6,18 @@ import ServiceTitleFields from './fields/ServiceTitleFields';
 import ClientColorFields from './fields/ClientColorFields';
 import ContactFields from './fields/ContactFields';
 import DurationNotesFields from './fields/DurationNotesFields';
+import MultipleEventsManager from './MultipleEventsManager';
+import { Separator } from '@/components/ui/separator';
+
+interface MultipleEvent {
+  id: string;
+  employeeId: string;
+  time: string;
+  serviceType: string;
+  title: string;
+  duration: string;
+  notes: string;
+}
 
 interface AppointmentFormFieldsProps {
   formData: any;
@@ -16,6 +28,8 @@ interface AppointmentFormFieldsProps {
   availableServices: string[];
   selectedEmployee: Employee | undefined;
   appointmentToEdit: any;
+  multipleEvents?: MultipleEvent[];
+  onMultipleEventsChange?: (events: MultipleEvent[]) => void;
 }
 
 const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
@@ -26,7 +40,9 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
   appointmentColors,
   availableServices,
   selectedEmployee,
-  appointmentToEdit
+  appointmentToEdit,
+  multipleEvents = [],
+  onMultipleEventsChange
 }) => {
   // Debug log per verificare i servizi disponibili
   console.log('DEBUG - Servizi disponibili nel form:', {
@@ -37,38 +53,61 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
   });
 
   return (
-    <>
-      <EmployeeTimeFields
-        formData={formData}
-        setFormData={setFormData}
-        employees={employees}
-        timeSlots={timeSlots}
-      />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <EmployeeTimeFields
+            formData={formData}
+            setFormData={setFormData}
+            employees={employees}
+            timeSlots={timeSlots}
+          />
 
-      <ServiceTitleFields
-        formData={formData}
-        setFormData={setFormData}
-        availableServices={availableServices}
-        selectedEmployee={selectedEmployee}
-      />
+          <ServiceTitleFields
+            formData={formData}
+            setFormData={setFormData}
+            availableServices={availableServices}
+            selectedEmployee={selectedEmployee}
+          />
+        </div>
 
-      <ClientColorFields
-        formData={formData}
-        setFormData={setFormData}
-        appointmentColors={appointmentColors}
-      />
+        <div className="space-y-4">
+          <ClientColorFields
+            formData={formData}
+            setFormData={setFormData}
+            appointmentColors={appointmentColors}
+          />
 
-      <ContactFields
-        formData={formData}
-        setFormData={setFormData}
-        appointmentToEdit={appointmentToEdit}
-      />
+          <ContactFields
+            formData={formData}
+            setFormData={setFormData}
+            appointmentToEdit={appointmentToEdit}
+          />
 
-      <DurationNotesFields
-        formData={formData}
-        setFormData={setFormData}
-      />
-    </>
+          <DurationNotesFields
+            formData={formData}
+            setFormData={setFormData}
+          />
+        </div>
+      </div>
+
+      {/* Multiple Events Section - Only show for new appointments */}
+      {!appointmentToEdit && onMultipleEventsChange && (
+        <>
+          <Separator className="my-6" />
+          <MultipleEventsManager
+            events={multipleEvents}
+            onEventsChange={onMultipleEventsChange}
+            employees={employees}
+            timeSlots={timeSlots}
+            availableServices={availableServices}
+            selectedEmployee={selectedEmployee}
+            mainEmployeeId={formData.employeeId}
+            mainTime={formData.time}
+          />
+        </>
+      )}
+    </div>
   );
 };
 
