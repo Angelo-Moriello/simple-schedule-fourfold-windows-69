@@ -6,11 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Settings, Trash2 } from 'lucide-react';
-import { serviceCategories, ServiceCategory } from '@/types/appointment';
+import { ServiceCategory } from '@/types/appointment';
 import { toast } from 'sonner';
 
 interface ServiceCategoryManagerProps {
-  onUpdateServiceCategories?: (categories: typeof serviceCategories) => void;
+  onUpdateServiceCategories?: (categories: Record<'Parrucchiere' | 'Estetista', ServiceCategory>) => void;
 }
 
 const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
@@ -24,28 +24,33 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   const loadStoredServices = (): Record<'Parrucchiere' | 'Estetista', ServiceCategory> => {
     try {
       const stored = localStorage.getItem('services');
-      return stored ? JSON.parse(stored) : {
-        Parrucchiere: {
-          name: 'Parrucchiere',
-          services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
-        },
-        Estetista: {
-          name: 'Estetista',
-          services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        console.log('Servizi caricati da localStorage:', parsed);
+        // Validate the structure
+        if (parsed.Parrucchiere && parsed.Estetista && 
+            Array.isArray(parsed.Parrucchiere.services) && 
+            Array.isArray(parsed.Estetista.services)) {
+          return parsed;
         }
-      };
-    } catch {
-      return {
-        Parrucchiere: {
-          name: 'Parrucchiere',
-          services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
-        },
-        Estetista: {
-          name: 'Estetista',
-          services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
-        }
-      };
+      }
+    } catch (error) {
+      console.error('Errore nel parsing dei servizi:', error);
     }
+    
+    // Return defaults if loading fails
+    const defaultServices = {
+      Parrucchiere: {
+        name: 'Parrucchiere',
+        services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
+      },
+      Estetista: {
+        name: 'Estetista',
+        services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+      }
+    };
+    console.log('Usando servizi di default:', defaultServices);
+    return defaultServices;
   };
 
   const [customCategories, setCustomCategories] = useState(loadStoredServices);
@@ -138,26 +143,29 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
             </div>
           </div>
 
-          {(Object.entries(customCategories) as [string, ServiceCategory][]).map(([categoryKey, category]) => (
-            <div key={categoryKey} className="space-y-3">
-              <h3 className="font-semibold text-lg">{category.name}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {category.services.map((service, index) => (
-                  <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded border">
-                    <span className="text-sm">{service}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveService(categoryKey as 'Parrucchiere' | 'Estetista', index)}
-                      className="text-red-600 hover:text-red-700 h-6 w-6 p-0"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
+          {Object.keys(customCategories).map((categoryKey) => {
+            const category = customCategories[categoryKey as keyof typeof customCategories];
+            return (
+              <div key={categoryKey} className="space-y-3">
+                <h3 className="font-semibold text-lg">{category.name}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {category.services.map((service, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded border">
+                      <span className="text-sm">{service}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveService(categoryKey as 'Parrucchiere' | 'Estetista', index)}
+                        className="text-red-600 hover:text-red-700 h-6 w-6 p-0"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </DialogContent>
     </Dialog>
