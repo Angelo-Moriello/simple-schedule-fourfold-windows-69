@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Settings, Trash2 } from 'lucide-react';
 import { serviceCategories } from '@/types/appointment';
+import { toast } from 'sonner';
 
 interface ServiceCategoryManagerProps {
   onUpdateServiceCategories?: (categories: typeof serviceCategories) => void;
@@ -18,7 +19,47 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'Parrucchiere' | 'Estetista'>('Parrucchiere');
   const [newService, setNewService] = useState('');
-  const [customCategories, setCustomCategories] = useState(serviceCategories);
+  
+  // Load services from localStorage or use defaults
+  const loadStoredServices = () => {
+    try {
+      const stored = localStorage.getItem('services');
+      return stored ? JSON.parse(stored) : {
+        Parrucchiere: {
+          name: 'Parrucchiere',
+          services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
+        },
+        Estetista: {
+          name: 'Estetista',
+          services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+        }
+      };
+    } catch {
+      return {
+        Parrucchiere: {
+          name: 'Parrucchiere',
+          services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
+        },
+        Estetista: {
+          name: 'Estetista',
+          services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+        }
+      };
+    }
+  };
+
+  const [customCategories, setCustomCategories] = useState(loadStoredServices);
+
+  // Save services to localStorage
+  const saveServicesToStorage = (categories: typeof serviceCategories) => {
+    try {
+      localStorage.setItem('services', JSON.stringify(categories));
+      console.log('Servizi salvati in localStorage:', categories);
+    } catch (error) {
+      console.error('Errore nel salvare i servizi:', error);
+      toast.error('Errore nel salvare i servizi');
+    }
+  };
 
   const handleAddService = () => {
     if (newService.trim()) {
@@ -29,13 +70,17 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
           services: [...customCategories[selectedCategory].services, newService.trim()]
         }
       };
+      
       setCustomCategories(updatedCategories);
+      saveServicesToStorage(updatedCategories);
       onUpdateServiceCategories?.(updatedCategories);
       setNewService('');
+      toast.success(`Servizio "${newService.trim()}" aggiunto con successo!`);
     }
   };
 
   const handleRemoveService = (category: 'Parrucchiere' | 'Estetista', serviceIndex: number) => {
+    const serviceToRemove = customCategories[category].services[serviceIndex];
     const updatedCategories = {
       ...customCategories,
       [category]: {
@@ -43,8 +88,11 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
         services: customCategories[category].services.filter((_, index) => index !== serviceIndex)
       }
     };
+    
     setCustomCategories(updatedCategories);
+    saveServicesToStorage(updatedCategories);
     onUpdateServiceCategories?.(updatedCategories);
+    toast.success(`Servizio "${serviceToRemove}" rimosso con successo!`);
   };
 
   return (

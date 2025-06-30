@@ -36,14 +36,37 @@ export const generateUUID = () => {
 export const getStoredServices = () => {
   try {
     const stored = localStorage.getItem('services');
-    return stored ? JSON.parse(stored) : {
-      Parrucchiere: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli'],
-      Estetista: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
-    };
-  } catch {
+    if (stored) {
+      const parsedServices = JSON.parse(stored);
+      console.log('Servizi caricati da localStorage:', parsedServices);
+      return parsedServices;
+    } else {
+      console.log('Nessun servizio in localStorage, usando defaults');
+      const defaultServices = {
+        Parrucchiere: {
+          name: 'Parrucchiere',
+          services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
+        },
+        Estetista: {
+          name: 'Estetista',
+          services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+        }
+      };
+      // Salva i defaults in localStorage per la prossima volta
+      localStorage.setItem('services', JSON.stringify(defaultServices));
+      return defaultServices;
+    }
+  } catch (error) {
+    console.error('Errore nel caricamento servizi:', error);
     return {
-      Parrucchiere: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli'],
-      Estetista: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+      Parrucchiere: {
+        name: 'Parrucchiere',
+        services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
+      },
+      Estetista: {
+        name: 'Estetista',
+        services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+      }
     };
   }
 };
