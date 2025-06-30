@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2 } from 'lucide-react';
 import { ServiceCategory } from '@/types/appointment';
 import { toast } from 'sonner';
+import { loadStoredServices, saveServicesToStorage } from './service-manager/ServiceStorageUtils';
+import ServiceAddForm from './service-manager/ServiceAddForm';
+import ServiceCategoryList from './service-manager/ServiceCategoryList';
 
 interface ServiceCategoryManagerProps {
   onUpdateServiceCategories?: (categories: Record<'Parrucchiere' | 'Estetista', ServiceCategory>) => void;
@@ -18,127 +18,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'Parrucchiere' | 'Estetista'>('Parrucchiere');
   const [newService, setNewService] = useState('');
-  
-  // Load services from localStorage or use defaults
-  const loadStoredServices = (): Record<'Parrucchiere' | 'Estetista', ServiceCategory> => {
-    try {
-      const stored = localStorage.getItem('services');
-      const backup1 = localStorage.getItem('services_backup');
-      const backup2 = localStorage.getItem('customServices');
-      
-      console.log('DEBUG - ServiceCategoryManager loading services');
-      
-      let servicesToLoad = null;
-      if (stored) {
-        try {
-          servicesToLoad = JSON.parse(stored);
-        } catch (e) {
-          console.error('Errore parsing servizi principali:', e);
-        }
-      }
-      
-      if (!servicesToLoad && backup1) {
-        try {
-          servicesToLoad = JSON.parse(backup1);
-          console.log('ServiceCategoryManager usando backup1');
-        } catch (e) {
-          console.error('Errore parsing backup1:', e);
-        }
-      }
-      
-      if (!servicesToLoad && backup2) {
-        try {
-          servicesToLoad = JSON.parse(backup2);
-          console.log('ServiceCategoryManager usando backup2');
-        } catch (e) {
-          console.error('Errore parsing backup2:', e);
-        }
-      }
-      
-      if (servicesToLoad && 
-          servicesToLoad.Parrucchiere && servicesToLoad.Estetista && 
-          Array.isArray(servicesToLoad.Parrucchiere.services) && 
-          Array.isArray(servicesToLoad.Estetista.services)) {
-        console.log('ServiceCategoryManager servizi recuperati:', servicesToLoad);
-        return servicesToLoad;
-      }
-    } catch (error) {
-      console.error('Errore nel parsing dei servizi:', error);
-    }
-    
-    // Return expanded defaults
-    const defaultServices = {
-      Parrucchiere: {
-        name: 'Parrucchiere',
-        services: [
-          'Piega', 
-          'Colore', 
-          'Taglio', 
-          'Colpi di sole', 
-          'Trattamento Capelli',
-          'Permanente',
-          'Stiratura',
-          'Extension',
-          'Balayage',
-          'Shatush',
-          'Mèches',
-          'Decolorazione',
-          'Tinta',
-          'Riflessante'
-        ]
-      },
-      Estetista: {
-        name: 'Estetista',
-        services: [
-          'Pulizia Viso', 
-          'Manicure', 
-          'Pedicure', 
-          'Massaggio', 
-          'Depilazione', 
-          'Trattamento Corpo',
-          'Ricostruzione Unghie',
-          'Semipermanente',
-          'Trattamento Viso',
-          'Ceretta',
-          'Peeling',
-          'Maschera Viso',
-          'Pressoterapia',
-          'Linfodrenaggio'
-        ]
-      }
-    };
-    console.log('ServiceCategoryManager usando servizi di default espansi:', defaultServices);
-    return defaultServices;
-  };
-
   const [customCategories, setCustomCategories] = useState(loadStoredServices);
-
-  // Save services to localStorage with multiple backups and emit event
-  const saveServicesToStorage = (categories: Record<'Parrucchiere' | 'Estetista', ServiceCategory>) => {
-    try {
-      const dataToSave = JSON.stringify(categories);
-      
-      // Salva in multiple locations for backup
-      localStorage.setItem('services', dataToSave);
-      localStorage.setItem('services_backup', dataToSave);
-      localStorage.setItem('customServices', dataToSave);
-      localStorage.setItem('services_timestamp', new Date().toISOString());
-      
-      console.log('ServiceCategoryManager servizi salvati:', categories);
-      
-      // Emit custom event to notify other components
-      window.dispatchEvent(new CustomEvent('servicesUpdated', { 
-        detail: categories 
-      }));
-      
-      // Also trigger storage event
-      window.dispatchEvent(new Event('storage'));
-      
-    } catch (error) {
-      console.error('Errore nel salvare i servizi:', error);
-      toast.error('Errore nel salvare i servizi');
-    }
-  };
 
   const handleAddService = () => {
     if (newService.trim()) {
@@ -192,54 +72,18 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
         </DialogHeader>
         
         <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium mb-2">Aggiungi nuovo servizio:</label>
-            <div className="flex gap-2">
-              <Select value={selectedCategory} onValueChange={(value: 'Parrucchiere' | 'Estetista') => setSelectedCategory(value)}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Parrucchiere">Parrucchiere</SelectItem>
-                  <SelectItem value="Estetista">Estetista</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Nome servizio"
-                value={newService}
-                onChange={(e) => setNewService(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddService()}
-                className="flex-1"
-              />
-              <Button onClick={handleAddService} disabled={!newService.trim()}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          <ServiceAddForm
+            selectedCategory={selectedCategory}
+            newService={newService}
+            onCategoryChange={setSelectedCategory}
+            onServiceChange={setNewService}
+            onAddService={handleAddService}
+          />
 
-          {(['Parrucchiere', 'Estetista'] as const).map((categoryKey) => {
-            const category = customCategories[categoryKey];
-            return (
-              <div key={categoryKey} className="space-y-3">
-                <h3 className="font-semibold text-lg">{category.name} ({category.services.length} servizi)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {category.services.map((service, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded border">
-                      <span className="text-sm">{service}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveService(categoryKey, index)}
-                        className="text-red-600 hover:text-red-700 h-6 w-6 p-0"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+          <ServiceCategoryList
+            categories={customCategories}
+            onRemoveService={handleRemoveService}
+          />
         </div>
       </DialogContent>
     </Dialog>
