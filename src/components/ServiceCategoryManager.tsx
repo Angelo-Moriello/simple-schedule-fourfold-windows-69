@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,18 +22,12 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   // Load services from localStorage or use defaults
   const loadStoredServices = (): Record<'Parrucchiere' | 'Estetista', ServiceCategory> => {
     try {
-      // Verifica tutti i possibili backup nel localStorage
       const stored = localStorage.getItem('services');
       const backup1 = localStorage.getItem('services_backup');
       const backup2 = localStorage.getItem('customServices');
       
-      console.log('DEBUG - Tentativo recupero servizi:', {
-        stored: stored ? JSON.parse(stored) : null,
-        backup1: backup1 ? JSON.parse(backup1) : null,
-        backup2: backup2 ? JSON.parse(backup2) : null
-      });
+      console.log('DEBUG - ServiceCategoryManager loading services');
       
-      // Prova prima con il backup
       let servicesToLoad = null;
       if (stored) {
         try {
@@ -45,7 +40,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
       if (!servicesToLoad && backup1) {
         try {
           servicesToLoad = JSON.parse(backup1);
-          console.log('Usando backup1');
+          console.log('ServiceCategoryManager usando backup1');
         } catch (e) {
           console.error('Errore parsing backup1:', e);
         }
@@ -54,26 +49,24 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
       if (!servicesToLoad && backup2) {
         try {
           servicesToLoad = JSON.parse(backup2);
-          console.log('Usando backup2');
+          console.log('ServiceCategoryManager usando backup2');
         } catch (e) {
           console.error('Errore parsing backup2:', e);
         }
       }
       
-      if (servicesToLoad) {
-        console.log('Servizi recuperati:', servicesToLoad);
-        // Validate the structure
-        if (servicesToLoad.Parrucchiere && servicesToLoad.Estetista && 
-            Array.isArray(servicesToLoad.Parrucchiere.services) && 
-            Array.isArray(servicesToLoad.Estetista.services)) {
-          return servicesToLoad;
-        }
+      if (servicesToLoad && 
+          servicesToLoad.Parrucchiere && servicesToLoad.Estetista && 
+          Array.isArray(servicesToLoad.Parrucchiere.services) && 
+          Array.isArray(servicesToLoad.Estetista.services)) {
+        console.log('ServiceCategoryManager servizi recuperati:', servicesToLoad);
+        return servicesToLoad;
       }
     } catch (error) {
       console.error('Errore nel parsing dei servizi:', error);
     }
     
-    // Return defaults with some common services that might have been added
+    // Return expanded defaults
     const defaultServices = {
       Parrucchiere: {
         name: 'Parrucchiere',
@@ -87,7 +80,11 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
           'Stiratura',
           'Extension',
           'Balayage',
-          'Shatush'
+          'Shatush',
+          'Mèches',
+          'Decolorazione',
+          'Tinta',
+          'Riflessante'
         ]
       },
       Estetista: {
@@ -102,17 +99,21 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
           'Ricostruzione Unghie',
           'Semipermanente',
           'Trattamento Viso',
-          'Ceretta'
+          'Ceretta',
+          'Peeling',
+          'Maschera Viso',
+          'Pressoterapia',
+          'Linfodrenaggio'
         ]
       }
     };
-    console.log('Usando servizi di default espansi:', defaultServices);
+    console.log('ServiceCategoryManager usando servizi di default espansi:', defaultServices);
     return defaultServices;
   };
 
   const [customCategories, setCustomCategories] = useState(loadStoredServices);
 
-  // Save services to localStorage with multiple backups
+  // Save services to localStorage with multiple backups and emit event
   const saveServicesToStorage = (categories: Record<'Parrucchiere' | 'Estetista', ServiceCategory>) => {
     try {
       const dataToSave = JSON.stringify(categories);
@@ -123,7 +124,16 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
       localStorage.setItem('customServices', dataToSave);
       localStorage.setItem('services_timestamp', new Date().toISOString());
       
-      console.log('Servizi salvati in localStorage con backup:', categories);
+      console.log('ServiceCategoryManager servizi salvati:', categories);
+      
+      // Emit custom event to notify other components
+      window.dispatchEvent(new CustomEvent('servicesUpdated', { 
+        detail: categories 
+      }));
+      
+      // Also trigger storage event
+      window.dispatchEvent(new Event('storage'));
+      
     } catch (error) {
       console.error('Errore nel salvare i servizi:', error);
       toast.error('Errore nel salvare i servizi');
@@ -211,7 +221,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
             const category = customCategories[categoryKey];
             return (
               <div key={categoryKey} className="space-y-3">
-                <h3 className="font-semibold text-lg">{category.name}</h3>
+                <h3 className="font-semibold text-lg">{category.name} ({category.services.length} servizi)</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {category.services.map((service, index) => (
                     <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded border">

@@ -4,7 +4,7 @@ import { Appointment, Employee } from '@/types/appointment';
 import AppointmentFormContainer from './appointment-form/AppointmentFormContainer';
 import AppointmentFormFields from './appointment-form/AppointmentFormFields';
 import AppointmentFormActions from './appointment-form/AppointmentFormActions';
-import { useAppointmentForm, appointmentColors, generateTimeSlots, getStoredServices } from './appointment-form/AppointmentFormLogic';
+import { useAppointmentForm, appointmentColors, generateTimeSlots } from './appointment-form/AppointmentFormLogic';
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -34,7 +34,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     setFormData,
     isSubmitting,
     handleSubmit,
-    handleGoogleCalendarSync
+    handleGoogleCalendarSync,
+    serviceCategories
   } = useAppointmentForm({
     isOpen,
     appointmentToEdit,
@@ -47,18 +48,21 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   });
 
   const timeSlots = generateTimeSlots();
-  const serviceCategories = getStoredServices();
 
   const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
   const availableServices = selectedEmployee && serviceCategories[selectedEmployee.specialization] 
     ? serviceCategories[selectedEmployee.specialization].services
     : [];
 
-  console.log('DEBUG - Servizi disponibili per dipendente:', {
-    selectedEmployee,
-    specialization: selectedEmployee?.specialization,
-    availableServices,
-    serviceCategories
+  console.log('DEBUG - Form rendering with:', {
+    selectedEmployee: selectedEmployee ? {
+      id: selectedEmployee.id,
+      name: selectedEmployee.name,
+      specialization: selectedEmployee.specialization
+    } : 'none',
+    availableServices: availableServices.length,
+    serviceCategories: Object.keys(serviceCategories),
+    formDataEmployeeId: formData.employeeId
   });
 
   return (

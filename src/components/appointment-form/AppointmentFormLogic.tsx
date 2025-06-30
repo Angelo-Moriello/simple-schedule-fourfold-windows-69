@@ -33,23 +33,32 @@ export const generateUUID = () => {
   });
 };
 
+// Global services state
+let globalServices = null;
+
 export const getStoredServices = () => {
+  if (globalServices) {
+    console.log('DEBUG - Usando servizi globali cached:', globalServices);
+    return globalServices;
+  }
+
   try {
     // Prova a recuperare da multiple sources
     const stored = localStorage.getItem('services');
     const backup1 = localStorage.getItem('services_backup');
     const backup2 = localStorage.getItem('customServices');
     
-    console.log('DEBUG - Tentativo recupero servizi (AppointmentFormLogic):', {
-      stored: stored ? JSON.parse(stored) : null,
-      backup1: backup1 ? JSON.parse(backup1) : null,
-      backup2: backup2 ? JSON.parse(backup2) : null
+    console.log('DEBUG - Caricamento servizi da localStorage:', {
+      stored: stored ? 'presente' : 'assente',
+      backup1: backup1 ? 'presente' : 'assente',
+      backup2: backup2 ? 'presente' : 'assente'
     });
     
     let servicesToLoad = null;
     if (stored) {
       try {
         servicesToLoad = JSON.parse(stored);
+        console.log('DEBUG - Servizi da stored:', servicesToLoad);
       } catch (e) {
         console.error('Errore parsing servizi principali:', e);
       }
@@ -58,7 +67,7 @@ export const getStoredServices = () => {
     if (!servicesToLoad && backup1) {
       try {
         servicesToLoad = JSON.parse(backup1);
-        console.log('Usando backup1 per form');
+        console.log('DEBUG - Servizi da backup1:', servicesToLoad);
       } catch (e) {
         console.error('Errore parsing backup1:', e);
       }
@@ -67,24 +76,21 @@ export const getStoredServices = () => {
     if (!servicesToLoad && backup2) {
       try {
         servicesToLoad = JSON.parse(backup2);
-        console.log('Usando backup2 per form');
+        console.log('DEBUG - Servizi da backup2:', servicesToLoad);
       } catch (e) {
         console.error('Errore parsing backup2:', e);
       }
     }
     
-    if (servicesToLoad) {
-      console.log('Servizi caricati da backup per form:', servicesToLoad);
-      
-      // Validate structure
-      if (servicesToLoad.Parrucchiere && servicesToLoad.Estetista && 
-          Array.isArray(servicesToLoad.Parrucchiere.services) && 
-          Array.isArray(servicesToLoad.Estetista.services)) {
-        return servicesToLoad;
-      }
+    if (servicesToLoad && servicesToLoad.Parrucchiere && servicesToLoad.Estetista && 
+        Array.isArray(servicesToLoad.Parrucchiere.services) && 
+        Array.isArray(servicesToLoad.Estetista.services)) {
+      console.log('DEBUG - Servizi validi trovati:', servicesToLoad);
+      globalServices = servicesToLoad;
+      return servicesToLoad;
     }
     
-    console.log('Nessun servizio valido in localStorage, usando defaults espansi');
+    console.log('DEBUG - Nessun servizio valido trovato, creando defaults espansi');
     const defaultServices = {
       Parrucchiere: {
         name: 'Parrucchiere',
@@ -98,7 +104,11 @@ export const getStoredServices = () => {
           'Stiratura',
           'Extension',
           'Balayage',
-          'Shatush'
+          'Shatush',
+          'Mèches',
+          'Decolorazione',
+          'Tinta',
+          'Riflessante'
         ]
       },
       Estetista: {
@@ -113,20 +123,27 @@ export const getStoredServices = () => {
           'Ricostruzione Unghie',
           'Semipermanente',
           'Trattamento Viso',
-          'Ceretta'
+          'Ceretta',
+          'Peeling',
+          'Maschera Viso',
+          'Pressoterapia',
+          'Linfodrenaggio'
         ]
       }
     };
     
-    // Salva i defaults espansi in localStorage per la prossima volta con backup
+    // Salva i defaults espansi
     const dataToSave = JSON.stringify(defaultServices);
     localStorage.setItem('services', dataToSave);
     localStorage.setItem('services_backup', dataToSave);
     localStorage.setItem('customServices', dataToSave);
+    
+    globalServices = defaultServices;
+    console.log('DEBUG - Servizi default salvati:', defaultServices);
     return defaultServices;
   } catch (error) {
     console.error('Errore nel caricamento servizi:', error);
-    return {
+    const fallbackServices = {
       Parrucchiere: {
         name: 'Parrucchiere',
         services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
@@ -136,7 +153,16 @@ export const getStoredServices = () => {
         services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
       }
     };
+    globalServices = fallbackServices;
+    return fallbackServices;
   }
+};
+
+// Function to refresh services from localStorage
+export const refreshServices = () => {
+  console.log('DEBUG - Refreshing services from localStorage');
+  globalServices = null;
+  return getStoredServices();
 };
 
 interface UseAppointmentFormProps {
@@ -176,6 +202,32 @@ export const useAppointmentForm = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditingMode, setIsEditingMode] = useState(false);
+  const [serviceCategories, setServiceCategories] = useState(getStoredServices());
+
+  // Listen for service updates
+  useEffect(() => {
+    const handleStorageChange = () => {
+      console.log('DEBUG - Storage changed, refreshing services');
+      const newServices = refreshServices();
+      setServiceCategories(newServices);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Custom event for service updates
+    const handleServiceUpdate = (event) => {
+      console.log('DEBUG - Service update event received:', event.detail);
+      const newServices = refreshServices();
+      setServiceCategories(newServices);
+    };
+
+    window.addEventListener('servicesUpdated', handleServiceUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('servicesUpdated', handleServiceUpdate);
+    };
+  }, []);
 
   // Effect per gestire il cambio di modalità editing
   useEffect(() => {
@@ -379,6 +431,7 @@ export const useAppointmentForm = ({
     setFormData,
     isSubmitting,
     handleSubmit,
-    handleGoogleCalendarSync
+    handleGoogleCalendarSync,
+    serviceCategories
   };
 };
