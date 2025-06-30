@@ -90,7 +90,8 @@ const EmployeeMobileCard: React.FC<EmployeeMobileCardProps> = ({
                 {timeSlots.map(time => {
                   const directAppointment = getEmployeeAppointmentsForTimeSlot(employee.id, time);
                   const occupationInfo = getSlotOccupationInfo(employee.id, time);
-                  const vacation = isVacationDay(employee.id, selectedDate);
+                  // Usa solo isFullDayVacation per determinare se è un giorno di ferie completo
+                  const isFullDayVacationDay = isVacationDay(employee.id, selectedDate);
 
                   return (
                     <TimeSlot
@@ -101,9 +102,12 @@ const EmployeeMobileCard: React.FC<EmployeeMobileCardProps> = ({
                       onAddAppointment={onAddAppointment}
                       onEditAppointment={onEditAppointment}
                       onDeleteAppointment={onDeleteAppointment}
-                      isVacationDay={vacation}
+                      isVacationDay={occupationInfo.isVacation || false}
                       isOccupied={occupationInfo.isOccupied}
-                      occupiedBy={occupationInfo.occupiedBy}
+                      occupiedBy={occupationInfo.isVacation ? { 
+                        isVacation: true, 
+                        vacationType: occupationInfo.vacationType 
+                      } : occupationInfo.occupiedBy}
                       isPartiallyOccupied={occupationInfo.isPartiallyOccupied}
                     />
                   );

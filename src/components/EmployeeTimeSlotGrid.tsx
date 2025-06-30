@@ -68,14 +68,15 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
     });
   };
 
-  const isVacationDay = useCallback((employeeId: number, date: Date): boolean => {
+  // Funzione per verificare se un dipendente ha ferie di giorno intero
+  const isFullDayVacation = useCallback((employeeId: number, date: Date): boolean => {
     const employee = employees.find(emp => emp.id === employeeId);
     if (!employee || !employee.vacations) return false;
 
     const dateString = format(date, 'yyyy-MM-dd');
     const vacationEntries = parseVacationEntries(employee.vacations);
     
-    return vacationEntries.some(entry => entry.date === dateString);
+    return vacationEntries.some(entry => entry.date === dateString && entry.type === 'full');
   }, [employees]);
 
   const getVacationInfo = useCallback((employeeId: number, date: Date, time: string) => {
@@ -215,7 +216,7 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
               onUpdateEmployeeName={onUpdateEmployeeName}
               getEmployeeAppointmentsForTimeSlot={getEmployeeAppointmentsForTimeSlot}
               getSlotOccupationInfo={getSlotOccupationInfo}
-              isVacationDay={isVacationDay}
+              isVacationDay={isFullDayVacation}
             />
           );
         })}
@@ -235,7 +236,7 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
       onUpdateEmployeeName={onUpdateEmployeeName}
       getEmployeeAppointmentsForTimeSlot={getEmployeeAppointmentsForTimeSlot}
       getSlotOccupationInfo={getSlotOccupationInfo}
-      isVacationDay={isVacationDay}
+      isVacationDay={isFullDayVacation}
     />
   );
 };
