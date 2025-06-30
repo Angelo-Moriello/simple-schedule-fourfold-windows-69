@@ -7,8 +7,9 @@ import { useAppointmentSchedulerState } from '@/hooks/useAppointmentSchedulerSta
 import AppointmentSchedulerLayout from './AppointmentSchedulerLayout';
 import AppointmentModals from './AppointmentModals';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { clearAllData, syncData } from '@/utils/dataStorage';
 
 const AppointmentScheduler = () => {
   const {
@@ -37,7 +38,7 @@ const AppointmentScheduler = () => {
 
   // Enhanced page refresh function for mobile
   const forcePageRefresh = () => {
-    console.log('DEBUG - Forzando aggiornamento pagina...');
+    console.log('DEBUG - Forzando aggiornamento pagina...', 'Mobile:', isMobile());
     
     // Show loading state briefly
     toast.info('Sincronizzazione in corso...', { duration: 1000 });
@@ -58,12 +59,36 @@ const AppointmentScheduler = () => {
   const handleManualSync = async () => {
     try {
       toast.info('Sincronizzazione manuale in corso...');
+      console.log('DEBUG - Sync manuale richiesto, mobile:', isMobile());
       
-      // Force reload data
-      window.location.reload();
+      // Clear potentially corrupted local data
+      syncData();
+      
+      // Wait a bit then force reload
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (error) {
       console.error('Errore nella sincronizzazione manuale:', error);
       toast.error('Errore nella sincronizzazione');
+    }
+  };
+
+  // Emergency data clear for mobile troubleshooting
+  const handleEmergencyClear = () => {
+    try {
+      toast.info('Pulizia dati locale in corso...');
+      console.log('DEBUG - Pulizia emergenza dati, mobile:', isMobile());
+      
+      clearAllData();
+      
+      // Force reload after clearing
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Errore nella pulizia emergenza:', error);
+      toast.error('Errore nella pulizia dati');
     }
   };
 
@@ -84,6 +109,7 @@ const AppointmentScheduler = () => {
   useEffect(() => {
     console.log('DEBUG - Stato appuntamenti cambiato:', {
       count: appointments.length,
+      mobile: isMobile(),
       appointments: appointments.map(apt => ({
         id: apt.id,
         employeeId: apt.employeeId,
@@ -95,11 +121,35 @@ const AppointmentScheduler = () => {
   }, [appointments]);
 
   useEffect(() => {
-    console.log('DEBUG - Stato dipendenti cambiato:', employees.length, employees);
+    console.log('DEBUG - Stato dipendenti cambiato:', {
+      count: employees.length,
+      mobile: isMobile(),
+      employees: employees.map(emp => ({
+        id: emp.id,
+        name: emp.name,
+        vacationsCount: emp.vacations?.length || 0
+      }))
+    });
   }, [employees]);
 
   // Mobile detection
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isMobile = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Network status
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -108,8 +158,23 @@ const AppointmentScheduler = () => {
           <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-blue-600 border-t-transparent mx-auto mb-4 sm:mb-6"></div>
           <p className="text-gray-700 text-base sm:text-lg font-medium">Caricamento dati da Supabase...</p>
           <p className="text-gray-500 text-xs sm:text-sm mt-2">Sincronizzazione in corso...</p>
-          {isMobile && (
-            <p className="text-blue-600 text-xs mt-2">Modalità mobile rilevata</p>
+          {isMobile() && (
+            <div className="mt-3 space-y-1">
+              <p className="text-blue-600 text-xs">Modalità mobile rilevata</p>
+              <div className="flex items-center justify-center gap-1 text-xs">
+                {isOnline ? (
+                  <>
+                    <Wifi className="h-3 w-3 text-green-600" />
+                    <span className="text-green-600">Online</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-3 w-3 text-red-600" />
+                    <span className="text-red-600">Offline</span>
+                  </>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -119,9 +184,9 @@ const AppointmentScheduler = () => {
   return (
     <>
       <div className="relative">
-        {/* Manual sync button for mobile users */}
-        {isMobile && (
-          <div className="fixed top-4 right-4 z-50">
+        {/* Enhanced mobile controls */}
+        {isMobile() && (
+          <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
             <Button
               onClick={handleManualSync}
               size="sm"
@@ -130,6 +195,25 @@ const AppointmentScheduler = () => {
             >
               <RefreshCw className="h-4 w-4 mr-1" />
               Sync
+            </Button>
+            
+            {/* Network status indicator */}
+            <div className={`px-2 py-1 rounded text-xs font-medium ${
+              isOnline 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {isOnline ? 'Online' : 'Offline'}
+            </div>
+            
+            {/* Emergency clear button for troubleshooting */}
+            <Button
+              onClick={handleEmergencyClear}
+              size="sm"
+              variant="destructive"
+              className="bg-red-500/90 hover:bg-red-600/90 backdrop-blur-sm shadow-lg text-xs"
+            >
+              Reset Dati
             </Button>
           </div>
         )}

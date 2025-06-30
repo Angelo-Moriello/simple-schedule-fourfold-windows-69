@@ -1,5 +1,5 @@
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Employee, Appointment } from '@/types/appointment';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -34,6 +34,45 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [openEmployees, setOpenEmployees] = useState<Record<number, boolean>>({});
+
+  // Debug logging for mobile issues
+  useEffect(() => {
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    console.log('DEBUG - EmployeeTimeSlotGrid render:', {
+      isMobile,
+      employeesCount: employees.length,
+      appointmentsCount: appointments.length,
+      selectedDate: dateString,
+      employees: employees.map(emp => ({
+        id: emp.id,
+        name: emp.name,
+        vacationsCount: emp.vacations?.length || 0,
+        vacations: emp.vacations
+      })),
+      appointments: appointments.map(apt => ({
+        id: apt.id,
+        employeeId: apt.employeeId,
+        date: apt.date,
+        client: apt.client
+      }))
+    });
+
+    // Check for vacation data issues on mobile
+    if (isMobile) {
+      employees.forEach(employee => {
+        const vacationEntries = parseVacationEntries(employee.vacations || []);
+        const todayVacations = vacationEntries.filter(entry => entry.date === dateString);
+        if (todayVacations.length > 0) {
+          console.log('DEBUG - Mobile vacation detected for employee:', {
+            employeeId: employee.id,
+            employeeName: employee.name,
+            todayVacations,
+            allVacations: vacationEntries
+          });
+        }
+      });
+    }
+  }, [employees, appointments, selectedDate, isMobile]);
 
   const toggleEmployee = (employeeId: number) => {
     setOpenEmployees(prev => ({
@@ -77,8 +116,20 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
     const dateString = format(date, 'yyyy-MM-dd');
     const vacationEntries = parseVacationEntries(employee.vacations);
     
-    return vacationEntries.some(entry => entry.date === dateString);
-  }, [employees]);
+    const hasVacation = vacationEntries.some(entry => entry.date === dateString);
+    
+    // Debug logging for mobile vacation issues
+    if (isMobile && hasVacation) {
+      console.log('DEBUG - Mobile vacation day detected:', {
+        employeeId,
+        employeeName: employee.name,
+        date: dateString,
+        vacationEntries: vacationEntries.filter(entry => entry.date === dateString)
+      });
+    }
+    
+    return hasVacation;
+  }, [employees, isMobile]);
 
   const getVacationInfo = useCallback((employeeId: number, date: Date, time: string) => {
     const employee = employees.find(emp => emp.id === employeeId);
@@ -204,6 +255,22 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
       apt.employeeId === employeeId && apt.date === dateString
     ).length;
   };
+
+  // Additional mobile debug info
+  if (isMobile) {
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    const totalVacationDays = employees.reduce((acc, emp) => {
+      const vacationEntries = parseVacationEntries(emp.vacations || []);
+      return acc + vacationEntries.filter(entry => entry.date === dateString).length;
+    }, 0);
+    
+    console.log('DEBUG - Mobile vacation summary:', {
+      selectedDate: dateString,
+      totalEmployees: employees.length,
+      totalVacationDays,
+      employeesOnVacation: employees.filter(emp => isVacationDay(emp.id, selectedDate)).length
+    });
+  }
 
   if (isMobile) {
     return (
