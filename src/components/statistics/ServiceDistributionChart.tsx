@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LabelList } from 'recharts';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, AlertCircle } from 'lucide-react';
 
 interface ServiceStats {
   name: string;
@@ -67,6 +67,8 @@ const Custom3DPercentageLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, p
 };
 
 const ServiceDistributionChart: React.FC<ServiceDistributionChartProps> = ({ serviceTypeStats }) => {
+  console.log('ServiceDistributionChart received data:', serviceTypeStats);
+  
   return (
     <Card className="bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
       <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50/50 border-b border-gray-200/50 rounded-t-lg">
@@ -156,8 +158,11 @@ const ServiceDistributionChart: React.FC<ServiceDistributionChartProps> = ({ ser
         ) : (
           <div className="flex items-center justify-center h-64 text-gray-500">
             <div className="text-center">
-              <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p className="text-lg">Nessun dato disponibile</p>
+              <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p className="text-lg font-semibold mb-2">Nessun dato disponibile</p>
+              <p className="text-sm text-gray-400">
+                Non ci sono appuntamenti che corrispondono ai filtri selezionati
+              </p>
             </div>
           </div>
         )}

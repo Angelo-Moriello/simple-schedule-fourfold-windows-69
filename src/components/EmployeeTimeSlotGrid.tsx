@@ -1,10 +1,9 @@
-
 import React, { useCallback, useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Employee, Appointment } from '@/types/appointment';
 import { useIsMobile } from '@/hooks/use-mobile';
 import EmployeeMobileCard from './employee-grid/EmployeeMobileCard';
-import EmployeeDesktopCard from './employee-grid/EmployeeDesktopCard';
+import DraggableEmployeeGrid from './employee-grid/DraggableEmployeeGrid';
 
 interface EmployeeTimeSlotGridProps {
   employees: Employee[];
@@ -146,24 +145,19 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {employees.map(employee => (
-        <EmployeeDesktopCard
-          key={employee.id}
-          employee={employee}
-          timeSlots={timeSlots}
-          appointments={appointments}
-          selectedDate={selectedDate}
-          onAddAppointment={onAddAppointment}
-          onEditAppointment={onEditAppointment}
-          onDeleteAppointment={onDeleteAppointment}
-          onUpdateEmployeeName={onUpdateEmployeeName}
-          getEmployeeAppointmentsForTimeSlot={getEmployeeAppointmentsForTimeSlot}
-          getSlotOccupationInfo={getSlotOccupationInfo}
-          isVacationDay={isVacationDay}
-        />
-      ))}
-    </div>
+    <DraggableEmployeeGrid
+      employees={employees}
+      timeSlots={timeSlots}
+      appointments={appointments}
+      selectedDate={selectedDate}
+      onAddAppointment={onAddAppointment}
+      onEditAppointment={onEditAppointment}
+      onDeleteAppointment={onDeleteAppointment}
+      onUpdateEmployeeName={onUpdateEmployeeName}
+      getEmployeeAppointmentsForTimeSlot={getEmployeeAppointmentsForTimeSlot}
+      getSlotOccupationInfo={getSlotOccupationInfo}
+      isVacationDay={isVacationDay}
+    />
   );
 };
 

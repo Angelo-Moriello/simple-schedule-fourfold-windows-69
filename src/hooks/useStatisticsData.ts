@@ -29,18 +29,28 @@ export const useStatisticsData = (
   };
 
   const filteredAppointments = useMemo(() => {
+    console.log('Filtering appointments with:', { 
+      totalAppointments: appointments.length, 
+      dateRange, 
+      selectedEmployee, 
+      specialization 
+    });
+    
     const interval = getDateInterval(dateRange);
     
-    return appointments.filter(appointment => {
+    const filtered = appointments.filter(appointment => {
+      // Filtro per data
       const appointmentDate = new Date(appointment.date);
       if (!isWithinInterval(appointmentDate, interval)) {
         return false;
       }
 
+      // Filtro per dipendente specifico
       if (selectedEmployee !== 'all' && appointment.employeeId !== selectedEmployee) {
         return false;
       }
 
+      // Filtro per specializzazione
       if (specialization !== 'all') {
         const employee = employees.find(emp => emp.id === appointment.employeeId);
         if (!employee || employee.specialization !== specialization) {
@@ -50,19 +60,30 @@ export const useStatisticsData = (
 
       return true;
     });
+
+    console.log('Filtered appointments:', filtered.length);
+    return filtered;
   }, [appointments, dateRange, selectedEmployee, specialization, employees]);
 
   const serviceTypeStats = useMemo(() => {
+    console.log('Computing service type stats from filtered appointments:', filteredAppointments.length);
+    
     const serviceTypes: { [key: string]: number } = {};
     filteredAppointments.forEach(appointment => {
-      serviceTypes[appointment.serviceType] = (serviceTypes[appointment.serviceType] || 0) + 1;
+      const serviceType = appointment.serviceType || 'Servizio non specificato';
+      serviceTypes[serviceType] = (serviceTypes[serviceType] || 0) + 1;
     });
 
-    return Object.entries(serviceTypes).map(([name, value]) => ({
+    console.log('Service types found:', serviceTypes);
+
+    const stats = Object.entries(serviceTypes).map(([name, value]) => ({
       name,
       value,
       percentage: filteredAppointments.length > 0 ? parseFloat(((value / filteredAppointments.length) * 100).toFixed(1)) : 0
     }));
+
+    console.log('Service type stats:', stats);
+    return stats;
   }, [filteredAppointments]);
 
   const employeeStats = useMemo(() => {
@@ -102,7 +123,12 @@ export const useStatisticsData = (
     return timeData;
   }, [filteredAppointments, dateRange]);
 
-  const avgAppointmentsPerDay = filteredAppointments.length / 7;
+  const avgAppointmentsPerDay = useMemo(() => {
+    const daysInPeriod = dateRange === 'day' ? 1 : 
+                        dateRange === 'week' ? 7 : 
+                        dateRange === 'month' ? 30 : 365;
+    return filteredAppointments.length / daysInPeriod;
+  }, [filteredAppointments.length, dateRange]);
 
   const mostActiveEmployee = useMemo(() => {
     const employeeAppointments: { [key: number]: number } = {};
