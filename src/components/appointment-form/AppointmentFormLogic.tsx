@@ -35,33 +35,94 @@ export const generateUUID = () => {
 
 export const getStoredServices = () => {
   try {
+    // Prova a recuperare da multiple sources
     const stored = localStorage.getItem('services');
+    const backup1 = localStorage.getItem('services_backup');
+    const backup2 = localStorage.getItem('customServices');
+    
+    console.log('DEBUG - Tentativo recupero servizi (AppointmentFormLogic):', {
+      stored: stored ? JSON.parse(stored) : null,
+      backup1: backup1 ? JSON.parse(backup1) : null,
+      backup2: backup2 ? JSON.parse(backup2) : null
+    });
+    
+    let servicesToLoad = null;
     if (stored) {
-      const parsedServices = JSON.parse(stored);
-      console.log('Servizi caricati da localStorage (AppointmentFormLogic):', parsedServices);
-      
-      // Validate structure
-      if (parsedServices.Parrucchiere && parsedServices.Estetista && 
-          Array.isArray(parsedServices.Parrucchiere.services) && 
-          Array.isArray(parsedServices.Estetista.services)) {
-        return parsedServices;
+      try {
+        servicesToLoad = JSON.parse(stored);
+      } catch (e) {
+        console.error('Errore parsing servizi principali:', e);
       }
     }
     
-    console.log('Nessun servizio valido in localStorage, usando defaults');
+    if (!servicesToLoad && backup1) {
+      try {
+        servicesToLoad = JSON.parse(backup1);
+        console.log('Usando backup1 per form');
+      } catch (e) {
+        console.error('Errore parsing backup1:', e);
+      }
+    }
+    
+    if (!servicesToLoad && backup2) {
+      try {
+        servicesToLoad = JSON.parse(backup2);
+        console.log('Usando backup2 per form');
+      } catch (e) {
+        console.error('Errore parsing backup2:', e);
+      }
+    }
+    
+    if (servicesToLoad) {
+      console.log('Servizi caricati da backup per form:', servicesToLoad);
+      
+      // Validate structure
+      if (servicesToLoad.Parrucchiere && servicesToLoad.Estetista && 
+          Array.isArray(servicesToLoad.Parrucchiere.services) && 
+          Array.isArray(servicesToLoad.Estetista.services)) {
+        return servicesToLoad;
+      }
+    }
+    
+    console.log('Nessun servizio valido in localStorage, usando defaults espansi');
     const defaultServices = {
       Parrucchiere: {
         name: 'Parrucchiere',
-        services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
+        services: [
+          'Piega', 
+          'Colore', 
+          'Taglio', 
+          'Colpi di sole', 
+          'Trattamento Capelli',
+          'Permanente',
+          'Stiratura',
+          'Extension',
+          'Balayage',
+          'Shatush'
+        ]
       },
       Estetista: {
         name: 'Estetista',
-        services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+        services: [
+          'Pulizia Viso', 
+          'Manicure', 
+          'Pedicure', 
+          'Massaggio', 
+          'Depilazione', 
+          'Trattamento Corpo',
+          'Ricostruzione Unghie',
+          'Semipermanente',
+          'Trattamento Viso',
+          'Ceretta'
+        ]
       }
     };
     
-    // Salva i defaults in localStorage per la prossima volta
-    localStorage.setItem('services', JSON.stringify(defaultServices));
+    // Salva i defaults espansi in localStorage per la prossima volta con backup
+    const dataToSave = JSON.stringify(defaultServices);
+    localStorage.setItem('services', dataToSave);
+    localStorage.setItem('services_backup', dataToSave);
+    localStorage.setItem('customServices', dataToSave);
     return defaultServices;
   } catch (error) {
     console.error('Errore nel caricamento servizi:', error);

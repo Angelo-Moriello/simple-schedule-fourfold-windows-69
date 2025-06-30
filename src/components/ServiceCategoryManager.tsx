@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,43 +21,109 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   // Load services from localStorage or use defaults
   const loadStoredServices = (): Record<'Parrucchiere' | 'Estetista', ServiceCategory> => {
     try {
+      // Verifica tutti i possibili backup nel localStorage
       const stored = localStorage.getItem('services');
+      const backup1 = localStorage.getItem('services_backup');
+      const backup2 = localStorage.getItem('customServices');
+      
+      console.log('DEBUG - Tentativo recupero servizi:', {
+        stored: stored ? JSON.parse(stored) : null,
+        backup1: backup1 ? JSON.parse(backup1) : null,
+        backup2: backup2 ? JSON.parse(backup2) : null
+      });
+      
+      // Prova prima con il backup
+      let servicesToLoad = null;
       if (stored) {
-        const parsed = JSON.parse(stored);
-        console.log('Servizi caricati da localStorage:', parsed);
+        try {
+          servicesToLoad = JSON.parse(stored);
+        } catch (e) {
+          console.error('Errore parsing servizi principali:', e);
+        }
+      }
+      
+      if (!servicesToLoad && backup1) {
+        try {
+          servicesToLoad = JSON.parse(backup1);
+          console.log('Usando backup1');
+        } catch (e) {
+          console.error('Errore parsing backup1:', e);
+        }
+      }
+      
+      if (!servicesToLoad && backup2) {
+        try {
+          servicesToLoad = JSON.parse(backup2);
+          console.log('Usando backup2');
+        } catch (e) {
+          console.error('Errore parsing backup2:', e);
+        }
+      }
+      
+      if (servicesToLoad) {
+        console.log('Servizi recuperati:', servicesToLoad);
         // Validate the structure
-        if (parsed.Parrucchiere && parsed.Estetista && 
-            Array.isArray(parsed.Parrucchiere.services) && 
-            Array.isArray(parsed.Estetista.services)) {
-          return parsed;
+        if (servicesToLoad.Parrucchiere && servicesToLoad.Estetista && 
+            Array.isArray(servicesToLoad.Parrucchiere.services) && 
+            Array.isArray(servicesToLoad.Estetista.services)) {
+          return servicesToLoad;
         }
       }
     } catch (error) {
       console.error('Errore nel parsing dei servizi:', error);
     }
     
-    // Return defaults if loading fails
+    // Return defaults with some common services that might have been added
     const defaultServices = {
       Parrucchiere: {
         name: 'Parrucchiere',
-        services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
+        services: [
+          'Piega', 
+          'Colore', 
+          'Taglio', 
+          'Colpi di sole', 
+          'Trattamento Capelli',
+          'Permanente',
+          'Stiratura',
+          'Extension',
+          'Balayage',
+          'Shatush'
+        ]
       },
       Estetista: {
         name: 'Estetista',
-        services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+        services: [
+          'Pulizia Viso', 
+          'Manicure', 
+          'Pedicure', 
+          'Massaggio', 
+          'Depilazione', 
+          'Trattamento Corpo',
+          'Ricostruzione Unghie',
+          'Semipermanente',
+          'Trattamento Viso',
+          'Ceretta'
+        ]
       }
     };
-    console.log('Usando servizi di default:', defaultServices);
+    console.log('Usando servizi di default espansi:', defaultServices);
     return defaultServices;
   };
 
   const [customCategories, setCustomCategories] = useState(loadStoredServices);
 
-  // Save services to localStorage
+  // Save services to localStorage with multiple backups
   const saveServicesToStorage = (categories: Record<'Parrucchiere' | 'Estetista', ServiceCategory>) => {
     try {
-      localStorage.setItem('services', JSON.stringify(categories));
-      console.log('Servizi salvati in localStorage:', categories);
+      const dataToSave = JSON.stringify(categories);
+      
+      // Salva in multiple locations for backup
+      localStorage.setItem('services', dataToSave);
+      localStorage.setItem('services_backup', dataToSave);
+      localStorage.setItem('customServices', dataToSave);
+      localStorage.setItem('services_timestamp', new Date().toISOString());
+      
+      console.log('Servizi salvati in localStorage con backup:', categories);
     } catch (error) {
       console.error('Errore nel salvare i servizi:', error);
       toast.error('Errore nel salvare i servizi');
