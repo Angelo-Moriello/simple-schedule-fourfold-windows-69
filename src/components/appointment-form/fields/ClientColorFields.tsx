@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Palette } from 'lucide-react';
+import { Palette } from 'lucide-react';
+import ClientAutocomplete from './ClientAutocomplete';
 
 interface ClientColorFieldsProps {
   formData: any;
@@ -18,20 +18,10 @@ const ClientColorFields: React.FC<ClientColorFieldsProps> = ({
 }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-      <div className="space-y-2">
-        <Label htmlFor="client" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <User className="h-4 w-4" />
-          Cliente <span className="text-red-500">*</span>
-        </Label>
-        <Input
-          id="client"
-          value={formData.client}
-          onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-          placeholder="Nome del cliente"
-          className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors"
-          required
-        />
-      </div>
+      <ClientAutocomplete
+        formData={formData}
+        setFormData={setFormData}
+      />
       
       <div className="space-y-2">
         <Label htmlFor="color" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
