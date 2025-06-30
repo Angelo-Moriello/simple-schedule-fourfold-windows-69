@@ -5,7 +5,8 @@ import { Appointment, Employee } from '@/types/appointment';
 import { 
   loadEmployeesFromSupabase, 
   loadAppointmentsFromSupabase,
-  migrateLocalStorageToSupabase
+  migrateLocalStorageToSupabase,
+  clearAllVacationsFromSupabase
 } from '@/utils/supabaseStorage';
 import { loadRecurringTreatmentsFromSupabase } from '@/utils/clientStorage';
 import { generateAppointmentsForDateRange } from '@/utils/recurringTreatmentUtils';
@@ -20,6 +21,9 @@ export const useAppointmentData = (selectedDate: Date) => {
     const loadData = async () => {
       try {
         setIsLoading(true);
+        
+        // Clear all vacations first
+        await clearAllVacationsFromSupabase();
         
         // Check if we need to migrate from localStorage
         const hasLocalData = localStorage.getItem('employees') || localStorage.getItem('appointments');
