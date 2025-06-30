@@ -38,24 +38,31 @@ export const getStoredServices = () => {
     const stored = localStorage.getItem('services');
     if (stored) {
       const parsedServices = JSON.parse(stored);
-      console.log('Servizi caricati da localStorage:', parsedServices);
-      return parsedServices;
-    } else {
-      console.log('Nessun servizio in localStorage, usando defaults');
-      const defaultServices = {
-        Parrucchiere: {
-          name: 'Parrucchiere',
-          services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
-        },
-        Estetista: {
-          name: 'Estetista',
-          services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
-        }
-      };
-      // Salva i defaults in localStorage per la prossima volta
-      localStorage.setItem('services', JSON.stringify(defaultServices));
-      return defaultServices;
+      console.log('Servizi caricati da localStorage (AppointmentFormLogic):', parsedServices);
+      
+      // Validate structure
+      if (parsedServices.Parrucchiere && parsedServices.Estetista && 
+          Array.isArray(parsedServices.Parrucchiere.services) && 
+          Array.isArray(parsedServices.Estetista.services)) {
+        return parsedServices;
+      }
     }
+    
+    console.log('Nessun servizio valido in localStorage, usando defaults');
+    const defaultServices = {
+      Parrucchiere: {
+        name: 'Parrucchiere',
+        services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
+      },
+      Estetista: {
+        name: 'Estetista',
+        services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
+      }
+    };
+    
+    // Salva i defaults in localStorage per la prossima volta
+    localStorage.setItem('services', JSON.stringify(defaultServices));
+    return defaultServices;
   } catch (error) {
     console.error('Errore nel caricamento servizi:', error);
     return {

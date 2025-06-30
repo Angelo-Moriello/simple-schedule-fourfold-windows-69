@@ -51,8 +51,15 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
   const availableServices = selectedEmployee && serviceCategories[selectedEmployee.specialization] 
-    ? serviceCategories[selectedEmployee.specialization]
+    ? serviceCategories[selectedEmployee.specialization].services
     : [];
+
+  console.log('DEBUG - Servizi disponibili per dipendente:', {
+    selectedEmployee,
+    specialization: selectedEmployee?.specialization,
+    availableServices,
+    serviceCategories
+  });
 
   return (
     <AppointmentFormContainer

@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Settings, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { ServiceCategory } from '@/types/appointment';
 import { toast } from 'sonner';
 
@@ -143,8 +142,8 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
             </div>
           </div>
 
-          {Object.keys(customCategories).map((categoryKey) => {
-            const category = customCategories[categoryKey as keyof typeof customCategories];
+          {(['Parrucchiere', 'Estetista'] as const).map((categoryKey) => {
+            const category = customCategories[categoryKey];
             return (
               <div key={categoryKey} className="space-y-3">
                 <h3 className="font-semibold text-lg">{category.name}</h3>
@@ -155,7 +154,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveService(categoryKey as 'Parrucchiere' | 'Estetista', index)}
+                        onClick={() => handleRemoveService(categoryKey, index)}
                         className="text-red-600 hover:text-red-700 h-6 w-6 p-0"
                       >
                         <Trash2 className="h-3 w-3" />
