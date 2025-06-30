@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +10,7 @@ import { RecurringTreatment } from '@/types/client';
 import { Employee } from '@/types/appointment';
 import { updateRecurringTreatmentInSupabase } from '@/utils/clientStorage';
 import { loadEmployeesFromSupabase } from '@/utils/supabaseStorage';
-import { getStoredServices } from '@/components/appointment-form/AppointmentFormLogic';
+import { getStoredServices } from '@/utils/serviceStorage';
 
 interface RecurringTreatmentEditDialogProps {
   isOpen: boolean;
