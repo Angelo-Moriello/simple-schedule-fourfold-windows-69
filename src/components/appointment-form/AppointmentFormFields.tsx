@@ -29,6 +29,14 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
   selectedEmployee,
   appointmentToEdit
 }) => {
+  // Debug log per verificare i servizi disponibili
+  console.log('DEBUG - Servizi disponibili nel form:', {
+    selectedEmployee,
+    specialization: selectedEmployee?.specialization,
+    availableServices,
+    availableServicesCount: availableServices.length
+  });
+
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -46,7 +54,7 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
             <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
               <SelectValue placeholder="Seleziona dipendente" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
               {employees.map(employee => (
                 <SelectItem key={employee.id} value={employee.id.toString()}>
                   {employee.name} ({employee.specialization})
@@ -68,7 +76,7 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
             <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
               <SelectValue placeholder="Seleziona orario" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white border border-gray-200 shadow-lg z-50 max-h-60 overflow-y-auto">
               {timeSlots.map(time => (
                 <SelectItem key={time} value={time}>
                   {time}
@@ -83,7 +91,8 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
         <div className="space-y-2">
           <Label htmlFor="serviceType" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
             <Scissors className="h-4 w-4" />
-            Tipo di Servizio <span className="text-red-500">*</span> {selectedEmployee && `(${selectedEmployee.specialization})`}
+            Tipo di Servizio <span className="text-red-500">*</span> 
+            {selectedEmployee && <span className="text-xs text-blue-600 font-normal">({selectedEmployee.specialization})</span>}
           </Label>
           <Select
             value={formData.serviceType}
@@ -93,14 +102,25 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
             <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
               <SelectValue placeholder={selectedEmployee ? "Seleziona servizio" : "Prima seleziona dipendente"} />
             </SelectTrigger>
-            <SelectContent>
-              {availableServices.map(service => (
-                <SelectItem key={service} value={service}>
-                  {service}
+            <SelectContent className="bg-white border border-gray-200 shadow-lg z-50 max-h-60 overflow-y-auto">
+              {availableServices.length > 0 ? (
+                availableServices.map(service => (
+                  <SelectItem key={service} value={service} className="cursor-pointer hover:bg-gray-50">
+                    {service}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-services" disabled className="text-gray-400">
+                  Nessun servizio disponibile
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
+          {selectedEmployee && availableServices.length === 0 && (
+            <p className="text-xs text-red-500 mt-1">
+              Nessun servizio configurato per {selectedEmployee.specialization}
+            </p>
+          )}
         </div>
         
         <div className="space-y-2">
@@ -146,7 +166,7 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
             <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
               <SelectValue placeholder="Seleziona colore" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
               {appointmentColors.map(color => (
                 <SelectItem key={color.value} value={color.value}>
                   <div className="flex items-center gap-2">
@@ -210,7 +230,7 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
           <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-blue-500 transition-colors">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
             <SelectItem value="15">15 minuti</SelectItem>
             <SelectItem value="30">30 minuti</SelectItem>
             <SelectItem value="45">45 minuti</SelectItem>
