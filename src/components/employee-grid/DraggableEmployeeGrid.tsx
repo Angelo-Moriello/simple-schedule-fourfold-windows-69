@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   DndContext,
   closestCenter,
@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { Employee, Appointment } from '@/types/appointment';
 import DraggableEmployeeCard from './DraggableEmployeeCard';
+import { useEmployeeOrder } from '@/hooks/useEmployeeOrder';
 
 interface DraggableEmployeeGridProps {
   employees: Employee[];
@@ -45,7 +46,7 @@ const DraggableEmployeeGrid: React.FC<DraggableEmployeeGridProps> = ({
   getSlotOccupationInfo,
   isVacationDay
 }) => {
-  const [orderedEmployees, setOrderedEmployees] = useState<Employee[]>(employees);
+  const { orderedEmployees, updateOrder } = useEmployeeOrder(employees);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -58,20 +59,15 @@ const DraggableEmployeeGrid: React.FC<DraggableEmployeeGridProps> = ({
     })
   );
 
-  React.useEffect(() => {
-    setOrderedEmployees(employees);
-  }, [employees]);
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setOrderedEmployees((employees) => {
-        const oldIndex = employees.findIndex((emp) => emp.id.toString() === active.id);
-        const newIndex = employees.findIndex((emp) => emp.id.toString() === over.id);
+      const oldIndex = orderedEmployees.findIndex((emp) => emp.id.toString() === active.id);
+      const newIndex = orderedEmployees.findIndex((emp) => emp.id.toString() === over.id);
 
-        return arrayMove(employees, oldIndex, newIndex);
-      });
+      const newOrderedEmployees = arrayMove(orderedEmployees, oldIndex, newIndex);
+      updateOrder(newOrderedEmployees);
     }
   };
 
