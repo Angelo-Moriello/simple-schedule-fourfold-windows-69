@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Appointment } from '@/types/appointment';
 import { toast } from 'sonner';
@@ -164,6 +165,45 @@ export const useAppointmentForm = ({
     console.log('DEBUG - FormData CHANGED:', formData);
   }, [formData]);
 
+  const findExistingClient = async (clientName: string, email?: string, phone?: string) => {
+    const existingClients = await loadClientsFromSupabase();
+    console.log('DEBUG - Ricerca cliente esistente:', { clientName, email, phone });
+    
+    // First, try to find by exact name match (case insensitive, trimmed)
+    let existingClient = existingClients.find(client => 
+      client.name.toLowerCase().trim() === clientName.toLowerCase().trim()
+    );
+    
+    if (existingClient) {
+      console.log('DEBUG - Cliente trovato per name:', existingClient);
+      return existingClient;
+    }
+    
+    // If no name match and we have email or phone, try to find by those
+    if (email?.trim()) {
+      existingClient = existingClients.find(client => 
+        client.email && client.email.toLowerCase().trim() === email.toLowerCase().trim()
+      );
+      if (existingClient) {
+        console.log('DEBUG - Cliente trovato per email:', existingClient);
+        return existingClient;
+      }
+    }
+    
+    if (phone?.trim()) {
+      existingClient = existingClients.find(client => 
+        client.phone && client.phone.trim() === phone.trim()
+      );
+      if (existingClient) {
+        console.log('DEBUG - Cliente trovato per telefono:', existingClient);
+        return existingClient;
+      }
+    }
+    
+    console.log('DEBUG - Nessun cliente esistente trovato');
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -198,7 +238,7 @@ export const useAppointmentForm = ({
       
       let finalClientId = formData.clientId;
       
-      // Handle client creation/finding logic (same as before)
+      // Handle client creation/finding logic
       if (!appointmentToEdit && !finalClientId) {
         console.log('DEBUG - Tentativo di trovare o creare cliente:', {
           name: formData.client,
@@ -206,22 +246,14 @@ export const useAppointmentForm = ({
           phone: formData.phone
         });
         
-        const existingClients = await loadClientsFromSupabase();
-        console.log('DEBUG - Clienti esistenti:', existingClients.length);
-        
-        let existingClient = existingClients.find(client => 
-          client.name.toLowerCase().trim() === formData.client.toLowerCase().trim()
+        const existingClient = await findExistingClient(
+          formData.client.trim(),
+          formData.email?.trim(),
+          formData.phone?.trim()
         );
-
-        if (!existingClient && (formData.email || formData.phone)) {
-          existingClient = existingClients.find(client => 
-            (formData.email && client.email === formData.email) ||
-            (formData.phone && client.phone === formData.phone)
-          );
-        }
         
         if (existingClient) {
-          console.log('DEBUG - Cliente trovato:', existingClient);
+          console.log('DEBUG - Cliente esistente trovato:', existingClient);
           finalClientId = existingClient.id;
         } else {
           console.log('DEBUG - Creazione nuovo cliente');

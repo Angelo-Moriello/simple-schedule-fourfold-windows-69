@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { User, Mail, Phone, FileText } from 'lucide-react';
-import { addClientToSupabase } from '@/utils/clientStorage';
+import { addClientToSupabase, loadClientsFromSupabase } from '@/utils/clientStorage';
 
 interface ClientFormProps {
   isOpen: boolean;
@@ -34,6 +34,44 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onClientAdded 
 
     try {
       setIsSubmitting(true);
+      
+      // Check for existing clients with the same name
+      console.log('DEBUG - Controllo clienti esistenti per nome:', formData.name.trim());
+      const existingClients = await loadClientsFromSupabase();
+      
+      const duplicateClient = existingClients.find(client => 
+        client.name.toLowerCase().trim() === formData.name.toLowerCase().trim()
+      );
+      
+      if (duplicateClient) {
+        console.log('DEBUG - Cliente duplicato trovato:', duplicateClient);
+        toast.error(`Esiste già un cliente con il nome "${formData.name.trim()}"`);
+        return;
+      }
+      
+      // Check for existing clients with the same email or phone
+      if (formData.email.trim()) {
+        const emailDuplicate = existingClients.find(client => 
+          client.email && client.email.toLowerCase().trim() === formData.email.toLowerCase().trim()
+        );
+        if (emailDuplicate) {
+          console.log('DEBUG - Cliente con email duplicata trovato:', emailDuplicate);
+          toast.error(`Esiste già un cliente con l'email "${formData.email.trim()}"`);
+          return;
+        }
+      }
+      
+      if (formData.phone.trim()) {
+        const phoneDuplicate = existingClients.find(client => 
+          client.phone && client.phone.trim() === formData.phone.trim()
+        );
+        if (phoneDuplicate) {
+          console.log('DEBUG - Cliente con telefono duplicato trovato:', phoneDuplicate);
+          toast.error(`Esiste già un cliente con il telefono "${formData.phone.trim()}"`);
+          return;
+        }
+      }
+      
       await addClientToSupabase({
         name: formData.name.trim(),
         email: formData.email.trim() || undefined,
