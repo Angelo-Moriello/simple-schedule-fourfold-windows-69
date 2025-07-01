@@ -1,9 +1,11 @@
-
 import { ServiceCategories, DEFAULT_SERVICES } from './types';
 import { getServicesCache, setServicesCache, clearServicesCache, getRealtimeChannel, setRealtimeChannel } from './cache';
 import { saveServicesToLocalStorage, loadServicesFromLocalStorage } from './localStorage';
 import { emitServicesUpdatedEvent } from './events';
 import { saveServicesToSupabase, loadServicesFromSupabase, setupServiceRealtimeListener } from '../supabaseServiceStorage';
+
+// Re-export clearServicesCache from cache module
+export { clearServicesCache };
 
 export const getStoredServices = async (): Promise<ServiceCategories> => {
   try {
