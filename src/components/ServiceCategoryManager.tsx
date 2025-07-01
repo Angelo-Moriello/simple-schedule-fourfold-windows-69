@@ -46,7 +46,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
     const channel = setupServicesRealtimeListener();
     
     const handleServicesUpdated = (event: CustomEvent) => {
-      console.log('ServiceCategoryManager - Ricevuto aggiornamento servizi:', event.detail);
+      console.log('ServiceCategoryManager - Ricevuto aggiornamento servizi globali:', event.detail);
       setCustomCategories(event.detail);
     };
 
@@ -64,7 +64,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   useEffect(() => {
     if (isOpen) {
       const reloadServices = async () => {
-        console.log('ServiceCategoryManager - Dialog aperto, ricaricando servizi');
+        console.log('ServiceCategoryManager - Dialog aperto, ricaricando servizi globali');
         setIsLoading(true);
         try {
           const refreshedServices = await getStoredServices();
@@ -98,7 +98,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
           setCustomCategories(updatedCategories);
           onUpdateServiceCategories?.(updatedCategories);
           setNewService('');
-          toast.success(`Servizio "${newService.trim()}" aggiunto e sincronizzato su tutti i dispositivi!`);
+          toast.success(`Servizio "${newService.trim()}" aggiunto globalmente per tutti gli utenti!`);
         } else {
           // Fallback locale
           setCustomCategories(updatedCategories);
@@ -132,7 +132,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
       if (success) {
         setCustomCategories(updatedCategories);
         onUpdateServiceCategories?.(updatedCategories);
-        toast.success(`Servizio "${serviceToRemove}" rimosso e sincronizzato su tutti i dispositivi!`);
+        toast.success(`Servizio "${serviceToRemove}" rimosso globalmente per tutti gli utenti!`);
       } else {
         // Fallback locale
         setCustomCategories(updatedCategories);
@@ -161,7 +161,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Gestione Tipi di Servizio</DialogTitle>
+          <DialogTitle>Gestione Tipi di Servizio Globali</DialogTitle>
         </DialogHeader>
         
         {isLoading ? (
@@ -171,9 +171,9 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm text-blue-700">
-                ℹ️ I servizi vengono sincronizzati automaticamente tra tutti i tuoi dispositivi.
+            <div className="bg-green-50 p-3 rounded-lg">
+              <p className="text-sm text-green-700">
+                🌍 I servizi sono ora condivisi globalmente tra tutti gli utenti. Le modifiche saranno visibili a tutti.
               </p>
             </div>
             
