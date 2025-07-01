@@ -21,11 +21,15 @@ export const saveServicesToSupabase = async (categories: Record<'Parrucchiere' |
     }
 
     // Controlla se esistono già servizi per questo utente
-    const { data: existingServices } = await supabase
-      .from('custom_services' as any)
+    const { data: existingServices, error: selectError } = await supabase
+      .from('custom_services')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (selectError && selectError.code !== 'PGRST116') {
+      throw selectError;
+    }
 
     const serviceData = {
       user_id: user.id,
@@ -36,7 +40,7 @@ export const saveServicesToSupabase = async (categories: Record<'Parrucchiere' |
     if (existingServices) {
       // Aggiorna i servizi esistenti
       const { error } = await supabase
-        .from('custom_services' as any)
+        .from('custom_services')
         .update(serviceData)
         .eq('user_id', user.id);
 
@@ -44,7 +48,7 @@ export const saveServicesToSupabase = async (categories: Record<'Parrucchiere' |
     } else {
       // Crea nuovi servizi
       const { error } = await supabase
-        .from('custom_services' as any)
+        .from('custom_services')
         .insert({
           ...serviceData,
           created_at: new Date().toISOString()
@@ -72,10 +76,10 @@ export const loadServicesFromSupabase = async (): Promise<Record<'Parrucchiere' 
     }
 
     const { data: services, error } = await supabase
-      .from('custom_services' as any)
+      .from('custom_services')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -86,8 +90,13 @@ export const loadServicesFromSupabase = async (): Promise<Record<'Parrucchiere' 
       throw error;
     }
 
-    console.log('Servizi caricati da Supabase:', services?.service_categories);
-    return services?.service_categories || null;
+    if (!services) {
+      console.log('Nessun servizio trovato per questo utente');
+      return null;
+    }
+
+    console.log('Servizi caricati da Supabase:', services.service_categories);
+    return services.service_categories as Record<'Parrucchiere' | 'Estetista', { name: string; services: string[] }>;
   } catch (error) {
     console.error('Errore nel caricare servizi da Supabase:', error);
     return null;
@@ -107,7 +116,7 @@ export const setupServiceRealtimeListener = (onServicesUpdated: (services: any) 
       },
       (payload) => {
         console.log('Servizi aggiornati in tempo reale:', payload);
-        if (payload.new && payload.new.service_categories) {
+        if (payload.new && typeof payload.new === 'object' && 'service_categories' in payload.new) {
           onServicesUpdated(payload.new.service_categories);
         }
       }
