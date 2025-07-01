@@ -5,7 +5,7 @@ import AppointmentFormContainer from './appointment-form/AppointmentFormContaine
 import AppointmentFormFields from './appointment-form/AppointmentFormFields';
 import AppointmentFormActions from './appointment-form/AppointmentFormActions';
 import { useAppointmentForm, appointmentColors, generateTimeSlots } from './appointment-form/AppointmentFormLogic';
-import { getStoredServices, refreshServices } from '@/utils/serviceStorage';
+import { getStoredServices, setupServicesRealtimeListener } from '@/utils/serviceStorage';
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -30,7 +30,10 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   appointmentToEdit,
   employees
 }) => {
-  const [serviceCategories, setServiceCategories] = useState(getStoredServices());
+  const [serviceCategories, setServiceCategories] = useState({
+    Parrucchiere: { name: 'Parrucchiere', services: [] },
+    Estetista: { name: 'Estetista', services: [] }
+  });
 
   const {
     formData,
@@ -53,49 +56,41 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     onClose
   });
 
-  // Ricarica i servizi quando il form si apre
+  // Carica servizi iniziali
   useEffect(() => {
-    if (isOpen) {
-      console.log('AppointmentForm - Form aperto, forzando refresh servizi');
-      const refreshedServices = refreshServices();
-      setServiceCategories(refreshedServices);
-    }
+    const loadInitialServices = async () => {
+      if (isOpen) {
+        console.log('AppointmentForm - Form aperto, caricando servizi');
+        try {
+          const refreshedServices = await getStoredServices();
+          setServiceCategories(refreshedServices);
+        } catch (error) {
+          console.error('Errore caricamento servizi:', error);
+        }
+      }
+    };
+
+    loadInitialServices();
   }, [isOpen]);
 
-  // Listener per aggiornamenti ai servizi - più aggressivo
+  // Setup realtime listener per aggiornamenti servizi
   useEffect(() => {
+    const channel = setupServicesRealtimeListener();
+    
     const handleServicesUpdated = (event: CustomEvent) => {
       console.log('AppointmentForm - Ricevuto aggiornamento servizi:', event.detail);
       setServiceCategories(event.detail);
     };
 
-    const handleStorageChange = (event: StorageEvent) => {
-      console.log('AppointmentForm - Storage change rilevato per chiave:', event.key);
-      if (event.key === 'services' || event.key === 'customServices' || event.key === null) {
-        const refreshedServices = refreshServices();
-        console.log('AppointmentForm - Servizi aggiornati da storage change:', refreshedServices);
-        setServiceCategories(refreshedServices);
-      }
-    };
-
-    const handleFocus = () => {
-      if (isOpen) {
-        console.log('AppointmentForm - Window focus, ricaricando servizi');
-        const refreshedServices = refreshServices();
-        setServiceCategories(refreshedServices);
-      }
-    };
-
     window.addEventListener('servicesUpdated', handleServicesUpdated as EventListener);
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('focus', handleFocus);
 
     return () => {
       window.removeEventListener('servicesUpdated', handleServicesUpdated as EventListener);
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('focus', handleFocus);
+      if (channel) {
+        channel.unsubscribe();
+      }
     };
-  }, [isOpen]);
+  }, []);
 
   const timeSlots = generateTimeSlots();
 

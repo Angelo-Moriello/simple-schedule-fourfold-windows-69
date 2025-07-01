@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ServiceCategory } from '@/types/appointment';
 import { toast } from 'sonner';
-import { getStoredServices, saveServicesToStorage } from '@/utils/serviceStorage';
+import { getStoredServices, saveServicesToStorage, setupServicesRealtimeListener } from '@/utils/serviceStorage';
 import ServiceAddForm from './service-manager/ServiceAddForm';
 import ServiceCategoryList from './service-manager/ServiceCategoryList';
 
@@ -18,74 +18,133 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'Parrucchiere' | 'Estetista'>('Parrucchiere');
   const [newService, setNewService] = useState('');
-  const [customCategories, setCustomCategories] = useState(getStoredServices);
+  const [customCategories, setCustomCategories] = useState<Record<'Parrucchiere' | 'Estetista', ServiceCategory>>({
+    Parrucchiere: { name: 'Parrucchiere', services: [] },
+    Estetista: { name: 'Estetista', services: [] }
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Listener per aggiornamenti ai servizi da altre parti dell'app
+  // Carica servizi iniziali
   useEffect(() => {
+    const loadInitialServices = async () => {
+      setIsLoading(true);
+      try {
+        const services = await getStoredServices();
+        setCustomCategories(services);
+      } catch (error) {
+        console.error('Errore caricamento servizi iniziali:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadInitialServices();
+  }, []);
+
+  // Setup realtime listener
+  useEffect(() => {
+    const channel = setupServicesRealtimeListener();
+    
     const handleServicesUpdated = (event: CustomEvent) => {
       console.log('ServiceCategoryManager - Ricevuto aggiornamento servizi:', event.detail);
       setCustomCategories(event.detail);
     };
 
-    const handleStorageChange = (event: StorageEvent) => {
-      console.log('ServiceCategoryManager - Storage change rilevato per chiave:', event.key);
-      if (event.key === 'services' || event.key === 'customServices' || event.key === null) {
-        const refreshedServices = getStoredServices();
-        console.log('ServiceCategoryManager - Ricaricando servizi da storage change:', refreshedServices);
-        setCustomCategories(refreshedServices);
-      }
-    };
-
     window.addEventListener('servicesUpdated', handleServicesUpdated as EventListener);
-    window.addEventListener('storage', handleStorageChange);
 
     return () => {
       window.removeEventListener('servicesUpdated', handleServicesUpdated as EventListener);
-      window.removeEventListener('storage', handleStorageChange);
+      if (channel) {
+        channel.unsubscribe();
+      }
     };
   }, []);
 
   // Ricarica i servizi quando il dialog si apre
   useEffect(() => {
     if (isOpen) {
-      console.log('ServiceCategoryManager - Dialog aperto, ricaricando servizi');
-      const refreshedServices = getStoredServices();
-      setCustomCategories(refreshedServices);
-    }
-  }, [isOpen]);
-
-  const handleAddService = () => {
-    if (newService.trim()) {
-      const updatedCategories = {
-        ...customCategories,
-        [selectedCategory]: {
-          ...customCategories[selectedCategory],
-          services: [...customCategories[selectedCategory].services, newService.trim()]
+      const reloadServices = async () => {
+        console.log('ServiceCategoryManager - Dialog aperto, ricaricando servizi');
+        setIsLoading(true);
+        try {
+          const refreshedServices = await getStoredServices();
+          setCustomCategories(refreshedServices);
+        } catch (error) {
+          console.error('Errore ricaricamento servizi:', error);
+        } finally {
+          setIsLoading(false);
         }
       };
       
-      setCustomCategories(updatedCategories);
-      saveServicesToStorage(updatedCategories);
-      onUpdateServiceCategories?.(updatedCategories);
-      setNewService('');
-      toast.success(`Servizio "${newService.trim()}" aggiunto con successo!`);
+      reloadServices();
+    }
+  }, [isOpen]);
+
+  const handleAddService = async () => {
+    if (newService.trim()) {
+      setIsLoading(true);
+      try {
+        const updatedCategories = {
+          ...customCategories,
+          [selectedCategory]: {
+            ...customCategories[selectedCategory],
+            services: [...customCategories[selectedCategory].services, newService.trim()]
+          }
+        };
+        
+        const success = await saveServicesToStorage(updatedCategories);
+        
+        if (success) {
+          setCustomCategories(updatedCategories);
+          onUpdateServiceCategories?.(updatedCategories);
+          setNewService('');
+          toast.success(`Servizio "${newService.trim()}" aggiunto e sincronizzato su tutti i dispositivi!`);
+        } else {
+          // Fallback locale
+          setCustomCategories(updatedCategories);
+          onUpdateServiceCategories?.(updatedCategories);
+          setNewService('');
+          toast.success(`Servizio "${newService.trim()}" aggiunto localmente. Verrà sincronizzato quando possibile.`);
+        }
+      } catch (error) {
+        console.error('Errore aggiunta servizio:', error);
+        toast.error('Errore nell\'aggiungere il servizio');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  const handleRemoveService = (category: 'Parrucchiere' | 'Estetista', serviceIndex: number) => {
-    const serviceToRemove = customCategories[category].services[serviceIndex];
-    const updatedCategories = {
-      ...customCategories,
-      [category]: {
-        ...customCategories[category],
-        services: customCategories[category].services.filter((_, index) => index !== serviceIndex)
+  const handleRemoveService = async (category: 'Parrucchiere' | 'Estetista', serviceIndex: number) => {
+    setIsLoading(true);
+    try {
+      const serviceToRemove = customCategories[category].services[serviceIndex];
+      const updatedCategories = {
+        ...customCategories,
+        [category]: {
+          ...customCategories[category],
+          services: customCategories[category].services.filter((_, index) => index !== serviceIndex)
+        }
+      };
+      
+      const success = await saveServicesToStorage(updatedCategories);
+      
+      if (success) {
+        setCustomCategories(updatedCategories);
+        onUpdateServiceCategories?.(updatedCategories);
+        toast.success(`Servizio "${serviceToRemove}" rimosso e sincronizzato su tutti i dispositivi!`);
+      } else {
+        // Fallback locale
+        setCustomCategories(updatedCategories);
+        onUpdateServiceCategories?.(updatedCategories);
+        toast.success(`Servizio "${serviceToRemove}" rimosso localmente. Verrà sincronizzato quando possibile.`);
       }
-    };
-    
-    setCustomCategories(updatedCategories);
-    saveServicesToStorage(updatedCategories);
-    onUpdateServiceCategories?.(updatedCategories);
-    toast.success(`Servizio "${serviceToRemove}" rimosso con successo!`);
+    } catch (error) {
+      console.error('Errore rimozione servizio:', error);
+      toast.error('Errore nella rimozione del servizio');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -105,20 +164,33 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
           <DialogTitle>Gestione Tipi di Servizio</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6">
-          <ServiceAddForm
-            selectedCategory={selectedCategory}
-            newService={newService}
-            onCategoryChange={setSelectedCategory}
-            onServiceChange={setNewService}
-            onAddService={handleAddService}
-          />
+        {isLoading ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <span className="ml-2 text-sm text-gray-600">Sincronizzazione in corso...</span>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <p className="text-sm text-blue-700">
+                ℹ️ I servizi vengono sincronizzati automaticamente tra tutti i tuoi dispositivi.
+              </p>
+            </div>
+            
+            <ServiceAddForm
+              selectedCategory={selectedCategory}
+              newService={newService}
+              onCategoryChange={setSelectedCategory}
+              onServiceChange={setNewService}
+              onAddService={handleAddService}
+            />
 
-          <ServiceCategoryList
-            categories={customCategories}
-            onRemoveService={handleRemoveService}
-          />
-        </div>
+            <ServiceCategoryList
+              categories={customCategories}
+              onRemoveService={handleRemoveService}
+            />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

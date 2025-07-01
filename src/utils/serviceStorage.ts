@@ -1,10 +1,26 @@
 
+import { saveServicesToSupabase, loadServicesFromSupabase, setupServiceRealtimeListener } from './supabaseServiceStorage';
+
 // Global services state
 let globalServices = null;
+let realtimeChannel = null;
 
-export const getStoredServices = () => {
+export const getStoredServices = async () => {
   try {
-    // Prova a recuperare da multiple sources
+    // Prima prova a caricare da Supabase
+    const supabaseServices = await loadServicesFromSupabase();
+    
+    if (supabaseServices) {
+      console.log('DEBUG - Servizi caricati da Supabase:', supabaseServices);
+      globalServices = supabaseServices;
+      
+      // Salva anche in localStorage come backup
+      localStorage.setItem('services', JSON.stringify(supabaseServices));
+      
+      return supabaseServices;
+    }
+
+    // Se non ci sono servizi su Supabase, carica da localStorage
     const stored = localStorage.getItem('services');
     const backup1 = localStorage.getItem('services_backup');
     const backup2 = localStorage.getItem('customServices');
@@ -17,7 +33,6 @@ export const getStoredServices = () => {
     
     let servicesToLoad = null;
     
-    // Prova prima 'services', poi 'customServices', poi 'services_backup'
     if (stored) {
       try {
         servicesToLoad = JSON.parse(stored);
@@ -50,53 +65,37 @@ export const getStoredServices = () => {
         Array.isArray(servicesToLoad.Estetista.services)) {
       console.log('DEBUG - Servizi validi trovati:', servicesToLoad);
       globalServices = servicesToLoad;
+      
+      // Migra a Supabase se non ci sono già
+      if (!supabaseServices) {
+        await saveServicesToSupabase(servicesToLoad);
+      }
+      
       return servicesToLoad;
     }
     
-    console.log('DEBUG - Nessun servizio valido trovato, creando defaults espansi');
+    console.log('DEBUG - Nessun servizio valido trovato, creando defaults');
     const defaultServices = {
       Parrucchiere: {
         name: 'Parrucchiere',
         services: [
-          'Piega', 
-          'Colore', 
-          'Taglio', 
-          'Colpi di sole', 
-          'Trattamento Capelli',
-          'Permanente',
-          'Stiratura',
-          'Extension',
-          'Balayage',
-          'Shatush',
-          'Mèches',
-          'Decolorazione',
-          'Tinta',
-          'Riflessante'
+          'Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli',
+          'Permanente', 'Stiratura', 'Extension', 'Balayage', 'Shatush',
+          'Mèches', 'Decolorazione', 'Tinta', 'Riflessante'
         ]
       },
       Estetista: {
         name: 'Estetista',
         services: [
-          'Pulizia Viso', 
-          'Manicure', 
-          'Pedicure', 
-          'Massaggio', 
-          'Depilazione', 
-          'Trattamento Corpo',
-          'Ricostruzione Unghie',
-          'Semipermanente',
-          'Trattamento Viso',
-          'Ceretta',
-          'Peeling',
-          'Maschera Viso',
-          'Pressoterapia',
-          'Linfodrenaggio'
+          'Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo',
+          'Ricostruzione Unghie', 'Semipermanente', 'Trattamento Viso', 'Ceretta',
+          'Peeling', 'Maschera Viso', 'Pressoterapia', 'Linfodrenaggio'
         ]
       }
     };
     
-    // Salva i defaults espansi
-    saveServicesToStorage(defaultServices);
+    await saveServicesToSupabase(defaultServices);
+    saveServicesToLocalStorage(defaultServices);
     
     globalServices = defaultServices;
     console.log('DEBUG - Servizi default salvati:', defaultServices);
@@ -118,18 +117,31 @@ export const getStoredServices = () => {
   }
 };
 
-// Funzione unificata per salvare i servizi
-export const saveServicesToStorage = (categories) => {
+// Salva solo in localStorage
+export const saveServicesToLocalStorage = (categories) => {
   try {
     const dataToSave = JSON.stringify(categories);
-    
-    // Salva in multiple locations for backup
     localStorage.setItem('services', dataToSave);
     localStorage.setItem('services_backup', dataToSave);
     localStorage.setItem('customServices', dataToSave);
     localStorage.setItem('services_timestamp', new Date().toISOString());
     
-    console.log('DEBUG - Servizi salvati in tutte le chiavi:', categories);
+    console.log('DEBUG - Servizi salvati in localStorage:', categories);
+  } catch (error) {
+    console.error('Errore nel salvare servizi in localStorage:', error);
+  }
+};
+
+// Funzione unificata per salvare i servizi
+export const saveServicesToStorage = async (categories) => {
+  try {
+    // Salva su Supabase
+    const supabaseSuccess = await saveServicesToSupabase(categories);
+    
+    // Salva sempre in localStorage come backup
+    saveServicesToLocalStorage(categories);
+    
+    console.log('DEBUG - Servizi salvati:', { supabaseSuccess, categories });
     
     // Clear cache
     globalServices = null;
@@ -139,29 +151,18 @@ export const saveServicesToStorage = (categories) => {
       detail: categories 
     }));
     
-    // Also trigger storage event manually
-    window.dispatchEvent(new Event('storage'));
-    
-    // Force page refresh for cross-tab synchronization
-    setTimeout(() => {
-      const event = new StorageEvent('storage', {
-        key: 'services',
-        newValue: dataToSave,
-        url: window.location.href
-      });
-      window.dispatchEvent(event);
-    }, 100);
-    
+    return supabaseSuccess;
   } catch (error) {
     console.error('Errore nel salvare i servizi:', error);
+    return false;
   }
 };
 
-// Function to refresh services from localStorage - sempre ricarica
-export const refreshServices = () => {
-  console.log('DEBUG - Refreshing services from localStorage, clearing cache');
+// Function to refresh services - sempre ricarica da Supabase
+export const refreshServices = async () => {
+  console.log('DEBUG - Refreshing services, clearing cache');
   globalServices = null;
-  const services = getStoredServices();
+  const services = await getStoredServices();
   
   // Emit event to notify components
   window.dispatchEvent(new CustomEvent('servicesUpdated', { 
@@ -169,6 +170,28 @@ export const refreshServices = () => {
   }));
   
   return services;
+};
+
+// Function to setup realtime listener
+export const setupServicesRealtimeListener = () => {
+  if (realtimeChannel) {
+    return realtimeChannel;
+  }
+
+  realtimeChannel = setupServiceRealtimeListener((updatedServices) => {
+    console.log('DEBUG - Servizi aggiornati via realtime:', updatedServices);
+    globalServices = updatedServices;
+    
+    // Salva in localStorage come backup
+    saveServicesToLocalStorage(updatedServices);
+    
+    // Notify components
+    window.dispatchEvent(new CustomEvent('servicesUpdated', { 
+      detail: updatedServices 
+    }));
+  });
+
+  return realtimeChannel;
 };
 
 // Function to clear cache and force reload
