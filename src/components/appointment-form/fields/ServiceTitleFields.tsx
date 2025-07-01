@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Employee } from '@/types/appointment';
 import { Scissors, FileText } from 'lucide-react';
-import { getStoredServices } from '@/utils/serviceStorage';
+import { getStoredServices, refreshServices } from '@/utils/serviceStorage';
 
 interface ServiceTitleFieldsProps {
   formData: any;
@@ -25,7 +25,7 @@ const ServiceTitleFields: React.FC<ServiceTitleFieldsProps> = ({
   // Aggiorna i servizi disponibili quando cambiano i servizi o l'employee selezionato
   useEffect(() => {
     if (selectedEmployee) {
-      const services = getStoredServices();
+      const services = refreshServices();
       const employeeServices = services[selectedEmployee.specialization]?.services || [];
       console.log('ServiceTitleFields - Aggiornando servizi per:', selectedEmployee.specialization, employeeServices);
       setAvailableServices(employeeServices);
@@ -34,23 +34,43 @@ const ServiceTitleFields: React.FC<ServiceTitleFieldsProps> = ({
     }
   }, [selectedEmployee]);
 
-  // Listener per aggiornamenti ai servizi
+  // Listener per aggiornamenti ai servizi - più aggressivo
   useEffect(() => {
     const handleServicesUpdated = () => {
       if (selectedEmployee) {
-        const services = getStoredServices();
+        const services = refreshServices();
         const employeeServices = services[selectedEmployee.specialization]?.services || [];
         console.log('ServiceTitleFields - Servizi aggiornati via evento per:', selectedEmployee.specialization, employeeServices);
         setAvailableServices(employeeServices);
       }
     };
 
+    const handleStorageChange = (event: StorageEvent) => {
+      if ((event.key === 'services' || event.key === 'customServices' || event.key === null) && selectedEmployee) {
+        const services = refreshServices();
+        const employeeServices = services[selectedEmployee.specialization]?.services || [];
+        console.log('ServiceTitleFields - Servizi aggiornati via storage per:', selectedEmployee.specialization, employeeServices);
+        setAvailableServices(employeeServices);
+      }
+    };
+
+    const handleFocus = () => {
+      if (selectedEmployee) {
+        const services = refreshServices();
+        const employeeServices = services[selectedEmployee.specialization]?.services || [];
+        console.log('ServiceTitleFields - Servizi aggiornati via focus per:', selectedEmployee.specialization, employeeServices);
+        setAvailableServices(employeeServices);
+      }
+    };
+
     window.addEventListener('servicesUpdated', handleServicesUpdated);
-    window.addEventListener('storage', handleServicesUpdated);
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       window.removeEventListener('servicesUpdated', handleServicesUpdated);
-      window.removeEventListener('storage', handleServicesUpdated);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [selectedEmployee]);
 

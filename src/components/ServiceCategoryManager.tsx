@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ServiceCategory } from '@/types/appointment';
 import { toast } from 'sonner';
-import { loadStoredServices, saveServicesToStorage } from './service-manager/ServiceStorageUtils';
+import { getStoredServices, saveServicesToStorage } from '@/utils/serviceStorage';
 import ServiceAddForm from './service-manager/ServiceAddForm';
 import ServiceCategoryList from './service-manager/ServiceCategoryList';
 
@@ -18,7 +18,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'Parrucchiere' | 'Estetista'>('Parrucchiere');
   const [newService, setNewService] = useState('');
-  const [customCategories, setCustomCategories] = useState(loadStoredServices);
+  const [customCategories, setCustomCategories] = useState(getStoredServices);
 
   // Listener per aggiornamenti ai servizi da altre parti dell'app
   useEffect(() => {
@@ -27,10 +27,13 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
       setCustomCategories(event.detail);
     };
 
-    const handleStorageChange = () => {
-      console.log('ServiceCategoryManager - Storage change rilevato, ricaricando servizi');
-      const refreshedServices = loadStoredServices();
-      setCustomCategories(refreshedServices);
+    const handleStorageChange = (event: StorageEvent) => {
+      console.log('ServiceCategoryManager - Storage change rilevato per chiave:', event.key);
+      if (event.key === 'services' || event.key === 'customServices' || event.key === null) {
+        const refreshedServices = getStoredServices();
+        console.log('ServiceCategoryManager - Ricaricando servizi da storage change:', refreshedServices);
+        setCustomCategories(refreshedServices);
+      }
     };
 
     window.addEventListener('servicesUpdated', handleServicesUpdated as EventListener);
@@ -46,7 +49,7 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   useEffect(() => {
     if (isOpen) {
       console.log('ServiceCategoryManager - Dialog aperto, ricaricando servizi');
-      const refreshedServices = loadStoredServices();
+      const refreshedServices = getStoredServices();
       setCustomCategories(refreshedServices);
     }
   }, [isOpen]);

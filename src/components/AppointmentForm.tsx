@@ -5,7 +5,7 @@ import AppointmentFormContainer from './appointment-form/AppointmentFormContaine
 import AppointmentFormFields from './appointment-form/AppointmentFormFields';
 import AppointmentFormActions from './appointment-form/AppointmentFormActions';
 import { useAppointmentForm, appointmentColors, generateTimeSlots } from './appointment-form/AppointmentFormLogic';
-import { getStoredServices } from '@/utils/serviceStorage';
+import { getStoredServices, refreshServices } from '@/utils/serviceStorage';
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -53,36 +53,49 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     onClose
   });
 
-  // Ricarica i servizi quando il form si apre o quando cambiano
+  // Ricarica i servizi quando il form si apre
   useEffect(() => {
     if (isOpen) {
-      console.log('AppointmentForm - Ricaricando servizi per form aperto');
-      const refreshedServices = getStoredServices();
+      console.log('AppointmentForm - Form aperto, forzando refresh servizi');
+      const refreshedServices = refreshServices();
       setServiceCategories(refreshedServices);
     }
   }, [isOpen]);
 
-  // Listener per aggiornamenti ai servizi
+  // Listener per aggiornamenti ai servizi - più aggressivo
   useEffect(() => {
     const handleServicesUpdated = (event: CustomEvent) => {
       console.log('AppointmentForm - Ricevuto aggiornamento servizi:', event.detail);
       setServiceCategories(event.detail);
     };
 
-    const handleStorageChange = () => {
-      console.log('AppointmentForm - Storage change rilevato, ricaricando servizi');
-      const refreshedServices = getStoredServices();
-      setServiceCategories(refreshedServices);
+    const handleStorageChange = (event: StorageEvent) => {
+      console.log('AppointmentForm - Storage change rilevato per chiave:', event.key);
+      if (event.key === 'services' || event.key === 'customServices' || event.key === null) {
+        const refreshedServices = refreshServices();
+        console.log('AppointmentForm - Servizi aggiornati da storage change:', refreshedServices);
+        setServiceCategories(refreshedServices);
+      }
+    };
+
+    const handleFocus = () => {
+      if (isOpen) {
+        console.log('AppointmentForm - Window focus, ricaricando servizi');
+        const refreshedServices = refreshServices();
+        setServiceCategories(refreshedServices);
+      }
     };
 
     window.addEventListener('servicesUpdated', handleServicesUpdated as EventListener);
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       window.removeEventListener('servicesUpdated', handleServicesUpdated as EventListener);
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
     };
-  }, []);
+  }, [isOpen]);
 
   const timeSlots = generateTimeSlots();
 

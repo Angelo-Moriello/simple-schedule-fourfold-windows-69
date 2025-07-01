@@ -16,6 +16,8 @@ export const getStoredServices = () => {
     });
     
     let servicesToLoad = null;
+    
+    // Prova prima 'services', poi 'customServices', poi 'services_backup'
     if (stored) {
       try {
         servicesToLoad = JSON.parse(stored);
@@ -25,21 +27,21 @@ export const getStoredServices = () => {
       }
     }
     
+    if (!servicesToLoad && backup2) {
+      try {
+        servicesToLoad = JSON.parse(backup2);
+        console.log('DEBUG - Servizi da customServices:', servicesToLoad);
+      } catch (e) {
+        console.error('Errore parsing customServices:', e);
+      }
+    }
+    
     if (!servicesToLoad && backup1) {
       try {
         servicesToLoad = JSON.parse(backup1);
         console.log('DEBUG - Servizi da backup1:', servicesToLoad);
       } catch (e) {
         console.error('Errore parsing backup1:', e);
-      }
-    }
-    
-    if (!servicesToLoad && backup2) {
-      try {
-        servicesToLoad = JSON.parse(backup2);
-        console.log('DEBUG - Servizi da backup2:', servicesToLoad);
-      } catch (e) {
-        console.error('Errore parsing backup2:', e);
       }
     }
     
@@ -94,10 +96,7 @@ export const getStoredServices = () => {
     };
     
     // Salva i defaults espansi
-    const dataToSave = JSON.stringify(defaultServices);
-    localStorage.setItem('services', dataToSave);
-    localStorage.setItem('services_backup', dataToSave);
-    localStorage.setItem('customServices', dataToSave);
+    saveServicesToStorage(defaultServices);
     
     globalServices = defaultServices;
     console.log('DEBUG - Servizi default salvati:', defaultServices);
@@ -116,6 +115,45 @@ export const getStoredServices = () => {
     };
     globalServices = fallbackServices;
     return fallbackServices;
+  }
+};
+
+// Funzione unificata per salvare i servizi
+export const saveServicesToStorage = (categories) => {
+  try {
+    const dataToSave = JSON.stringify(categories);
+    
+    // Salva in multiple locations for backup
+    localStorage.setItem('services', dataToSave);
+    localStorage.setItem('services_backup', dataToSave);
+    localStorage.setItem('customServices', dataToSave);
+    localStorage.setItem('services_timestamp', new Date().toISOString());
+    
+    console.log('DEBUG - Servizi salvati in tutte le chiavi:', categories);
+    
+    // Clear cache
+    globalServices = null;
+    
+    // Emit custom event to notify other components
+    window.dispatchEvent(new CustomEvent('servicesUpdated', { 
+      detail: categories 
+    }));
+    
+    // Also trigger storage event manually
+    window.dispatchEvent(new Event('storage'));
+    
+    // Force page refresh for cross-tab synchronization
+    setTimeout(() => {
+      const event = new StorageEvent('storage', {
+        key: 'services',
+        newValue: dataToSave,
+        url: window.location.href
+      });
+      window.dispatchEvent(event);
+    }, 100);
+    
+  } catch (error) {
+    console.error('Errore nel salvare i servizi:', error);
   }
 };
 
