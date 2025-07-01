@@ -3,11 +3,6 @@
 let globalServices = null;
 
 export const getStoredServices = () => {
-  if (globalServices) {
-    console.log('DEBUG - Usando servizi globali cached:', globalServices);
-    return globalServices;
-  }
-
   try {
     // Prova a recuperare da multiple sources
     const stored = localStorage.getItem('services');
@@ -124,9 +119,22 @@ export const getStoredServices = () => {
   }
 };
 
-// Function to refresh services from localStorage
+// Function to refresh services from localStorage - sempre ricarica
 export const refreshServices = () => {
-  console.log('DEBUG - Refreshing services from localStorage');
+  console.log('DEBUG - Refreshing services from localStorage, clearing cache');
   globalServices = null;
-  return getStoredServices();
+  const services = getStoredServices();
+  
+  // Emit event to notify components
+  window.dispatchEvent(new CustomEvent('servicesUpdated', { 
+    detail: services 
+  }));
+  
+  return services;
+};
+
+// Function to clear cache and force reload
+export const clearServicesCache = () => {
+  console.log('DEBUG - Clearing services cache');
+  globalServices = null;
 };

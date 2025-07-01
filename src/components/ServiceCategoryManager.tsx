@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ServiceCategory } from '@/types/appointment';
@@ -19,6 +19,37 @@ const ServiceCategoryManager: React.FC<ServiceCategoryManagerProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<'Parrucchiere' | 'Estetista'>('Parrucchiere');
   const [newService, setNewService] = useState('');
   const [customCategories, setCustomCategories] = useState(loadStoredServices);
+
+  // Listener per aggiornamenti ai servizi da altre parti dell'app
+  useEffect(() => {
+    const handleServicesUpdated = (event: CustomEvent) => {
+      console.log('ServiceCategoryManager - Ricevuto aggiornamento servizi:', event.detail);
+      setCustomCategories(event.detail);
+    };
+
+    const handleStorageChange = () => {
+      console.log('ServiceCategoryManager - Storage change rilevato, ricaricando servizi');
+      const refreshedServices = loadStoredServices();
+      setCustomCategories(refreshedServices);
+    };
+
+    window.addEventListener('servicesUpdated', handleServicesUpdated as EventListener);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('servicesUpdated', handleServicesUpdated as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  // Ricarica i servizi quando il dialog si apre
+  useEffect(() => {
+    if (isOpen) {
+      console.log('ServiceCategoryManager - Dialog aperto, ricaricando servizi');
+      const refreshedServices = loadStoredServices();
+      setCustomCategories(refreshedServices);
+    }
+  }, [isOpen]);
 
   const handleAddService = () => {
     if (newService.trim()) {

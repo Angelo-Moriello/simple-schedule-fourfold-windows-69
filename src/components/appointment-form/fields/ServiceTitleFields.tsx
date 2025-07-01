@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Employee } from '@/types/appointment';
 import { Scissors, FileText } from 'lucide-react';
+import { getStoredServices } from '@/utils/serviceStorage';
 
 interface ServiceTitleFieldsProps {
   formData: any;
@@ -16,9 +17,43 @@ interface ServiceTitleFieldsProps {
 const ServiceTitleFields: React.FC<ServiceTitleFieldsProps> = ({
   formData,
   setFormData,
-  availableServices,
+  availableServices: initialAvailableServices,
   selectedEmployee
 }) => {
+  const [availableServices, setAvailableServices] = useState(initialAvailableServices);
+
+  // Aggiorna i servizi disponibili quando cambiano i servizi o l'employee selezionato
+  useEffect(() => {
+    if (selectedEmployee) {
+      const services = getStoredServices();
+      const employeeServices = services[selectedEmployee.specialization]?.services || [];
+      console.log('ServiceTitleFields - Aggiornando servizi per:', selectedEmployee.specialization, employeeServices);
+      setAvailableServices(employeeServices);
+    } else {
+      setAvailableServices([]);
+    }
+  }, [selectedEmployee]);
+
+  // Listener per aggiornamenti ai servizi
+  useEffect(() => {
+    const handleServicesUpdated = () => {
+      if (selectedEmployee) {
+        const services = getStoredServices();
+        const employeeServices = services[selectedEmployee.specialization]?.services || [];
+        console.log('ServiceTitleFields - Servizi aggiornati via evento per:', selectedEmployee.specialization, employeeServices);
+        setAvailableServices(employeeServices);
+      }
+    };
+
+    window.addEventListener('servicesUpdated', handleServicesUpdated);
+    window.addEventListener('storage', handleServicesUpdated);
+
+    return () => {
+      window.removeEventListener('servicesUpdated', handleServicesUpdated);
+      window.removeEventListener('storage', handleServicesUpdated);
+    };
+  }, [selectedEmployee]);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-2">
