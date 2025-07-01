@@ -1,12 +1,38 @@
 
 import { saveServicesToSupabase, loadServicesFromSupabase, setupServiceRealtimeListener } from './supabaseServiceStorage';
 
-// Global services state
-let globalServices = null;
-let realtimeChannel = null;
+// Default services that should always be available
+const DEFAULT_SERVICES = {
+  Parrucchiere: {
+    name: 'Parrucchiere',
+    services: [
+      'Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli',
+      'Permanente', 'Stiratura', 'Extension', 'Balayage', 'Shatush',
+      'Mèches', 'Decolorazione', 'Tinta', 'Riflessante'
+    ]
+  },
+  Estetista: {
+    name: 'Estetista',
+    services: [
+      'Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo',
+      'Ricostruzione Unghie', 'Semipermanente', 'Trattamento Viso', 'Ceretta',
+      'Peeling', 'Maschera Viso', 'Pressoterapia', 'Linfodrenaggio'
+    ]
+  }
+};
 
-export const getStoredServices = async () => {
+// Global services state
+let globalServices: Record<'Parrucchiere' | 'Estetista', { name: string; services: string[] }> | null = null;
+let realtimeChannel: any = null;
+
+export const getStoredServices = async (): Promise<Record<'Parrucchiere' | 'Estetista', { name: string; services: string[] }>> => {
   try {
+    // Se abbiamo già i servizi in cache, restituiscili
+    if (globalServices) {
+      console.log('DEBUG - Servizi da cache:', globalServices);
+      return globalServices;
+    }
+
     // Prima prova a caricare da Supabase
     const supabaseServices = await loadServicesFromSupabase();
     
@@ -22,108 +48,43 @@ export const getStoredServices = async () => {
 
     // Se non ci sono servizi su Supabase, carica da localStorage
     const stored = localStorage.getItem('services');
-    const backup1 = localStorage.getItem('services_backup');
-    const backup2 = localStorage.getItem('customServices');
-    
-    console.log('DEBUG - Caricamento servizi da localStorage:', {
-      stored: stored ? 'presente' : 'assente',
-      backup1: backup1 ? 'presente' : 'assente',
-      backup2: backup2 ? 'presente' : 'assente'
-    });
-    
-    let servicesToLoad = null;
     
     if (stored) {
       try {
-        servicesToLoad = JSON.parse(stored);
-        console.log('DEBUG - Servizi da stored:', servicesToLoad);
+        const parsedServices = JSON.parse(stored);
+        if (parsedServices && parsedServices.Parrucchiere && parsedServices.Estetista) {
+          console.log('DEBUG - Servizi da localStorage:', parsedServices);
+          globalServices = parsedServices;
+          return parsedServices;
+        }
       } catch (e) {
-        console.error('Errore parsing servizi principali:', e);
+        console.error('Errore parsing servizi da localStorage:', e);
       }
     }
     
-    if (!servicesToLoad && backup2) {
-      try {
-        servicesToLoad = JSON.parse(backup2);
-        console.log('DEBUG - Servizi da customServices:', servicesToLoad);
-      } catch (e) {
-        console.error('Errore parsing customServices:', e);
-      }
-    }
+    // Se non ci sono servizi personalizzati, usa quelli di default
+    console.log('DEBUG - Usando servizi di default');
+    globalServices = DEFAULT_SERVICES;
     
-    if (!servicesToLoad && backup1) {
-      try {
-        servicesToLoad = JSON.parse(backup1);
-        console.log('DEBUG - Servizi da backup1:', servicesToLoad);
-      } catch (e) {
-        console.error('Errore parsing backup1:', e);
-      }
-    }
+    // Salva i servizi di default
+    await saveServicesToSupabase(DEFAULT_SERVICES);
+    localStorage.setItem('services', JSON.stringify(DEFAULT_SERVICES));
     
-    if (servicesToLoad && servicesToLoad.Parrucchiere && servicesToLoad.Estetista && 
-        Array.isArray(servicesToLoad.Parrucchiere.services) && 
-        Array.isArray(servicesToLoad.Estetista.services)) {
-      console.log('DEBUG - Servizi validi trovati:', servicesToLoad);
-      globalServices = servicesToLoad;
-      
-      // Migra a Supabase se non ci sono già
-      if (!supabaseServices) {
-        await saveServicesToSupabase(servicesToLoad);
-      }
-      
-      return servicesToLoad;
-    }
-    
-    console.log('DEBUG - Nessun servizio valido trovato, creando defaults');
-    const defaultServices = {
-      Parrucchiere: {
-        name: 'Parrucchiere',
-        services: [
-          'Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli',
-          'Permanente', 'Stiratura', 'Extension', 'Balayage', 'Shatush',
-          'Mèches', 'Decolorazione', 'Tinta', 'Riflessante'
-        ]
-      },
-      Estetista: {
-        name: 'Estetista',
-        services: [
-          'Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo',
-          'Ricostruzione Unghie', 'Semipermanente', 'Trattamento Viso', 'Ceretta',
-          'Peeling', 'Maschera Viso', 'Pressoterapia', 'Linfodrenaggio'
-        ]
-      }
-    };
-    
-    await saveServicesToSupabase(defaultServices);
-    saveServicesToLocalStorage(defaultServices);
-    
-    globalServices = defaultServices;
-    console.log('DEBUG - Servizi default salvati:', defaultServices);
-    return defaultServices;
+    return DEFAULT_SERVICES;
   } catch (error) {
     console.error('Errore nel caricamento servizi:', error);
-    const fallbackServices = {
-      Parrucchiere: {
-        name: 'Parrucchiere',
-        services: ['Piega', 'Colore', 'Taglio', 'Colpi di sole', 'Trattamento Capelli']
-      },
-      Estetista: {
-        name: 'Estetista',
-        services: ['Pulizia Viso', 'Manicure', 'Pedicure', 'Massaggio', 'Depilazione', 'Trattamento Corpo']
-      }
-    };
-    globalServices = fallbackServices;
-    return fallbackServices;
+    // In caso di errore, restituisci sempre i servizi di default
+    globalServices = DEFAULT_SERVICES;
+    return DEFAULT_SERVICES;
   }
 };
 
 // Salva solo in localStorage
-export const saveServicesToLocalStorage = (categories) => {
+export const saveServicesToLocalStorage = (categories: Record<'Parrucchiere' | 'Estetista', { name: string; services: string[] }>) => {
   try {
     const dataToSave = JSON.stringify(categories);
     localStorage.setItem('services', dataToSave);
     localStorage.setItem('services_backup', dataToSave);
-    localStorage.setItem('customServices', dataToSave);
     localStorage.setItem('services_timestamp', new Date().toISOString());
     
     console.log('DEBUG - Servizi salvati in localStorage:', categories);
@@ -133,7 +94,7 @@ export const saveServicesToLocalStorage = (categories) => {
 };
 
 // Funzione unificata per salvare i servizi
-export const saveServicesToStorage = async (categories) => {
+export const saveServicesToStorage = async (categories: Record<'Parrucchiere' | 'Estetista', { name: string; services: string[] }>) => {
   try {
     // Salva su Supabase
     const supabaseSuccess = await saveServicesToSupabase(categories);
@@ -143,8 +104,8 @@ export const saveServicesToStorage = async (categories) => {
     
     console.log('DEBUG - Servizi salvati:', { supabaseSuccess, categories });
     
-    // Clear cache
-    globalServices = null;
+    // Aggiorna cache globale
+    globalServices = categories;
     
     // Emit custom event to notify other components
     window.dispatchEvent(new CustomEvent('servicesUpdated', { 
@@ -158,8 +119,8 @@ export const saveServicesToStorage = async (categories) => {
   }
 };
 
-// Function to refresh services - sempre ricarica da Supabase
-export const refreshServices = async () => {
+// Function to refresh services - sempre ricarica
+export const refreshServices = async (): Promise<Record<'Parrucchiere' | 'Estetista', { name: string; services: string[] }>> => {
   console.log('DEBUG - Refreshing services, clearing cache');
   globalServices = null;
   const services = await getStoredServices();

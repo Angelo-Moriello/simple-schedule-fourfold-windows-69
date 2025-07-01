@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Employee } from '@/types/appointment';
 import { Scissors, FileText } from 'lucide-react';
-import { getStoredServices, refreshServices } from '@/utils/serviceStorage';
+import { getStoredServices } from '@/utils/serviceStorage';
 
 interface ServiceTitleFieldsProps {
   formData: any;
@@ -20,61 +20,54 @@ const ServiceTitleFields: React.FC<ServiceTitleFieldsProps> = ({
   availableServices: initialAvailableServices,
   selectedEmployee
 }) => {
-  const [availableServices, setAvailableServices] = useState(initialAvailableServices);
+  const [availableServices, setAvailableServices] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Aggiorna i servizi disponibili quando cambiano i servizi o l'employee selezionato
+  // Carica i servizi quando cambia l'employee selezionato
   useEffect(() => {
-    const updateServices = async () => {
-      if (selectedEmployee) {
-        const services = await refreshServices();
-        const employeeServices = services[selectedEmployee.specialization]?.services || [];
-        console.log('ServiceTitleFields - Aggiornando servizi per:', selectedEmployee.specialization, employeeServices);
-        setAvailableServices(employeeServices);
-      } else {
+    const loadServices = async () => {
+      if (!selectedEmployee) {
         setAvailableServices([]);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        console.log('ServiceTitleFields - Caricando servizi per:', selectedEmployee.specialization);
+        const services = await getStoredServices();
+        const employeeServices = services[selectedEmployee.specialization]?.services || [];
+        console.log('ServiceTitleFields - Servizi caricati:', employeeServices);
+        setAvailableServices(employeeServices);
+      } catch (error) {
+        console.error('Errore caricamento servizi:', error);
+        setAvailableServices([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    updateServices();
+    loadServices();
   }, [selectedEmployee]);
 
-  // Listener per aggiornamenti ai servizi - più aggressivo
+  // Listener per aggiornamenti ai servizi
   useEffect(() => {
     const handleServicesUpdated = async () => {
       if (selectedEmployee) {
-        const services = await refreshServices();
-        const employeeServices = services[selectedEmployee.specialization]?.services || [];
-        console.log('ServiceTitleFields - Servizi aggiornati via evento per:', selectedEmployee.specialization, employeeServices);
-        setAvailableServices(employeeServices);
-      }
-    };
-
-    const handleStorageChange = async (event: StorageEvent) => {
-      if ((event.key === 'services' || event.key === 'customServices' || event.key === null) && selectedEmployee) {
-        const services = await refreshServices();
-        const employeeServices = services[selectedEmployee.specialization]?.services || [];
-        console.log('ServiceTitleFields - Servizi aggiornati via storage per:', selectedEmployee.specialization, employeeServices);
-        setAvailableServices(employeeServices);
-      }
-    };
-
-    const handleFocus = async () => {
-      if (selectedEmployee) {
-        const services = await refreshServices();
-        const employeeServices = services[selectedEmployee.specialization]?.services || [];
-        console.log('ServiceTitleFields - Servizi aggiornati via focus per:', selectedEmployee.specialization, employeeServices);
-        setAvailableServices(employeeServices);
+        try {
+          const services = await getStoredServices();
+          const employeeServices = services[selectedEmployee.specialization]?.services || [];
+          console.log('ServiceTitleFields - Servizi aggiornati via evento per:', selectedEmployee.specialization, employeeServices);
+          setAvailableServices(employeeServices);
+        } catch (error) {
+          console.error('Errore aggiornamento servizi:', error);
+        }
       }
     };
 
     window.addEventListener('servicesUpdated', handleServicesUpdated);
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('focus', handleFocus);
 
     return () => {
       window.removeEventListener('servicesUpdated', handleServicesUpdated);
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('focus', handleFocus);
     };
   }, [selectedEmployee]);
 
@@ -89,10 +82,16 @@ const ServiceTitleFields: React.FC<ServiceTitleFieldsProps> = ({
         <Select
           value={formData.serviceType}
           onValueChange={(value) => setFormData({ ...formData, serviceType: value })}
-          disabled={!selectedEmployee}
+          disabled={!selectedEmployee || isLoading}
         >
           <SelectTrigger className="h-11">
-            <SelectValue placeholder={selectedEmployee ? "Seleziona servizio" : "Prima seleziona dipendente"} />
+            <SelectValue placeholder={
+              !selectedEmployee 
+                ? "Prima seleziona dipendente" 
+                : isLoading
+                ? "Caricamento servizi..."
+                : "Seleziona servizio"
+            } />
           </SelectTrigger>
           <SelectContent className="max-h-60 overflow-y-auto">
             {availableServices.length > 0 ? (
@@ -106,14 +105,14 @@ const ServiceTitleFields: React.FC<ServiceTitleFieldsProps> = ({
               ))
             ) : (
               <SelectItem value="no-services" disabled className="text-gray-400">
-                Nessun servizio disponibile
+                {isLoading ? "Caricamento..." : "Nessun servizio disponibile"}
               </SelectItem>
             )}
           </SelectContent>
         </Select>
-        {selectedEmployee && availableServices.length === 0 && (
+        {selectedEmployee && availableServices.length === 0 && !isLoading && (
           <p className="text-xs text-red-500 mt-1 bg-red-50 p-2 rounded">
-            ⚠️ Nessun servizio configurato per {selectedEmployee.specialization}
+            ⚠️ Nessun servizio configurato per {selectedEmployee.specialization}. Controlla le impostazioni servizi.
           </p>
         )}
       </div>
