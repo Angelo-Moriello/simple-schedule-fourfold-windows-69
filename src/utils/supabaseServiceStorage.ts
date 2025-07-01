@@ -22,7 +22,7 @@ export const saveServicesToSupabase = async (categories: Record<'Parrucchiere' |
 
     // Controlla se esistono già servizi per questo utente
     const { data: existingServices } = await supabase
-      .from('custom_services')
+      .from('custom_services' as any)
       .select('*')
       .eq('user_id', user.id)
       .single();
@@ -36,7 +36,7 @@ export const saveServicesToSupabase = async (categories: Record<'Parrucchiere' |
     if (existingServices) {
       // Aggiorna i servizi esistenti
       const { error } = await supabase
-        .from('custom_services')
+        .from('custom_services' as any)
         .update(serviceData)
         .eq('user_id', user.id);
 
@@ -44,7 +44,7 @@ export const saveServicesToSupabase = async (categories: Record<'Parrucchiere' |
     } else {
       // Crea nuovi servizi
       const { error } = await supabase
-        .from('custom_services')
+        .from('custom_services' as any)
         .insert({
           ...serviceData,
           created_at: new Date().toISOString()
@@ -72,7 +72,7 @@ export const loadServicesFromSupabase = async (): Promise<Record<'Parrucchiere' 
     }
 
     const { data: services, error } = await supabase
-      .from('custom_services')
+      .from('custom_services' as any)
       .select('*')
       .eq('user_id', user.id)
       .single();

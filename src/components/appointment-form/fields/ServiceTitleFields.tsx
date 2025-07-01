@@ -24,39 +24,43 @@ const ServiceTitleFields: React.FC<ServiceTitleFieldsProps> = ({
 
   // Aggiorna i servizi disponibili quando cambiano i servizi o l'employee selezionato
   useEffect(() => {
-    if (selectedEmployee) {
-      const services = refreshServices();
-      const employeeServices = services[selectedEmployee.specialization]?.services || [];
-      console.log('ServiceTitleFields - Aggiornando servizi per:', selectedEmployee.specialization, employeeServices);
-      setAvailableServices(employeeServices);
-    } else {
-      setAvailableServices([]);
-    }
+    const updateServices = async () => {
+      if (selectedEmployee) {
+        const services = await refreshServices();
+        const employeeServices = services[selectedEmployee.specialization]?.services || [];
+        console.log('ServiceTitleFields - Aggiornando servizi per:', selectedEmployee.specialization, employeeServices);
+        setAvailableServices(employeeServices);
+      } else {
+        setAvailableServices([]);
+      }
+    };
+
+    updateServices();
   }, [selectedEmployee]);
 
   // Listener per aggiornamenti ai servizi - più aggressivo
   useEffect(() => {
-    const handleServicesUpdated = () => {
+    const handleServicesUpdated = async () => {
       if (selectedEmployee) {
-        const services = refreshServices();
+        const services = await refreshServices();
         const employeeServices = services[selectedEmployee.specialization]?.services || [];
         console.log('ServiceTitleFields - Servizi aggiornati via evento per:', selectedEmployee.specialization, employeeServices);
         setAvailableServices(employeeServices);
       }
     };
 
-    const handleStorageChange = (event: StorageEvent) => {
+    const handleStorageChange = async (event: StorageEvent) => {
       if ((event.key === 'services' || event.key === 'customServices' || event.key === null) && selectedEmployee) {
-        const services = refreshServices();
+        const services = await refreshServices();
         const employeeServices = services[selectedEmployee.specialization]?.services || [];
         console.log('ServiceTitleFields - Servizi aggiornati via storage per:', selectedEmployee.specialization, employeeServices);
         setAvailableServices(employeeServices);
       }
     };
 
-    const handleFocus = () => {
+    const handleFocus = async () => {
       if (selectedEmployee) {
-        const services = refreshServices();
+        const services = await refreshServices();
         const employeeServices = services[selectedEmployee.specialization]?.services || [];
         console.log('ServiceTitleFields - Servizi aggiornati via focus per:', selectedEmployee.specialization, employeeServices);
         setAvailableServices(employeeServices);

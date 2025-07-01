@@ -108,6 +108,30 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_services: {
+        Row: {
+          created_at: string | null
+          id: string
+          service_categories: Json
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          service_categories: Json
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          service_categories?: Json
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       employees: {
         Row: {
           color: string
