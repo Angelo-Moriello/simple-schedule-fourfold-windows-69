@@ -2,17 +2,13 @@
 import { Appointment } from '@/types/appointment';
 import { format } from 'date-fns';
 
-// Contatore globale per garantire unicità assoluta
-let globalUniqueCounter = 0;
-
-// Genera un UUID veramente unico con timestamp e contatore globale
-const generateTrulyUniqueId = () => {
-  const timestamp = Date.now().toString(36);
-  const counter = (++globalUniqueCounter).toString(36);
-  const randomPart = Math.random().toString(36).substr(2, 9);
-  
-  // Formato UUID standard ma con parti uniche garantite
-  return `${timestamp.substr(0, 8)}-${counter.padStart(4, '0')}-4${randomPart.substr(0, 3)}-${randomPart.substr(3, 4)}-${randomPart.substr(7)}${timestamp.substr(8)}`.substr(0, 36);
+// Genera un UUID v4 standard
+const generateStandardUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 };
 
 interface MultipleEvent {
@@ -43,8 +39,8 @@ export const useAppointmentCreation = () => {
       clientId: finalClientId
     });
 
-    // 1. Crea appuntamento principale con ID unico garantito
-    const mainAppointmentId = appointmentToEdit?.id || generateTrulyUniqueId();
+    // 1. Crea appuntamento principale con ID UUID standard
+    const mainAppointmentId = appointmentToEdit?.id || generateStandardUUID();
     const mainAppointment: Appointment = {
       id: mainAppointmentId,
       employeeId: parseInt(formData.employeeId),
@@ -68,9 +64,9 @@ export const useAppointmentCreation = () => {
       id: mainAppointment.id
     });
 
-    // 2. Crea appuntamenti aggiuntivi con ID unici garantiti
+    // 2. Crea appuntamenti aggiuntivi con ID UUID standard
     const additionalAppointments: Appointment[] = multipleEvents.map((event, index) => {
-      const additionalId = generateTrulyUniqueId(); // Genera un ID completamente unico
+      const additionalId = generateStandardUUID();
       return {
         id: additionalId,
         employeeId: parseInt(event.employeeId),
@@ -93,7 +89,7 @@ export const useAppointmentCreation = () => {
       dates: additionalAppointments.map(a => ({ date: a.date, time: a.time, id: a.id }))
     });
 
-    // 3. Crea appuntamenti ricorrenti con ID unici garantiti
+    // 3. Crea appuntamenti ricorrenti con ID UUID standard
     console.log('📅 CREAZIONE RICORRENTI - INPUT DETTAGLIATO:', {
       selectedDates,
       mainDateToExclude: format(date, 'yyyy-MM-dd'),
@@ -122,10 +118,8 @@ export const useAppointmentCreation = () => {
         remaining: filteredDates.map(d => format(d, 'yyyy-MM-dd'))
       });
 
-      console.log('DEBUG - Totale appuntamenti ricorrenti da salvare (ESCLUSA data principale):', filteredDates.length);
-
       filteredDates.forEach((selectedDate, index) => {
-        const recurringId = generateTrulyUniqueId(); // Genera un ID completamente unico
+        const recurringId = generateStandardUUID();
         const recurringAppointment: Appointment = {
           id: recurringId,
           employeeId: parseInt(formData.employeeId),

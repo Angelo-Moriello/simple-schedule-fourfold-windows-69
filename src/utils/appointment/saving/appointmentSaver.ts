@@ -8,17 +8,13 @@ interface SaveResult {
   error?: string;
 }
 
-// Contatore globale per garantire unicità assoluta
-let globalCounter = 0;
-
-// Genera un UUID veramente unico con timestamp e contatore
-const generateTrulyUniqueId = () => {
-  const timestamp = Date.now().toString(36);
-  const counter = (++globalCounter).toString(36);
-  const randomPart = Math.random().toString(36).substr(2, 9);
-  
-  // Formato UUID standard ma con parti uniche
-  return `${timestamp.substr(0, 8)}-${counter.padStart(4, '0')}-4${randomPart.substr(0, 3)}-${randomPart.substr(3, 4)}-${randomPart.substr(7)}${timestamp.substr(8)}`.substr(0, 36);
+// Genera un UUID v4 standard
+const generateStandardUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 };
 
 export const saveAppointmentSafely = async (
@@ -26,28 +22,30 @@ export const saveAppointmentSafely = async (
   addAppointment: (appointment: Appointment) => void
 ): Promise<SaveResult> => {
   try {
-    // Genera un nuovo ID completamente unico per evitare conflitti
-    const appointmentWithUniqueId = {
+    // Genera un nuovo ID UUID standard se necessario
+    const appointmentWithValidId = {
       ...appointment,
-      id: generateTrulyUniqueId()
+      id: appointment.id && appointment.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) 
+        ? appointment.id 
+        : generateStandardUUID()
     };
 
-    console.log('💾 Salvando appuntamento con ID veramente unico:', {
-      client: appointmentWithUniqueId.client,
-      date: appointmentWithUniqueId.date,
-      time: appointmentWithUniqueId.time,
-      id: appointmentWithUniqueId.id,
+    console.log('💾 Salvando appuntamento con ID UUID standard:', {
+      client: appointmentWithValidId.client,
+      date: appointmentWithValidId.date,
+      time: appointmentWithValidId.time,
+      id: appointmentWithValidId.id,
       originalId: appointment.id
     });
 
     // Salva su Supabase PRIMA
-    await addAppointmentToSupabase(appointmentWithUniqueId);
-    console.log('✅ Appuntamento salvato su Supabase:', appointmentWithUniqueId.id);
+    await addAppointmentToSupabase(appointmentWithValidId);
+    console.log('✅ Appuntamento salvato su Supabase:', appointmentWithValidId.id);
     
     // Solo se il salvataggio su Supabase è riuscito, aggiorna lo stato locale
     try {
-      addAppointment(appointmentWithUniqueId);
-      console.log('✅ Stato locale aggiornato con successo:', appointmentWithUniqueId.id);
+      addAppointment(appointmentWithValidId);
+      console.log('✅ Stato locale aggiornato con successo:', appointmentWithValidId.id);
     } catch (localError) {
       console.warn('⚠️ Errore aggiornamento stato locale (ma salvato su DB):', localError);
       // Non considerare questo un errore critico dato che il salvataggio su DB è riuscito
@@ -107,9 +105,9 @@ export const saveMultipleAppointments = async (
       onProgress(savedCount, appointments.length);
     }
 
-    // Pausa più lunga tra i salvataggi per evitare conflitti di timing
+    // Pausa tra i salvataggi per evitare conflitti
     if (i < appointments.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
 
