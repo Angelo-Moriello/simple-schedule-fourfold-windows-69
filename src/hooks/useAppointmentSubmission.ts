@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
 import { format } from 'date-fns';
@@ -138,7 +139,7 @@ export const useAppointmentSubmission = ({
         toast.success('Appuntamento modificato con successo!');
         console.log('DEBUG - ✅ Appuntamento modificato');
       } else if (addAppointment) {
-        console.log('DEBUG - 💾 Inizio processo di salvataggio...');
+        console.log('DEBUG - 💾 Inizio processo di salvataggio sequenziale...');
         
         const { savedRecurringCount } = await saveAppointments(
           mainAppointment,
@@ -158,20 +159,23 @@ export const useAppointmentSubmission = ({
           mainEvents: totalMainEvents,
           recurringEvents: savedRecurringCount,
           totalRecurringExpected: recurringAppointments.length,
-          successRate: `${Math.round((savedRecurringCount / recurringAppointments.length) * 100)}%`
+          successRate: `${Math.round((savedRecurringCount / recurringAppointments.length) * 100)}%`,
+          expectedTotal: recurringAppointments.length
         });
         
-        // Show appropriate message based on success rate
-        if (savedRecurringCount === 0 && recurringAppointments.length > 0) {
-          toast.error(`Appuntamento principale creato, ma nessun appuntamento ricorrente è stato salvato. Riprova.`);
-        } else if (savedRecurringCount < recurringAppointments.length && savedRecurringCount > 0) {
-          toast.warning(`${successMessage} Attenzione: solo ${savedRecurringCount}/${recurringAppointments.length} appuntamenti ricorrenti sono stati salvati.`);
+        // Show success message if all or most appointments were saved
+        if (savedRecurringCount === recurringAppointments.length) {
+          toast.success(successMessage);
+        } else if (savedRecurringCount > 0) {
+          toast.warning(`${successMessage} Attenzione: solo ${savedRecurringCount}/${recurringAppointments.length} appuntamenti ricorrenti salvati.`);
+        } else if (recurringAppointments.length > 0) {
+          toast.error(`Appuntamento principale creato, ma nessun appuntamento ricorrente è stato salvato.`);
         } else {
           toast.success(successMessage);
         }
       }
 
-      // Close immediately on successful completion
+      // Close form after successful operation
       onClose();
       
     } catch (error) {

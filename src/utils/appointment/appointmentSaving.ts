@@ -36,36 +36,33 @@ export const saveAppointments = async (
     }
   }
 
-  // Save all recurring appointments with batch processing for mobile
+  // Save recurring appointments with sequential processing for reliability
   let savedRecurringCount = 0;
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-  const batchSize = isMobile ? 3 : 5; // Smaller batches on mobile
   
-  console.log(`DEBUG - 📱 Processamento ${recurringAppointments.length} appuntamenti ricorrenti in batch di ${batchSize}`);
+  console.log(`DEBUG - 📱 Processamento sequenziale di ${recurringAppointments.length} appuntamenti ricorrenti su mobile: ${isMobile}`);
   
-  for (let i = 0; i < recurringAppointments.length; i += batchSize) {
-    const batch = recurringAppointments.slice(i, i + batchSize);
-    console.log(`DEBUG - 📦 Processando batch ${Math.floor(i/batchSize) + 1}: ${batch.length} appuntamenti`);
+  // Process appointments one by one with delays for mobile reliability
+  for (let i = 0; i < recurringAppointments.length; i++) {
+    const recurringAppointment = recurringAppointments[i];
     
-    // Process each appointment in the batch
-    for (const recurringAppointment of batch) {
-      try {
-        console.log(`DEBUG - 💾 Salvando appuntamento per data:`, recurringAppointment.date);
-        
-        await addAppointment(recurringAppointment);
-        savedRecurringCount++;
-        
-        console.log(`DEBUG - ✅ Salvato con successo! Totale salvati: ${savedRecurringCount}/${recurringAppointments.length}`);
-        
-      } catch (error) {
-        console.error(`❌ Errore salvando appuntamento per ${recurringAppointment.date}:`, error);
-        // Continue with next appointment instead of failing completely
+    try {
+      console.log(`DEBUG - 💾 Salvando appuntamento ${i + 1}/${recurringAppointments.length} per data:`, recurringAppointment.date);
+      
+      await addAppointment(recurringAppointment);
+      savedRecurringCount++;
+      
+      console.log(`DEBUG - ✅ Salvato con successo! Progresso: ${savedRecurringCount}/${recurringAppointments.length}`);
+      
+      // Add delay between saves on mobile to prevent overwhelming the system
+      if (isMobile && i < recurringAppointments.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        console.log(`DEBUG - ⏱️ Pausa di 200ms completata prima del prossimo salvataggio`);
       }
-    }
-    
-    // Small delay only between batches on mobile to prevent overwhelming the system
-    if (isMobile && i + batchSize < recurringAppointments.length) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      
+    } catch (error) {
+      console.error(`❌ Errore salvando appuntamento ${i + 1} per ${recurringAppointment.date}:`, error);
+      // Continue with next appointment but log the failure
     }
   }
   
