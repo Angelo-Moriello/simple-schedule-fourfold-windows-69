@@ -32,39 +32,33 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
     }
 
     const dateString = format(date, 'yyyy-MM-dd');
-    
-    // Use functional update to ensure we're working with the latest state
-    onDatesChange((prevDates) => {
-      const isAlreadySelected = prevDates.some(
-        selectedDate => format(selectedDate, 'yyyy-MM-dd') === dateString
-      );
+    const isAlreadySelected = selectedDates.some(
+      selectedDate => format(selectedDate, 'yyyy-MM-dd') === dateString
+    );
 
-      if (isAlreadySelected) {
-        // Remove date if already selected
-        const newDates = prevDates.filter(
-          selectedDate => format(selectedDate, 'yyyy-MM-dd') !== dateString
-        );
-        console.log('DEBUG - Data rimossa:', dateString, 'Date rimanenti:', newDates.length);
-        return newDates;
-      } else {
-        // Add date if not selected
-        const newDates = [...prevDates, date];
-        console.log('DEBUG - Data aggiunta:', dateString, 'Totale date:', newDates.length);
-        return newDates;
-      }
-    });
-  }, [mainDate, onDatesChange]);
+    if (isAlreadySelected) {
+      // Remove date if already selected
+      const newDates = selectedDates.filter(
+        selectedDate => format(selectedDate, 'yyyy-MM-dd') !== dateString
+      );
+      console.log('DEBUG - Data rimossa:', dateString, 'Date rimanenti:', newDates.length);
+      onDatesChange(newDates);
+    } else {
+      // Add date if not selected
+      const newDates = [...selectedDates, date];
+      console.log('DEBUG - Data aggiunta:', dateString, 'Totale date:', newDates.length);
+      onDatesChange(newDates);
+    }
+  }, [selectedDates, mainDate, onDatesChange]);
 
   const removeDate = useCallback((dateToRemove: Date) => {
     const dateString = format(dateToRemove, 'yyyy-MM-dd');
-    onDatesChange((prevDates) => {
-      const newDates = prevDates.filter(
-        date => format(date, 'yyyy-MM-dd') !== dateString
-      );
-      console.log('DEBUG - Data rimossa manualmente:', dateString, 'Date rimanenti:', newDates.length);
-      return newDates;
-    });
-  }, [onDatesChange]);
+    const newDates = selectedDates.filter(
+      date => format(date, 'yyyy-MM-dd') !== dateString
+    );
+    console.log('DEBUG - Data rimossa manualmente:', dateString, 'Date rimanenti:', newDates.length);
+    onDatesChange(newDates);
+  }, [selectedDates, onDatesChange]);
 
   const clearAllDates = useCallback(() => {
     console.log('DEBUG - Cancellazione di tutte le date');
