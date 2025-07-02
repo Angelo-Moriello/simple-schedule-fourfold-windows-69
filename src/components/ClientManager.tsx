@@ -33,8 +33,8 @@ const ClientManager: React.FC<ClientManagerProps> = ({ isOpen, onClose }) => {
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[95vh] w-[95vw] sm:w-full overflow-hidden flex flex-col">
-          <DialogHeader className="flex-shrink-0">
+        <DialogContent className="max-w-[95vw] w-full sm:max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0 border-b pb-4">
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <div className="bg-blue-100 rounded-full p-2">
                 <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
@@ -43,14 +43,16 @@ const ClientManager: React.FC<ClientManagerProps> = ({ isOpen, onClose }) => {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
-            <ClientSearchBar
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              onAddClient={() => setIsClientFormOpen(true)}
-            />
+          <div className="flex-1 flex flex-col space-y-4 overflow-hidden min-h-0">
+            <div className="flex-shrink-0 px-1">
+              <ClientSearchBar
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onAddClient={() => setIsClientFormOpen(true)}
+              />
+            </div>
 
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden px-1">
               <ClientList
                 filteredClients={filteredClients}
                 isLoading={isLoading}

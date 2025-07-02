@@ -1,39 +1,28 @@
 
 import React from 'react';
-import { Employee } from '@/types/appointment';
-import EmployeeTimeFields from './fields/EmployeeTimeFields';
+import { Appointment, Employee } from '@/types/appointment';
+import ClientAutocomplete from './fields/ClientAutocomplete';
 import ServiceTitleFields from './fields/ServiceTitleFields';
+import EmployeeTimeFields from './fields/EmployeeTimeFields';
 import ClientColorFields from './fields/ClientColorFields';
 import ContactFields from './fields/ContactFields';
 import DurationNotesFields from './fields/DurationNotesFields';
 import MultipleEventsManager from './MultipleEventsManager';
-import MultiDateSelector from './fields/MultiDateSelector';
-import { Separator } from '@/components/ui/separator';
-
-interface MultipleEvent {
-  id: string;
-  employeeId: string;
-  time: string;
-  serviceType: string;
-  title: string;
-  duration: string;
-  notes: string;
-}
 
 interface AppointmentFormFieldsProps {
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: Appointment;
+  setFormData: (data: Appointment) => void;
   employees: Employee[];
   timeSlots: string[];
-  appointmentColors: any[];
+  appointmentColors: string[];
   availableServices: string[];
-  selectedEmployee: Employee | undefined;
-  appointmentToEdit: any;
-  multipleEvents?: MultipleEvent[];
-  onMultipleEventsChange?: (events: MultipleEvent[]) => void;
-  selectedDates?: Date[];
-  onSelectedDatesChange?: (dates: Date[]) => void;
-  mainDate?: Date;
+  selectedEmployee?: Employee;
+  appointmentToEdit: Appointment | null;
+  multipleEvents: Appointment[];
+  onMultipleEventsChange: (events: Appointment[]) => void;
+  selectedDates: Date[];
+  onSelectedDatesChange: (dates: Date[]) => void;
+  mainDate: Date;
 }
 
 const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
@@ -45,93 +34,91 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
   availableServices,
   selectedEmployee,
   appointmentToEdit,
-  multipleEvents = [],
+  multipleEvents,
   onMultipleEventsChange,
-  selectedDates = [],
+  selectedDates,
   onSelectedDatesChange,
-  mainDate = new Date()
+  mainDate
 }) => {
-  console.log('DEBUG - Servizi disponibili nel form:', {
-    selectedEmployee,
-    specialization: selectedEmployee?.specialization,
-    availableServices,
-    availableServicesCount: availableServices.length
-  });
-
   return (
-    <div className="space-y-6">
-      {/* Employee and Time Row */}
-      <EmployeeTimeFields
-        formData={formData}
-        setFormData={setFormData}
-        employees={employees}
-        timeSlots={timeSlots}
-      />
+    <div className="space-y-4 sm:space-y-6">
+      {/* Client Selection - Full width on mobile */}
+      <div className="w-full">
+        <ClientAutocomplete
+          value={formData.client}
+          onChange={(value) => setFormData({ ...formData, client: value })}
+          onClientIdChange={(clientId) => setFormData({ ...formData, clientId })}
+          onEmailChange={(email) => setFormData({ ...formData, email })}
+          onPhoneChange={(phone) => setFormData({ ...formData, phone })}
+        />
+      </div>
 
-      <Separator className="my-4" />
+      {/* Service and Title - Stack on mobile, side by side on larger screens */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <ServiceTitleFields
+          serviceType={formData.serviceType}
+          title={formData.title}
+          availableServices={availableServices}
+          selectedEmployee={selectedEmployee}
+          onServiceTypeChange={(serviceType) => setFormData({ ...formData, serviceType })}
+          onTitleChange={(title) => setFormData({ ...formData, title })}
+        />
+      </div>
 
-      {/* Service and Title Row */}
-      <ServiceTitleFields
-        formData={formData}
-        setFormData={setFormData}
-        availableServices={availableServices}
-        selectedEmployee={selectedEmployee}
-      />
+      {/* Employee and Time - Stack on mobile, side by side on larger screens */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <EmployeeTimeFields
+          employeeId={formData.employeeId}
+          time={formData.time}
+          employees={employees}
+          timeSlots={timeSlots}
+          onEmployeeIdChange={(employeeId) => setFormData({ ...formData, employeeId })}
+          onTimeChange={(time) => setFormData({ ...formData, time })}
+        />
+      </div>
 
-      <Separator className="my-4" />
+      {/* Color Selection - Full width */}
+      <div className="w-full">
+        <ClientColorFields
+          color={formData.color}
+          colors={appointmentColors}
+          onColorChange={(color) => setFormData({ ...formData, color })}
+        />
+      </div>
 
-      {/* Client and Color Row */}
-      <ClientColorFields
-        formData={formData}
-        setFormData={setFormData}
-        appointmentColors={appointmentColors}
-      />
+      {/* Contact Fields - Stack on mobile, side by side on larger screens */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <ContactFields
+          email={formData.email}
+          phone={formData.phone}
+          onEmailChange={(email) => setFormData({ ...formData, email })}
+          onPhoneChange={(phone) => setFormData({ ...formData, phone })}
+        />
+      </div>
 
-      <Separator className="my-4" />
+      {/* Duration and Notes - Stack on mobile, side by side on larger screens */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <DurationNotesFields
+          duration={formData.duration}
+          notes={formData.notes}
+          onDurationChange={(duration) => setFormData({ ...formData, duration })}
+          onNotesChange={(notes) => setFormData({ ...formData, notes })}
+        />
+      </div>
 
-      {/* Contact Information Row */}
-      <ContactFields
-        formData={formData}
-        setFormData={setFormData}
-        appointmentToEdit={appointmentToEdit}
-      />
-
-      <Separator className="my-4" />
-
-      {/* Duration and Notes Row */}
-      <DurationNotesFields
-        formData={formData}
-        setFormData={setFormData}
-      />
-
-      {/* Multi-Date Selector - Only show for new appointments */}
-      {!appointmentToEdit && onSelectedDatesChange && (
-        <>
-          <Separator className="my-6" />
-          <MultiDateSelector
-            selectedDates={selectedDates}
-            onDatesChange={onSelectedDatesChange}
-            mainDate={mainDate}
-          />
-        </>
-      )}
-
-      {/* Multiple Events Section - Only show for new appointments */}
-      {!appointmentToEdit && onMultipleEventsChange && (
-        <>
-          <Separator className="my-6" />
-          <MultipleEventsManager
-            events={multipleEvents}
-            onEventsChange={onMultipleEventsChange}
-            employees={employees}
-            timeSlots={timeSlots}
-            availableServices={availableServices}
-            selectedEmployee={selectedEmployee}
-            mainEmployeeId={formData.employeeId}
-            mainTime={formData.time}
-          />
-        </>
-      )}
+      {/* Multiple Events Manager - Full width */}
+      <div className="w-full">
+        <MultipleEventsManager
+          mainDate={mainDate}
+          mainAppointment={formData}
+          multipleEvents={multipleEvents}
+          onMultipleEventsChange={onMultipleEventsChange}
+          selectedDates={selectedDates}
+          onSelectedDatesChange={onSelectedDatesChange}
+          employees={employees}
+          appointmentToEdit={appointmentToEdit}
+        />
+      </div>
     </div>
   );
 };

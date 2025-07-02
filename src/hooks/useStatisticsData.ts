@@ -1,8 +1,9 @@
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Appointment, Employee } from '@/types/appointment';
+import { getStoredServices } from '@/utils/serviceStorage';
 
 export const useStatisticsData = (
   appointments: Appointment[],
@@ -11,6 +12,29 @@ export const useStatisticsData = (
   selectedEmployee: 'all' | number,
   specialization: 'all' | 'Parrucchiere' | 'Estetista'
 ) => {
+  const [availableServices, setAvailableServices] = useState<string[]>([]);
+
+  // Carica i servizi disponibili dal database
+  useEffect(() => {
+    const loadAvailableServices = async () => {
+      try {
+        const serviceCategories = await getStoredServices();
+        const allServices: string[] = [];
+        
+        Object.values(serviceCategories).forEach(category => {
+          allServices.push(...category.services);
+        });
+        
+        setAvailableServices(allServices);
+        console.log('Servizi disponibili caricati per statistiche:', allServices);
+      } catch (error) {
+        console.error('Errore nel caricamento servizi per statistiche:', error);
+      }
+    };
+
+    loadAvailableServices();
+  }, []);
+
   const getDateInterval = (range: 'day' | 'week' | 'month' | 'year') => {
     const today = new Date();
     
@@ -67,14 +91,20 @@ export const useStatisticsData = (
 
   const serviceTypeStats = useMemo(() => {
     console.log('Computing service type stats from filtered appointments:', filteredAppointments.length);
+    console.log('Available services from DB:', availableServices);
     
     const serviceTypes: { [key: string]: number } = {};
+    
     filteredAppointments.forEach(appointment => {
       const serviceType = appointment.serviceType || 'Servizio non specificato';
-      serviceTypes[serviceType] = (serviceTypes[serviceType] || 0) + 1;
+      
+      // Solo se il servizio esiste nei servizi disponibili o è "Servizio non specificato"
+      if (availableServices.includes(serviceType) || serviceType === 'Servizio non specificato') {
+        serviceTypes[serviceType] = (serviceTypes[serviceType] || 0) + 1;
+      }
     });
 
-    console.log('Service types found:', serviceTypes);
+    console.log('Service types found (filtered by available services):', serviceTypes);
 
     const stats = Object.entries(serviceTypes).map(([name, value]) => ({
       name,
@@ -82,9 +112,9 @@ export const useStatisticsData = (
       percentage: filteredAppointments.length > 0 ? parseFloat(((value / filteredAppointments.length) * 100).toFixed(1)) : 0
     }));
 
-    console.log('Service type stats:', stats);
+    console.log('Service type stats (final):', stats);
     return stats;
-  }, [filteredAppointments]);
+  }, [filteredAppointments, availableServices]);
 
   const employeeStats = useMemo(() => {
     const employeeData: { [key: number]: number } = {};
