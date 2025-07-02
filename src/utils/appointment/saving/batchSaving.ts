@@ -11,7 +11,6 @@ export const saveAppointmentsBatch = async (
   batchType: 'additional' | 'recurring'
 ): Promise<{ savedCount: number; failedSaves: string[] }> => {
   const isMobile = isMobileDevice();
-  const delays = getMobileDelays();
   const failedSaves: string[] = [];
   let savedCount = 0;
 
@@ -19,13 +18,12 @@ export const saveAppointmentsBatch = async (
     return { savedCount: 0, failedSaves: [] };
   }
 
-  console.log(`📋 Salvataggio ${appointments.length} appuntamenti ${batchType}...`);
+  console.log(`📋 INIZIO BATCH ${batchType.toUpperCase()} - ${appointments.length} appuntamenti - MOBILE: ${isMobile}`);
 
-  // Progress toast per operazioni lunghe
-  if (appointments.length > 3 && batchType === 'recurring') {
-    toast.loading(`Salvando ${appointments.length} appuntamenti ricorrenti...`, {
-      id: 'recurring-save-progress'
-    });
+  // Progress toast SOLO per operazioni lunghe
+  let progressToastId: string | number | undefined;
+  if (appointments.length > 5 && batchType === 'recurring') {
+    progressToastId = toast.loading(`Salvando ${appointments.length} appuntamenti ricorrenti...`);
   }
 
   // SALVATAGGIO SEQUENZIALE ULTRA-ROBUSTO
@@ -36,7 +34,8 @@ export const saveAppointmentsBatch = async (
       date: appointment.date,
       time: appointment.time,
       client: appointment.client,
-      progress: `${i + 1}/${appointments.length}`
+      progress: `${i + 1}/${appointments.length}`,
+      isMobile
     });
     
     try {
@@ -54,6 +53,7 @@ export const saveAppointmentsBatch = async (
       } else {
         console.error(`❌ [${i + 1}/${appointments.length}] ${batchType.toUpperCase()} FALLITO:`, result.error);
         failedSaves.push(`${batchType} ${i + 1} (${appointment.date}): ${result.error}`);
+        // CONTINUA COMUNQUE - non fermare il processo
       }
     } catch (criticalError) {
       const errorMsg = criticalError instanceof Error ? criticalError.message : 'Errore critico sconosciuto';
@@ -62,27 +62,36 @@ export const saveAppointmentsBatch = async (
         appointment: appointment.date
       });
       failedSaves.push(`${batchType} ${i + 1} (${appointment.date}): ${errorMsg}`);
+      // CONTINUA COMUNQUE - non fermare il processo
     }
     
     // Aggiorna progress toast periodicamente
-    if (appointments.length > 3 && batchType === 'recurring' && (i + 1) % 2 === 0) {
+    if (progressToastId && (i + 1) % 3 === 0) {
       toast.loading(`Salvati ${savedCount}/${appointments.length} appuntamenti...`, {
-        id: 'recurring-save-progress'
+        id: progressToastId
       });
     }
     
     // PAUSA FONDAMENTALE TRA SALVATAGGI - MAI SALTARE
     if (i < appointments.length - 1) {
-      const delay = batchType === 'recurring' ? delays.recurringDelay : delays.additionalDelay;
+      // Pausa aumentata significativamente per mobile
+      const delay = isMobile ? 2000 : 800; // Raddoppiato per mobile
       console.log(`⏱️ [${i + 1}/${appointments.length}] PAUSA OBBLIGATORIA di ${delay}ms prima di continuare...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
 
   // Chiudi progress toast
-  if (appointments.length > 3 && batchType === 'recurring') {
-    toast.dismiss('recurring-save-progress');
+  if (progressToastId) {
+    toast.dismiss(progressToastId);
   }
+
+  console.log(`🏁 BATCH ${batchType.toUpperCase()} COMPLETATO:`, {
+    salvati: savedCount,
+    totale: appointments.length,
+    falliti: failedSaves.length,
+    successRate: `${Math.round((savedCount / appointments.length) * 100)}%`
+  });
 
   return { savedCount, failedSaves };
 };

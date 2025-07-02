@@ -15,7 +15,7 @@ export const saveAppointmentWithRetry = async (
   existingAppointments: Appointment[],
   index: number,
   total: number,
-  maxRetries = 5
+  maxRetries = 3 // Ridotto per evitare loop infiniti
 ): Promise<SaveResult> => {
   const isMobile = isMobileDevice();
   const delays = getMobileDelays();
@@ -39,14 +39,15 @@ export const saveAppointmentWithRetry = async (
         }
       }
       
-      // SALVATAGGIO DIRETTO - SEMPLICE E ROBUSTO
-      console.log(`💾 [${index + 1}/${total}] INIZIO SALVATAGGIO DIRETTO`);
+      // SALVATAGGIO ULTRA-SEMPLIFICATO
+      console.log(`💾 [${index + 1}/${total}] SALVATAGGIO DIRETTO`);
       
-      // Chiamata diretta senza try-catch interno per non nascondere errori
+      // Chiamata diretta al salvataggio
       addAppointment(appointment);
       
-      // Pausa breve per assicurarsi che il salvataggio sia completato
-      await new Promise(resolve => setTimeout(resolve, delays.saveDelay));
+      // Pausa OBBLIGATORIA per mobile
+      const saveDelay = isMobile ? 800 : 300; // Aumentato significativamente per mobile
+      await new Promise(resolve => setTimeout(resolve, saveDelay));
       
       console.log(`✅ [${index + 1}/${total}] SALVATO CON SUCCESSO al tentativo ${attempt}`);
       return { success: true };
@@ -65,14 +66,16 @@ export const saveAppointmentWithRetry = async (
       
       if (attempt === maxRetries) {
         console.error(`❌ [${index + 1}/${total}] FALLITO DEFINITIVAMENTE dopo ${maxRetries} tentativi`);
+        // NON BLOCCARE IL PROCESSO - continua con il prossimo
         return { success: false, error: errorMsg };
       }
       
-      // Pausa progressiva tra retry
-      const retryDelay = delays.retryDelay(attempt);
+      // Pausa progressiva tra retry (aumentata per mobile)
+      const retryDelay = isMobile ? attempt * 1500 : attempt * 700;
       console.log(`⏱️ [${index + 1}/${total}] Pausa retry di ${retryDelay}ms...`);
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
   }
+  
   return { success: false, error: 'Fallito dopo tutti i tentativi' };
 };
