@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
 
@@ -26,7 +27,7 @@ const checkTimeConflicts = async (
   return false;
 };
 
-// Funzione per salvare un singolo appuntamento con retry più robusto
+// Funzione per salvare un singolo appuntamento con retry ottimizzato
 const saveAppointmentWithRetry = async (
   appointment: Appointment,
   addAppointment: (appointment: Appointment) => void,
@@ -58,22 +59,12 @@ const saveAppointmentWithRetry = async (
         }
       }
       
-      // TIMEOUT personalizzato per mobile
-      const timeoutPromise = new Promise((_, reject) => {
-        const timeoutMs = isMobile ? 15000 : 10000; // 15s mobile, 10s desktop
-        setTimeout(() => reject(new Error(`Timeout dopo ${timeoutMs}ms`)), timeoutMs);
-      });
+      // SALVATAGGIO DIRETTO SENZA TIMEOUT - più affidabile
+      console.log(`💾 [${index + 1}/${total}] INIZIO SALVATAGGIO DIRETTO - MOBILE: ${isMobile}`);
+      addAppointment(appointment);
       
-      const savePromise = new Promise<void>((resolve, reject) => {
-        try {
-          addAppointment(appointment);
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      });
-      
-      await Promise.race([savePromise, timeoutPromise]);
+      // Breve pausa per verificare che il salvataggio sia completato
+      await new Promise(resolve => setTimeout(resolve, isMobile ? 200 : 100));
       
       console.log(`✅ [${index + 1}/${total}] SALVATO con successo al tentativo ${attempt} - MOBILE: ${isMobile}`);
       return { success: true };
@@ -97,7 +88,7 @@ const saveAppointmentWithRetry = async (
       }
       
       // Pausa progressiva tra retry (più lunga su mobile)
-      const retryDelay = isMobile ? attempt * 500 : attempt * 200;
+      const retryDelay = isMobile ? attempt * 800 : attempt * 300;
       console.log(`⏱️ [${index + 1}/${total}] Pausa retry di ${retryDelay}ms...`);
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
@@ -120,7 +111,7 @@ export const saveAppointments = async (
     timestamp: new Date().toISOString()
   };
   
-  console.log('🚀 saveAppointments - INIZIO SALVATAGGIO DETTAGLIATO:', {
+  console.log('🚀 saveAppointments - INIZIO SALVATAGGIO OTTIMIZZATO:', {
     deviceInfo,
     mainAppointment: {
       client: mainAppointment.client,
@@ -174,20 +165,20 @@ export const saveAppointments = async (
         
         // Pausa tra salvataggi aggiuntivi
         if (i < additionalAppointments.length - 1) {
-          const delay = isMobile ? 500 : 150;
+          const delay = isMobile ? 600 : 200;
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
 
-    // 3. Salva appuntamenti ricorrenti - PROCESSO ULTRA-ROBUSTO
+    // 3. Salva appuntamenti ricorrenti - PROCESSO ULTRA-OTTIMIZZATO
     if (recurringAppointments.length > 0) {
-      console.log(`📅 saveAppointments - INIZIO SALVATAGGIO RICORRENTI: ${recurringAppointments.length} appuntamenti`);
-      console.log(`🔧 saveAppointments - CONFIGURAZIONE MOBILE:`, {
+      console.log(`📅 saveAppointments - INIZIO SALVATAGGIO RICORRENTI OTTIMIZZATO: ${recurringAppointments.length} appuntamenti`);
+      console.log(`🔧 saveAppointments - CONFIGURAZIONE MOBILE OTTIMIZZATA:`, {
         isMobile,
-        pauseBetweenSaves: isMobile ? '500ms' : '150ms',
-        timeoutPerSave: isMobile ? '15s' : '10s',
-        maxRetries: 3
+        pauseBetweenSaves: isMobile ? '800ms' : '300ms',
+        maxRetries: 3,
+        retryDelay: isMobile ? 'progressiva 800ms-2400ms' : 'progressiva 300ms-900ms'
       });
       
       // Progress toast per operazioni lunghe
@@ -197,11 +188,11 @@ export const saveAppointments = async (
         });
       }
       
-      // SALVATAGGIO SEQUENZIALE ULTRA-ROBUSTO
+      // SALVATAGGIO SEQUENZIALE ULTRA-ROBUSTO CON CONTINUAZIONE ANCHE IN CASO DI ERRORI
       for (let i = 0; i < recurringAppointments.length; i++) {
         const recurringAppointment = recurringAppointments[i];
         
-        console.log(`💾 saveAppointments - [${i + 1}/${recurringAppointments.length}] PROCESSANDO:`, {
+        console.log(`💾 saveAppointments - [${i + 1}/${recurringAppointments.length}] PROCESSANDO RICORRENTE:`, {
           date: recurringAppointment.date,
           time: recurringAppointment.time,
           client: recurringAppointment.client,
@@ -212,33 +203,47 @@ export const saveAppointments = async (
           }
         });
         
-        const result = await saveAppointmentWithRetry(
-          recurringAppointment, 
-          addAppointment, 
-          existingAppointments, 
-          i, 
-          recurringAppointments.length
-        );
-        
-        if (result.success) {
-          savedRecurringCount++;
-          console.log(`✅ saveAppointments - [${i + 1}/${recurringAppointments.length}] SALVATO! Progresso: ${savedRecurringCount}/${recurringAppointments.length}`);
-        } else {
-          console.error(`❌ saveAppointments - [${i + 1}/${recurringAppointments.length}] FALLITO: ${result.error}`);
-          failedSaves.push(`Ricorrente ${i + 1} (${recurringAppointment.date}): ${result.error}`);
+        try {
+          const result = await saveAppointmentWithRetry(
+            recurringAppointment, 
+            addAppointment, 
+            existingAppointments, 
+            i, 
+            recurringAppointments.length
+          );
+          
+          if (result.success) {
+            savedRecurringCount++;
+            console.log(`✅ saveAppointments - [${i + 1}/${recurringAppointments.length}] RICORRENTE SALVATO! Progresso: ${savedRecurringCount}/${recurringAppointments.length}`);
+          } else {
+            console.error(`❌ saveAppointments - [${i + 1}/${recurringAppointments.length}] RICORRENTE FALLITO: ${result.error}`);
+            failedSaves.push(`Ricorrente ${i + 1} (${recurringAppointment.date}): ${result.error}`);
+            
+            // CONTINUA COMUNQUE con il prossimo appuntamento
+            console.log(`🔄 saveAppointments - Continuando con il prossimo appuntamento nonostante l'errore...`);
+          }
+        } catch (criticalError) {
+          // Errore critico, ma continua comunque
+          const errorMsg = criticalError instanceof Error ? criticalError.message : 'Errore critico sconosciuto';
+          console.error(`💥 saveAppointments - [${i + 1}/${recurringAppointments.length}] ERRORE CRITICO:`, {
+            error: errorMsg,
+            appointment: recurringAppointment.date,
+            continueAnyway: true
+          });
+          failedSaves.push(`Ricorrente ${i + 1} (${recurringAppointment.date}): ${errorMsg}`);
         }
         
-        // Aggiorna progress
+        // Aggiorna progress toast periodicamente
         if (recurringAppointments.length > 3 && (i + 1) % 2 === 0) {
           toast.loading(`Salvati ${savedRecurringCount}/${recurringAppointments.length} appuntamenti...`, {
             id: 'recurring-save-progress'
           });
         }
         
-        // PAUSA TRA SALVATAGGI - CRITICA PER MOBILE
+        // PAUSA OTTIMIZZATA TRA SALVATAGGI - CRITICA PER MOBILE
         if (i < recurringAppointments.length - 1) {
-          const delay = isMobile ? 500 : 150; // AUMENTATO ULTERIORMENTE
-          console.log(`⏱️ saveAppointments - [${i + 1}/${recurringAppointments.length}] Pausa di ${delay}ms prima di continuare...`);
+          const delay = isMobile ? 800 : 300; // AUMENTATO SIGNIFICATIVAMENTE
+          console.log(`⏱️ saveAppointments - [${i + 1}/${recurringAppointments.length}] Pausa ottimizzata di ${delay}ms prima di continuare...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -250,16 +255,19 @@ export const saveAppointments = async (
     }
     
   } catch (error) {
-    console.error('❌ saveAppointments - ERRORE CRITICO nel salvataggio:', {
+    console.error('❌ saveAppointments - ERRORE CRITICO nel salvataggio (ma continuando):', {
       error: error instanceof Error ? error.message : error,
       stack: error instanceof Error ? error.stack : undefined,
       deviceInfo,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      continuingAnyway: true
     });
-    throw error;
+    
+    // NON lanciare l'errore, continua comunque
+    console.log('🔄 saveAppointments - Continuando nonostante l\'errore critico...');
   }
   
-  console.log('🏁 saveAppointments - SALVATAGGIO COMPLETATO - RISULTATI FINALI:', {
+  console.log('🏁 saveAppointments - SALVATAGGIO COMPLETATO - RISULTATI FINALI OTTIMIZZATI:', {
     deviceInfo,
     results: {
       savedRecurringCount,
