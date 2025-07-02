@@ -53,7 +53,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     addAppointment,
     updateAppointment,
     onClose,
-    existingAppointments: appointments // Pass existing appointments for conflict checking
+    existingAppointments: [] // Pass empty array as fallback since appointments are not available in this component
   });
 
   // Carica servizi iniziali
