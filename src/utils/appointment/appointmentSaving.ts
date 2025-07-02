@@ -1,9 +1,7 @@
 
 import { Appointment } from '@/types/appointment';
-import { saveAppointmentWithRetry } from './saving/retryMechanism';
-import { saveAppointmentsBatch } from './saving/batchSaving';
-import { generateSuccessMessage } from './saving/successMessage';
-import { getMobileDelays } from './saving/mobileDetection';
+import { saveAppointmentSafely, saveMultipleAppointments } from './saving/appointmentSaver';
+import { toast } from 'sonner';
 
 export const saveAppointments = async (
   mainAppointment: Appointment,
@@ -12,90 +10,105 @@ export const saveAppointments = async (
   addAppointment: (appointment: Appointment) => void,
   existingAppointments: Appointment[] = []
 ) => {
-  const delays = getMobileDelays();
-  
-  console.log('🚀 INIZIO PROCESSO SALVATAGGIO MOBILE-OTTIMIZZATO:', {
-    delays: {
-      saveDelay: `${delays.saveDelay}ms`,
-      additionalDelay: `${delays.additionalDelay}ms`,
-      recurringDelay: `${delays.recurringDelay}ms`
-    },
+  console.log('🚀 INIZIO PROCESSO SALVATAGGIO APPUNTAMENTI:', {
     mainAppointment: `${mainAppointment.client} - ${mainAppointment.date}`,
     additionalCount: additionalAppointments.length,
     recurringCount: recurringAppointments.length,
-    totalToSave: 1 + additionalAppointments.length + recurringAppointments.length,
-    isMobile: /Mobi|Android/i.test(navigator.userAgent)
+    totalToSave: 1 + additionalAppointments.length + recurringAppointments.length
   });
 
   const failedSaves: string[] = [];
 
   // 1. Salva appuntamento principale
-  console.log('📋 1. SALVANDO APPUNTAMENTO PRINCIPALE...');
-  try {
-    const mainResult = await saveAppointmentWithRetry(mainAppointment, addAppointment, existingAppointments, 0, 1);
-    if (!mainResult.success) {
-      failedSaves.push(`Principale: ${mainResult.error}`);
-    } else {
-      console.log('✅ Appuntamento principale salvato con successo');
-    }
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Errore sconosciuto';
-    console.error('❌ Errore nel salvare appuntamento principale:', errorMsg);
-    failedSaves.push(`Principale: ${errorMsg}`);
-  }
-
-  // Pausa tra le fasi principali
-  if (additionalAppointments.length > 0 || recurringAppointments.length > 0) {
-    console.log(`⏳ PAUSA TRA FASI PRINCIPALI: ${delays.saveDelay}ms`);
-    await new Promise(resolve => setTimeout(resolve, delays.saveDelay));
+  console.log('📋 1. Salvando appuntamento principale...');
+  const mainResult = await saveAppointmentSafely(mainAppointment, addAppointment);
+  
+  if (!mainResult.success) {
+    failedSaves.push(`Principale: ${mainResult.error}`);
+    console.error('❌ Errore nel salvare appuntamento principale:', mainResult.error);
+  } else {
+    console.log('✅ Appuntamento principale salvato con successo');
   }
 
   // 2. Salva appuntamenti aggiuntivi
+  let additionalSavedCount = 0;
   if (additionalAppointments.length > 0) {
-    console.log('📋 2. INIZIANDO BATCH APPUNTAMENTI AGGIUNTIVI...');
-    const additionalResult = await saveAppointmentsBatch(
+    console.log('📋 2. Salvando appuntamenti aggiuntivi...');
+    
+    const additionalResult = await saveMultipleAppointments(
       additionalAppointments,
       addAppointment,
-      existingAppointments,
-      'additional'
+      (saved, total) => {
+        if (total > 1) {
+          toast.loading(`Salvando eventi aggiuntivi: ${saved}/${total}...`);
+        }
+      }
     );
+    
+    additionalSavedCount = additionalResult.savedCount;
     failedSaves.push(...additionalResult.failedSaves);
     
-    // Pausa prima dei ricorrenti
-    if (recurringAppointments.length > 0) {
-      console.log(`⏳ PAUSA PRIMA RICORRENTI: ${delays.recurringDelay}ms`);
-      await new Promise(resolve => setTimeout(resolve, delays.recurringDelay));
-    }
+    console.log('✅ Appuntamenti aggiuntivi completati:', {
+      salvati: additionalResult.savedCount,
+      richiesti: additionalAppointments.length
+    });
   }
 
-  // 3. Salva appuntamenti ricorrenti - FASE PIÙ CRITICA
+  // 3. Salva appuntamenti ricorrenti
+  let savedRecurringCount = 0;
   if (recurringAppointments.length > 0) {
-    console.log('📋 3. INIZIANDO BATCH APPUNTAMENTI RICORRENTI - FASE CRITICA:', {
-      count: recurringAppointments.length,
-      recurringDelay: delays.recurringDelay,
-      tempoStimato: `${(recurringAppointments.length * delays.recurringDelay) / 1000}s`
-    });
+    console.log('📋 3. Salvando appuntamenti ricorrenti...');
     
-    const recurringResult = await saveAppointmentsBatch(
+    const recurringResult = await saveMultipleAppointments(
       recurringAppointments,
       addAppointment,
-      existingAppointments,
-      'recurring'
+      (saved, total) => {
+        if (total > 1) {
+          toast.loading(`Salvando ricorrenti: ${saved}/${total}...`);
+        }
+      }
     );
+    
+    savedRecurringCount = recurringResult.savedCount;
     failedSaves.push(...recurringResult.failedSaves);
     
-    console.log('🏁 RISULTATO FINALE RICORRENTI:', {
+    console.log('✅ Appuntamenti ricorrenti completati:', {
       salvati: recurringResult.savedCount,
-      richiesti: recurringAppointments.length,
-      falliti: recurringResult.failedSaves.length,
-      successRate: `${Math.round((recurringResult.savedCount / recurringAppointments.length) * 100)}%`
+      richiesti: recurringAppointments.length
     });
-    
-    return { savedRecurringCount: recurringResult.savedCount, failedSaves };
   }
-  
-  return { savedRecurringCount: 0, failedSaves };
+
+  console.log('🏁 PROCESSO SALVATAGGIO COMPLETATO:', {
+    mainAppointment: mainResult.success ? 'Salvato' : 'Fallito',
+    additionalEvents: `${additionalSavedCount}/${additionalAppointments.length}`,
+    recurringEvents: `${savedRecurringCount}/${recurringAppointments.length}`,
+    totalFailed: failedSaves.length
+  });
+
+  return { savedRecurringCount, failedSaves };
 };
 
-// Re-export for backward compatibility
-export { generateSuccessMessage } from './saving/successMessage';
+export const generateSuccessMessage = (
+  totalMainEvents: number,
+  savedRecurringCount: number,
+  totalRecurringEvents: number,
+  failedSaves: string[]
+): string => {
+  const mainSuccess = totalMainEvents > 1 
+    ? `${totalMainEvents} appuntamenti principali creati`
+    : 'Appuntamento creato';
+
+  if (totalRecurringEvents === 0) {
+    return `${mainSuccess} con successo!`;
+  }
+
+  if (savedRecurringCount === totalRecurringEvents && failedSaves.length === 0) {
+    return `${mainSuccess} con ${savedRecurringCount} appuntamenti ricorrenti!`;
+  }
+  
+  if (savedRecurringCount > 0) {
+    return `${mainSuccess}. ${savedRecurringCount}/${totalRecurringEvents} appuntamenti ricorrenti salvati.`;
+  }
+  
+  return `${mainSuccess}, ma i ricorrenti non sono stati salvati.`;
+};
