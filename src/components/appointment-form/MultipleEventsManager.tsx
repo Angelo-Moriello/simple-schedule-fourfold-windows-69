@@ -14,7 +14,7 @@ interface MultipleEventsManagerProps {
   onEventsChange: (events: Appointment[]) => void;
   employees: Employee[];
   timeSlots: string[];
-  availableServices: string[];
+  serviceCategories: { [key: string]: { name: string; services: string[] } };
   selectedEmployee: Employee | undefined;
   mainEmployeeId: string;
   mainTime: string;
@@ -26,7 +26,7 @@ const MultipleEventsManager: React.FC<MultipleEventsManagerProps> = ({
   onEventsChange,
   employees,
   timeSlots,
-  availableServices,
+  serviceCategories,
   selectedEmployee,
   mainEmployeeId,
   mainTime,
@@ -110,7 +110,10 @@ const MultipleEventsManager: React.FC<MultipleEventsManagerProps> = ({
 
       {events.map((event, index) => {
         const eventEmployee = employees.find(emp => emp.id === event.employeeId);
-        const eventAvailableServices = eventEmployee && availableServices.length > 0 ? availableServices : [];
+        // Calcola dinamicamente i servizi disponibili per questo specifico evento
+        const eventAvailableServices = eventEmployee && serviceCategories[eventEmployee.specialization] 
+          ? serviceCategories[eventEmployee.specialization].services
+          : [];
         const hasTimeConflict = event.time && isTimeConflict(event.time, event.duration, event.id);
 
         return (

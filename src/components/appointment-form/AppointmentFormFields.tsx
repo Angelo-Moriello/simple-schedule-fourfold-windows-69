@@ -24,6 +24,7 @@ interface AppointmentFormFieldsProps {
   selectedDates: Date[];
   onSelectedDatesChange: (dates: Date[]) => void;
   mainDate: Date;
+  serviceCategories: { [key: string]: { name: string; services: string[] } };
 }
 
 const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
@@ -39,7 +40,8 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
   onMultipleEventsChange,
   selectedDates,
   onSelectedDatesChange,
-  mainDate
+  mainDate,
+  serviceCategories
 }) => {
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -104,7 +106,7 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
           onEventsChange={onMultipleEventsChange}
           employees={employees}
           timeSlots={timeSlots}
-          availableServices={availableServices}
+          serviceCategories={serviceCategories}
           selectedEmployee={selectedEmployee}
           mainEmployeeId={formData.employeeId.toString()}
           mainTime={formData.time}

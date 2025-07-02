@@ -172,6 +172,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         selectedDates={selectedDates}
         onSelectedDatesChange={setSelectedDates}
         mainDate={date}
+        serviceCategories={serviceCategories}
       />
 
       <AppointmentFormActions
