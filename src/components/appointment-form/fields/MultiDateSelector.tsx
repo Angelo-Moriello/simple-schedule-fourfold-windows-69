@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -23,19 +23,28 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
 }) => {
   const [showCalendar, setShowCalendar] = useState(false);
 
+  // Sincronizza le date selezionate con i log di debug
+  useEffect(() => {
+    console.log('DEBUG - MultiDateSelector - Date correnti:', {
+      selectedDates: selectedDates.map(d => format(d, 'yyyy-MM-dd')),
+      mainDate: format(mainDate, 'yyyy-MM-dd'),
+      totalSelected: selectedDates.length
+    });
+  }, [selectedDates, mainDate]);
+
   const handleDateSelect = useCallback((date: Date | undefined) => {
     if (!date) return;
 
-    // Don't allow selecting the main appointment date
     const mainDateString = format(mainDate, 'yyyy-MM-dd');
     const selectedDateString = format(date, 'yyyy-MM-dd');
     
-    console.log('DEBUG - 📅 Selezione data:', {
+    console.log('DEBUG - 📅 Tentativo selezione data:', {
       selectedDate: selectedDateString,
       mainDate: mainDateString,
-      currentSelectedDates: selectedDates.map(d => format(d, 'yyyy-MM-dd'))
+      isMainDate: selectedDateString === mainDateString
     });
 
+    // Non permettere di selezionare la data principale
     if (selectedDateString === mainDateString) {
       console.log('DEBUG - ⚠️ Data principale non selezionabile');
       return;
@@ -48,18 +57,18 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
     let newDates: Date[];
     
     if (isAlreadySelected) {
-      // Remove date if already selected
+      // Rimuovi la data se già selezionata
       newDates = selectedDates.filter(
         selectedDate => format(selectedDate, 'yyyy-MM-dd') !== selectedDateString
       );
-      console.log('DEBUG - ❌ Data rimossa:', selectedDateString, 'Date rimanenti:', newDates.length);
+      console.log('DEBUG - ❌ Data rimossa:', selectedDateString);
     } else {
-      // Add date if not selected
+      // Aggiungi la data se non selezionata
       newDates = [...selectedDates, new Date(date.getTime())];
-      console.log('DEBUG - ✅ Data aggiunta:', selectedDateString, 'Totale date:', newDates.length);
+      console.log('DEBUG - ✅ Data aggiunta:', selectedDateString);
     }
     
-    console.log('DEBUG - 🔄 Aggiornando date selezionate:', newDates.map(d => format(d, 'yyyy-MM-dd')));
+    console.log('DEBUG - 🔄 Chiamata onDatesChange con:', newDates.map(d => format(d, 'yyyy-MM-dd')));
     onDatesChange(newDates);
     
   }, [selectedDates, mainDate, onDatesChange]);
@@ -71,7 +80,7 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
       date => format(date, 'yyyy-MM-dd') !== dateString
     );
     
-    console.log('DEBUG - 🗑️ Data rimossa manualmente:', dateString, 'Date rimanenti:', newDates.length);
+    console.log('DEBUG - 🗑️ Data rimossa manualmente:', dateString);
     onDatesChange(newDates);
   }, [selectedDates, onDatesChange]);
 
@@ -107,7 +116,7 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
             className="w-full justify-start text-left font-normal"
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            <span>Seleziona date aggiuntive</span>
+            <span>Seleziona date aggiuntive ({selectedDates.length} selezionate)</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
@@ -119,7 +128,6 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
             className={cn("p-3")}
             locale={it}
             disabled={(date) => {
-              // Disable past dates and the main appointment date
               const today = new Date();
               today.setHours(0, 0, 0, 0);
               return date < today || format(date, 'yyyy-MM-dd') === format(mainDate, 'yyyy-MM-dd');
