@@ -19,30 +19,28 @@ export const saveAppointmentsBatch = async (
     return { savedCount: 0, failedSaves: [] };
   }
 
+  // Usa i delays corretti per ogni tipo di batch
   const batchDelay = batchType === 'recurring' ? delays.recurringDelay : delays.additionalDelay;
   
-  console.log(`📋 INIZIO BATCH ${batchType.toUpperCase()}:`, {
+  console.log(`📋 INIZIO BATCH ${batchType.toUpperCase()} - TIMING REALE:`, {
     appointmentsCount: appointments.length,
     batchDelay: batchDelay,
     saveDelay: delays.saveDelay,
-    connectionType: delays.connectionType
+    connectionType: delays.connectionType,
+    totalEstimatedTime: `${(appointments.length * batchDelay) / 1000}s`
   });
 
-  // Progress toast solo per batch grandi
+  // Progress toast
   let progressToastId: string | number | undefined;
-  if (appointments.length > 3) {
-    progressToastId = toast.loading(`Salvando ${appointments.length} appuntamenti...`);
+  if (appointments.length > 2) {
+    progressToastId = toast.loading(`Salvando ${appointments.length} appuntamenti ${batchType}...`);
   }
 
-  // SALVATAGGIO SEQUENZIALE CON TEMPI REALI
+  // SALVATAGGIO SEQUENZIALE CON TEMPI CORRETTI
   for (let i = 0; i < appointments.length; i++) {
     const appointment = appointments[i];
     
-    console.log(`💾 [${i + 1}/${appointments.length}] PROCESSANDO BATCH ${batchType}:`, {
-      date: appointment.date,
-      time: appointment.time,
-      client: appointment.client
-    });
+    console.log(`💾 [${i + 1}/${appointments.length}] PROCESSANDO BATCH ${batchType}: ${appointment.client} - ${appointment.date} ${appointment.time}`);
     
     try {
       const result = await saveAppointmentWithRetry(
@@ -55,25 +53,25 @@ export const saveAppointmentsBatch = async (
       
       if (result.success) {
         savedCount++;
-        console.log(`✅ [${i + 1}/${appointments.length}] SALVATO! Total: ${savedCount}/${appointments.length}`);
+        console.log(`✅ [${i + 1}/${appointments.length}] SALVATO! Progresso: ${savedCount}/${appointments.length}`);
       } else {
         console.error(`❌ [${i + 1}/${appointments.length}] FALLITO:`, result.error);
-        failedSaves.push(`${appointment.date} ${appointment.time}: ${result.error}`);
+        failedSaves.push(`${appointment.date} ${appointment.time} - ${appointment.client}: ${result.error}`);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Errore critico';
       console.error(`💥 [${i + 1}/${appointments.length}] ERRORE CRITICO:`, errorMsg);
-      failedSaves.push(`${appointment.date} ${appointment.time}: ${errorMsg}`);
+      failedSaves.push(`${appointment.date} ${appointment.time} - ${appointment.client}: ${errorMsg}`);
     }
     
     // Aggiorna progress
     if (progressToastId && (i + 1) % 2 === 0) {
-      toast.loading(`Salvati ${savedCount}/${appointments.length}...`, { id: progressToastId });
+      toast.loading(`Salvati ${savedCount}/${appointments.length} appuntamenti...`, { id: progressToastId });
     }
     
-    // PAUSA OBBLIGATORIA TRA SALVATAGGI usando i delays configurati
+    // PAUSA OBBLIGATORIA TRA APPUNTAMENTI - Usa i delays effettivi
     if (i < appointments.length - 1) {
-      console.log(`⏱️ PAUSA BATCH ${batchType} di ${batchDelay}ms prima del prossimo...`);
+      console.log(`⏱️ PAUSA BATCH ${batchType} di ${batchDelay}ms prima del prossimo appuntamento...`);
       await new Promise(resolve => setTimeout(resolve, batchDelay));
     }
   }
@@ -87,7 +85,7 @@ export const saveAppointmentsBatch = async (
     totale: appointments.length,
     falliti: failedSaves.length,
     successRate: `${Math.round((savedCount / appointments.length) * 100)}%`,
-    totalTimeEstimate: `${(appointments.length * batchDelay) / 1000}s`
+    tempoTotale: `${(appointments.length * batchDelay) / 1000}s`
   });
 
   return { savedCount, failedSaves };

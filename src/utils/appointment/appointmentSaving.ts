@@ -14,13 +14,13 @@ export const saveAppointments = async (
 ) => {
   const delays = getMobileDelays();
   
-  console.log('🚀 INIZIO PROCESSO SALVATAGGIO CON TEMPI REALI:', {
+  console.log('🚀 INIZIO PROCESSO SALVATAGGIO CON TEMPI EFFETTIVI:', {
     delays: delays,
-    mainAppointment: mainAppointment.date,
+    mainAppointment: `${mainAppointment.client} - ${mainAppointment.date}`,
     additionalCount: additionalAppointments.length,
     recurringCount: recurringAppointments.length,
     totalToSave: 1 + additionalAppointments.length + recurringAppointments.length,
-    estimatedTime: `${((additionalAppointments.length * delays.additionalDelay) + (recurringAppointments.length * delays.recurringDelay)) / 1000}s`
+    tempoStimato: `${((additionalAppointments.length * delays.additionalDelay) + (recurringAppointments.length * delays.recurringDelay)) / 1000}s`
   });
 
   const failedSaves: string[] = [];
@@ -32,22 +32,23 @@ export const saveAppointments = async (
     if (!mainResult.success) {
       failedSaves.push(`Principale: ${mainResult.error}`);
     } else {
-      console.log('✅ Appuntamento principale salvato');
+      console.log('✅ Appuntamento principale salvato con successo');
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Errore sconosciuto';
+    console.error('❌ Errore nel salvare appuntamento principale:', errorMsg);
     failedSaves.push(`Principale: ${errorMsg}`);
   }
 
-  // Pausa tra fasi usando i delays configurati
+  // Pausa tra fasi principali
   if (additionalAppointments.length > 0 || recurringAppointments.length > 0) {
-    console.log(`⏱️ PAUSA TRA FASI di ${delays.saveDelay}ms`);
+    console.log(`⏱️ PAUSA TRA FASI PRINCIPALI di ${delays.saveDelay}ms`);
     await new Promise(resolve => setTimeout(resolve, delays.saveDelay));
   }
 
   // 2. Salva appuntamenti aggiuntivi
   if (additionalAppointments.length > 0) {
-    console.log('📋 2. Salvando appuntamenti aggiuntivi...');
+    console.log('📋 2. Iniziando batch appuntamenti aggiuntivi...');
     const additionalResult = await saveAppointmentsBatch(
       additionalAppointments,
       addAppointment,
@@ -56,19 +57,19 @@ export const saveAppointments = async (
     );
     failedSaves.push(...additionalResult.failedSaves);
     
-    // Pausa prima dei ricorrenti usando i delays configurati
+    // Pausa prima dei ricorrenti
     if (recurringAppointments.length > 0) {
       console.log(`⏱️ PAUSA PRIMA RICORRENTI di ${delays.saveDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, delays.saveDelay));
     }
   }
 
-  // 3. Salva appuntamenti ricorrenti - LA PARTE PIÙ CRITICA
+  // 3. Salva appuntamenti ricorrenti - FASE PIÙ CRITICA
   if (recurringAppointments.length > 0) {
-    console.log('📋 3. Salvando appuntamenti ricorrenti - FASE CRITICA CON TEMPI REALI:', {
+    console.log('📋 3. Iniziando batch appuntamenti ricorrenti - FASE CRITICA:', {
       count: recurringAppointments.length,
       recurringDelay: delays.recurringDelay,
-      estimatedTime: `${(recurringAppointments.length * delays.recurringDelay) / 1000}s`
+      tempoStimato: `${(recurringAppointments.length * delays.recurringDelay) / 1000}s`
     });
     
     const recurringResult = await saveAppointmentsBatch(

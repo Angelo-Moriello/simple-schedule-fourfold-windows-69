@@ -19,19 +19,13 @@ export const saveAppointmentWithRetry = async (
 ): Promise<SaveResult> => {
   const delays = getMobileDelays();
   
-  console.log(`🔄 [${index + 1}/${total}] SALVATAGGIO TENTATIVO - Delays configurati:`, {
-    client: appointment.client,
-    date: appointment.date,
-    time: appointment.time,
-    saveDelay: delays.saveDelay,
-    connectionType: delays.connectionType
-  });
+  console.log(`🔄 [${index + 1}/${total}] SALVATAGGIO - Inizio con delays:`, delays);
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    console.log(`💾 [${index + 1}/${total}] TENTATIVO ${attempt}/${maxRetries}`);
+    console.log(`💾 [${index + 1}/${total}] TENTATIVO ${attempt}/${maxRetries} per ${appointment.client}`);
     
     try {
-      // Verifica conflitti solo se necessario
+      // Verifica conflitti
       if (existingAppointments.length > 0) {
         const hasConflict = await checkTimeConflicts(appointment, existingAppointments);
         if (hasConflict) {
@@ -40,15 +34,15 @@ export const saveAppointmentWithRetry = async (
         }
       }
       
-      // SALVATAGGIO DIRETTO
-      console.log(`💾 [${index + 1}/${total}] SALVANDO...`);
+      // SALVATAGGIO
+      console.log(`💾 [${index + 1}/${total}] SALVANDO ${appointment.client}...`);
       addAppointment(appointment);
       
-      // PAUSA OBBLIGATORIA usando i delays configurati
-      console.log(`⏱️ [${index + 1}/${total}] PAUSA di ${delays.saveDelay}ms`);
+      // PAUSA OBBLIGATORIA - Usa effettivamente i delays
+      console.log(`⏱️ [${index + 1}/${total}] PAUSA OBBLIGATORIA di ${delays.saveDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, delays.saveDelay));
       
-      console.log(`✅ [${index + 1}/${total}] SALVATO con successo dopo ${delays.saveDelay}ms`);
+      console.log(`✅ [${index + 1}/${total}] SALVATO ${appointment.client} con successo`);
       return { success: true };
       
     } catch (error) {
@@ -56,13 +50,13 @@ export const saveAppointmentWithRetry = async (
       console.error(`❌ [${index + 1}/${total}] ERRORE tentativo ${attempt}:`, errorMsg);
       
       if (attempt === maxRetries) {
-        console.error(`❌ [${index + 1}/${total}] FALLITO dopo ${maxRetries} tentativi`);
+        console.error(`❌ [${index + 1}/${total}] FALLITO definitivamente dopo ${maxRetries} tentativi`);
         return { success: false, error: errorMsg };
       }
       
-      // Pausa tra retry usando i delays configurati
+      // Pausa prima del retry
       const retryDelay = delays.retryDelay(attempt);
-      console.log(`⏱️ [${index + 1}/${total}] RETRY in ${retryDelay}ms`);
+      console.log(`⏱️ [${index + 1}/${total}] PAUSA RETRY di ${retryDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
   }
