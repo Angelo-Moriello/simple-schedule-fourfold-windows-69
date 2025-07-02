@@ -14,6 +14,8 @@ const getClientInfo = async (clientId: string | null) => {
   if (!clientId) return null;
   
   try {
+    console.log('🔍 DEBUG - Richiesta info cliente per ID:', clientId);
+    
     const { data, error } = await supabase
       .from('clients')
       .select('name, email, phone')
@@ -21,13 +23,14 @@ const getClientInfo = async (clientId: string | null) => {
       .maybeSingle();
     
     if (error) {
-      console.error('Errore nel recupero info cliente:', error);
+      console.error('❌ DEBUG - Errore nel recupero info cliente per ID:', clientId, error);
       return null;
     }
     
+    console.log('✅ DEBUG - Info cliente recuperate per ID:', clientId, '- Dati:', data);
     return data;
   } catch (error) {
-    console.error('Errore nel recupero info cliente:', error);
+    console.error('❌ DEBUG - Errore nel recupero info cliente per ID:', clientId, error);
     return null;
   }
 };
@@ -52,7 +55,12 @@ export const useRealtimeSubscriptions = ({
           table: 'appointments'
         },
         async (payload) => {
-          console.log('DEBUG - Realtime appointment change:', payload);
+          console.log('🔔 DEBUG - Realtime appointment change:', payload);
+          console.log('🔍 DEBUG - Payload details:', {
+            eventType: payload.eventType,
+            newData: payload.new,
+            oldData: payload.old
+          });
           
           try {
             if (payload.eventType === 'INSERT') {
@@ -60,13 +68,26 @@ export const useRealtimeSubscriptions = ({
               let clientEmail = payload.new.email || '';
               let clientPhone = payload.new.phone || '';
               
+              console.log('➕ DEBUG - INSERT - Dati iniziali:', {
+                clientName,
+                clientEmail,
+                clientPhone,
+                clientId: payload.new.client_id
+              });
+              
               if ((!clientName || clientName.trim() === '') && payload.new.client_id) {
-                console.log('DEBUG - Recupero info cliente per realtime INSERT:', payload.new.client_id);
+                console.log('🔄 DEBUG - Recupero info cliente per realtime INSERT:', payload.new.client_id);
                 const clientInfo = await getClientInfo(payload.new.client_id);
                 if (clientInfo) {
+                  console.log('✅ DEBUG - Dati cliente recuperati:', clientInfo);
                   clientName = clientInfo.name || clientName;
                   clientEmail = clientInfo.email || payload.new.email || '';
                   clientPhone = clientInfo.phone || payload.new.phone || '';
+                  console.log('🔄 DEBUG - Dati cliente aggiornati:', {
+                    clientName,
+                    clientEmail,
+                    clientPhone
+                  });
                 }
               }
               
@@ -86,6 +107,8 @@ export const useRealtimeSubscriptions = ({
                 clientId: payload.new.client_id
               };
               
+              console.log('📅 DEBUG - Nuovo appuntamento creato:', newAppointment);
+              
               setAppointments(prev => {
                 const exists = prev.some(apt => apt.id === newAppointment.id);
                 if (!exists) {
@@ -99,12 +122,26 @@ export const useRealtimeSubscriptions = ({
               let clientEmail = payload.new.email || '';
               let clientPhone = payload.new.phone || '';
               
+              console.log('🔄 DEBUG - UPDATE - Dati iniziali:', {
+                clientName,
+                clientEmail,
+                clientPhone,
+                clientId: payload.new.client_id
+              });
+              
               if ((!clientName || clientName.trim() === '') && payload.new.client_id) {
+                console.log('🔄 DEBUG - Recupero info cliente per realtime UPDATE:', payload.new.client_id);
                 const clientInfo = await getClientInfo(payload.new.client_id);
                 if (clientInfo) {
+                  console.log('✅ DEBUG - Dati cliente recuperati per UPDATE:', clientInfo);
                   clientName = clientInfo.name || clientName;
                   clientEmail = clientInfo.email || payload.new.email || '';
                   clientPhone = clientInfo.phone || payload.new.phone || '';
+                  console.log('🔄 DEBUG - Dati cliente aggiornati per UPDATE:', {
+                    clientName,
+                    clientEmail,
+                    clientPhone
+                  });
                 }
               }
               
@@ -124,15 +161,18 @@ export const useRealtimeSubscriptions = ({
                 clientId: payload.new.client_id
               };
               
+              console.log('📝 DEBUG - Appuntamento aggiornato:', updatedAppointment);
+              
               setAppointments(prev => prev.map(apt =>
                 apt.id === updatedAppointment.id ? updatedAppointment : apt
               ));
               
             } else if (payload.eventType === 'DELETE') {
+              console.log('🗑️ DEBUG - DELETE appuntamento:', payload.old.id);
               setAppointments(prev => prev.filter(apt => apt.id !== payload.old.id));
             }
           } catch (error) {
-            console.error('Errore nel processare cambiamento realtime appuntamento:', error);
+            console.error('❌ DEBUG - Errore nel processare cambiamento realtime appuntamento:', error);
           }
         }
       )
