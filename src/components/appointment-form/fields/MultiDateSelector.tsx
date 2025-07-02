@@ -22,55 +22,99 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
   mainDate
 }) => {
   const [showCalendar, setShowCalendar] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleDateSelect = useCallback((date: Date | undefined) => {
-    if (!date) return;
+  const handleDateSelect = useCallback(async (date: Date | undefined) => {
+    if (!date || isProcessing) return;
 
-    // Don't allow selecting the main appointment date
-    if (format(date, 'yyyy-MM-dd') === format(mainDate, 'yyyy-MM-dd')) {
-      return;
-    }
-
-    const dateString = format(date, 'yyyy-MM-dd');
+    setIsProcessing(true);
     
-    const isAlreadySelected = selectedDates.some(
-      selectedDate => format(selectedDate, 'yyyy-MM-dd') === dateString
-    );
+    try {
+      // Don't allow selecting the main appointment date
+      const mainDateString = format(mainDate, 'yyyy-MM-dd');
+      const selectedDateString = format(date, 'yyyy-MM-dd');
+      
+      console.log('DEBUG - Tentativo selezione data:', {
+        selectedDate: selectedDateString,
+        mainDate: mainDateString,
+        currentSelectedDates: selectedDates.map(d => format(d, 'yyyy-MM-dd'))
+      });
 
-    let newDates: Date[];
-    
-    if (isAlreadySelected) {
-      // Remove date if already selected
-      newDates = selectedDates.filter(
-        selectedDate => format(selectedDate, 'yyyy-MM-dd') !== dateString
+      if (selectedDateString === mainDateString) {
+        console.log('DEBUG - Data principale non selezionabile');
+        setIsProcessing(false);
+        return;
+      }
+
+      const isAlreadySelected = selectedDates.some(
+        selectedDate => format(selectedDate, 'yyyy-MM-dd') === selectedDateString
       );
-      console.log('DEBUG - Data rimossa:', dateString, 'Date rimanenti:', newDates.length);
-    } else {
-      // Add date if not selected
-      newDates = [...selectedDates, date];
-      console.log('DEBUG - Data aggiunta:', dateString, 'Totale date:', newDates.length);
+
+      let newDates: Date[];
+      
+      if (isAlreadySelected) {
+        // Remove date if already selected
+        newDates = selectedDates.filter(
+          selectedDate => format(selectedDate, 'yyyy-MM-dd') !== selectedDateString
+        );
+        console.log('DEBUG - ❌ Data rimossa:', selectedDateString, 'Date rimanenti:', newDates.length);
+      } else {
+        // Add date if not selected
+        newDates = [...selectedDates, new Date(date.getTime())];
+        console.log('DEBUG - ✅ Data aggiunta:', selectedDateString, 'Totale date:', newDates.length);
+      }
+      
+      console.log('DEBUG - Nuove date selezionate:', newDates.map(d => format(d, 'yyyy-MM-dd')));
+      
+      // Usa un timeout per garantire che l'aggiornamento sia asincrono su mobile
+      setTimeout(() => {
+        onDatesChange(newDates);
+        setIsProcessing(false);
+      }, 10);
+      
+    } catch (error) {
+      console.error('ERRORE - Selezione data:', error);
+      setIsProcessing(false);
     }
-    
-    console.log('DEBUG - Nuove date selezionate:', newDates.map(d => format(d, 'yyyy-MM-dd')));
-    onDatesChange(newDates);
-  }, [selectedDates, mainDate, onDatesChange]);
+  }, [selectedDates, mainDate, onDatesChange, isProcessing]);
 
-  const removeDate = useCallback((dateToRemove: Date) => {
-    const dateString = format(dateToRemove, 'yyyy-MM-dd');
+  const removeDate = useCallback(async (dateToRemove: Date) => {
+    if (isProcessing) return;
     
-    const newDates = selectedDates.filter(
-      date => format(date, 'yyyy-MM-dd') !== dateString
-    );
+    setIsProcessing(true);
     
-    console.log('DEBUG - Data rimossa manualmente:', dateString, 'Date rimanenti:', newDates.length);
-    console.log('DEBUG - Date dopo rimozione:', newDates.map(d => format(d, 'yyyy-MM-dd')));
-    onDatesChange(newDates);
-  }, [selectedDates, onDatesChange]);
+    try {
+      const dateString = format(dateToRemove, 'yyyy-MM-dd');
+      
+      const newDates = selectedDates.filter(
+        date => format(date, 'yyyy-MM-dd') !== dateString
+      );
+      
+      console.log('DEBUG - ❌ Data rimossa manualmente:', dateString, 'Date rimanenti:', newDates.length);
+      console.log('DEBUG - Date dopo rimozione:', newDates.map(d => format(d, 'yyyy-MM-dd')));
+      
+      setTimeout(() => {
+        onDatesChange(newDates);
+        setIsProcessing(false);
+      }, 10);
+      
+    } catch (error) {
+      console.error('ERRORE - Rimozione data:', error);
+      setIsProcessing(false);
+    }
+  }, [selectedDates, onDatesChange, isProcessing]);
 
-  const clearAllDates = useCallback(() => {
-    console.log('DEBUG - Cancellazione di tutte le date');
-    onDatesChange([]);
-  }, [onDatesChange]);
+  const clearAllDates = useCallback(async () => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    console.log('DEBUG - 🗑️ Cancellazione di tutte le date');
+    
+    setTimeout(() => {
+      onDatesChange([]);
+      setIsProcessing(false);
+    }, 10);
+  }, [onDatesChange, isProcessing]);
 
   return (
     <div className="space-y-4">
@@ -84,6 +128,7 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
             variant="ghost"
             size="sm"
             onClick={clearAllDates}
+            disabled={isProcessing}
             className="text-xs text-gray-500 hover:text-gray-700"
           >
             Cancella tutto
@@ -97,9 +142,10 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
             type="button"
             variant="outline"
             className="w-full justify-start text-left font-normal"
+            disabled={isProcessing}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            <span>Seleziona date aggiuntive</span>
+            <span>Seleziona date aggiuntive {isProcessing ? '(elaborazione...)' : ''}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
@@ -114,7 +160,7 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
               // Disable past dates and the main appointment date
               const today = new Date();
               today.setHours(0, 0, 0, 0);
-              return date < today || format(date, 'yyyy-MM-dd') === format(mainDate, 'yyyy-MM-dd');
+              return date < today || format(date, 'yyyy-MM-dd') === format(mainDate, 'yyyy-MM-dd') || isProcessing;
             }}
           />
         </PopoverContent>
@@ -144,6 +190,7 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => removeDate(date)}
+                      disabled={isProcessing}
                       className="h-4 w-4 p-0 hover:bg-blue-100"
                     >
                       <X className="h-3 w-3" />

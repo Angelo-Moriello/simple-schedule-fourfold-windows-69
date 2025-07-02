@@ -80,19 +80,23 @@ export const useAppointmentSubmission = ({
     multipleEvents: MultipleEvent[],
     selectedDates: Date[]
   ) => {
-    console.log('DEBUG - Submit iniziato con:', {
+    console.log('DEBUG - 🚀 Submit iniziato con:', {
       formData: formData,
       multipleEvents: multipleEvents.length,
       selectedDates: selectedDates.length,
-      selectedDatesDetails: selectedDates.map(d => format(d, 'yyyy-MM-dd'))
+      selectedDatesDetails: selectedDates.map(d => format(d, 'yyyy-MM-dd')),
+      userAgent: navigator.userAgent,
+      isMobile: /Mobi|Android/i.test(navigator.userAgent)
     });
     
     if (!validateAppointmentForm(formData, multipleEvents)) {
+      console.log('DEBUG - ❌ Validazione fallita');
       return;
     }
 
     try {
       const finalClientId = await handleClientCreation(formData);
+      console.log('DEBUG - ✅ Cliente preparato:', finalClientId);
 
       // Create main appointment
       const mainAppointment = createAppointmentFromData(
@@ -102,7 +106,7 @@ export const useAppointmentSubmission = ({
         appointmentToEdit?.id
       );
 
-      console.log('DEBUG - Appuntamento principale creato:', mainAppointment);
+      console.log('DEBUG - ✅ Appuntamento principale creato:', mainAppointment);
 
       // Create additional appointments for multiple events on the same day
       const additionalAppointments = createAdditionalAppointments(
@@ -112,9 +116,11 @@ export const useAppointmentSubmission = ({
         multipleEvents
       );
 
-      console.log('DEBUG - Appuntamenti aggiuntivi per stesso giorno:', additionalAppointments.length);
+      console.log('DEBUG - ✅ Appuntamenti aggiuntivi per stesso giorno preparati:', additionalAppointments.length);
 
       // Create recurring appointments for each selected date
+      console.log('DEBUG - 📅 Preparazione appuntamenti ricorrenti per date:', selectedDates.map(d => format(d, 'yyyy-MM-dd')));
+      
       const recurringAppointments = createRecurringAppointments(
         formData,
         finalClientId,
@@ -122,10 +128,19 @@ export const useAppointmentSubmission = ({
         multipleEvents
       );
 
+      console.log('DEBUG - ✅ Appuntamenti ricorrenti preparati:', {
+        total: recurringAppointments.length,
+        dates: selectedDates.length,
+        eventsPerDate: multipleEvents.length + 1
+      });
+
       if (appointmentToEdit && updateAppointment) {
         await updateAppointment(mainAppointment);
         toast.success('Appuntamento modificato con successo!');
+        console.log('DEBUG - ✅ Appuntamento modificato');
       } else if (addAppointment) {
+        console.log('DEBUG - 💾 Inizio processo di salvataggio...');
+        
         const { savedRecurringCount } = await saveAppointments(
           mainAppointment,
           additionalAppointments,
@@ -140,19 +155,30 @@ export const useAppointmentSubmission = ({
           selectedDates.length
         );
         
-        console.log('DEBUG - Operazione completata:', {
+        console.log('DEBUG - ✅ Operazione completata:', {
           mainEvents: totalMainEvents,
           recurringEvents: savedRecurringCount,
-          totalRecurringDates: selectedDates.length
+          totalRecurringDates: selectedDates.length,
+          expectedRecurringEvents: recurringAppointments.length,
+          success: savedRecurringCount === recurringAppointments.length
         });
         
-        toast.success(successMessage);
+        if (savedRecurringCount < recurringAppointments.length) {
+          console.warn('DEBUG - ⚠️ Non tutti gli appuntamenti ricorrenti sono stati salvati');
+          toast.warning(`${successMessage} Attenzione: alcuni appuntamenti ricorrenti potrebbero non essere stati salvati correttamente.`);
+        } else {
+          toast.success(successMessage);
+        }
       }
 
-      onClose();
+      // Aggiungi un piccolo delay prima di chiudere per permettere il completamento su mobile
+      setTimeout(() => {
+        onClose();
+      }, 100);
+      
     } catch (error) {
-      console.error('Errore nell\'operazione:', error);
-      toast.error('Errore nell\'operazione');
+      console.error('❌ ERRORE nell\'operazione:', error);
+      toast.error('Errore nell\'operazione: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
     }
   };
 
