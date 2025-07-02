@@ -82,24 +82,48 @@ export const useAppointmentSubmission = ({
     multipleEvents: MultipleEvent[],
     selectedDates: Date[]
   ) => {
-    console.log('DEBUG - 🚀 Submit iniziato:', {
-      formData: formData,
+    console.log('🚀 useAppointmentSubmission - INIZIO SUBMIT:', {
+      formData: {
+        client: formData.client,
+        time: formData.time,
+        employeeId: formData.employeeId
+      },
       multipleEvents: multipleEvents.length,
-      selectedDates: selectedDates.length,
-      selectedDatesDetails: selectedDates.map(d => format(d, 'yyyy-MM-dd')),
+      selectedDates: selectedDates?.length || 0,
+      selectedDatesDetails: selectedDates?.map(d => format(d, 'yyyy-MM-dd')) || [],
       mainDate: format(date, 'yyyy-MM-dd'),
       existingAppointments: existingAppointments.length,
-      isMobile: /Mobi|Android/i.test(navigator.userAgent)
+      isMobile: /Mobi|Android/i.test(navigator.userAgent),
+      dataTypes: {
+        selectedDates: typeof selectedDates,
+        isArray: Array.isArray(selectedDates),
+        formData: typeof formData,
+        multipleEvents: typeof multipleEvents
+      }
     });
     
+    // Validazione dati di input
+    if (!selectedDates) {
+      console.log('⚠️ useAppointmentSubmission - selectedDates è null/undefined, inizializzazione array vuoto');
+      selectedDates = [];
+    }
+    
+    if (!Array.isArray(selectedDates)) {
+      console.error('❌ useAppointmentSubmission - selectedDates non è un array!', {
+        selectedDates,
+        type: typeof selectedDates
+      });
+      selectedDates = [];
+    }
+    
     if (!validateAppointmentForm(formData, multipleEvents)) {
-      console.log('DEBUG - ❌ Validazione fallita');
+      console.log('❌ useAppointmentSubmission - Validazione fallita');
       return;
     }
 
     try {
       const finalClientId = await handleClientCreation(formData);
-      console.log('DEBUG - ✅ Cliente preparato:', finalClientId);
+      console.log('✅ useAppointmentSubmission - Cliente preparato:', finalClientId);
 
       // Create main appointment
       const mainAppointment = createAppointmentFromData(
@@ -109,7 +133,7 @@ export const useAppointmentSubmission = ({
         appointmentToEdit?.id
       );
 
-      console.log('DEBUG - ✅ Appuntamento principale creato per data:', format(date, 'yyyy-MM-dd'));
+      console.log('✅ useAppointmentSubmission - Appuntamento principale creato per:', format(date, 'yyyy-MM-dd'));
 
       // Create additional appointments for multiple events on the same day
       const additionalAppointments = createAdditionalAppointments(
@@ -119,10 +143,15 @@ export const useAppointmentSubmission = ({
         multipleEvents
       );
 
-      console.log('DEBUG - ✅ Appuntamenti aggiuntivi preparati per data principale:', additionalAppointments.length);
+      console.log('✅ useAppointmentSubmission - Appuntamenti aggiuntivi preparati:', additionalAppointments.length);
 
       // Create recurring appointments for each selected date (ESCLUSA la data principale)
-      console.log('DEBUG - 📅 Preparazione appuntamenti ricorrenti, escludendo data principale...');
+      console.log('📅 useAppointmentSubmission - PREPARAZIONE RICORRENTI con date:', {
+        selectedDatesInput: selectedDates.map(d => format(d, 'yyyy-MM-dd')),
+        selectedDatesCount: selectedDates.length,
+        mainDateToExclude: format(date, 'yyyy-MM-dd'),
+        multipleEventsCount: multipleEvents.length
+      });
       
       const recurringAppointments = createRecurringAppointments(
         formData,
@@ -132,21 +161,31 @@ export const useAppointmentSubmission = ({
         date // Passa la data principale per escluderla
       );
 
-      console.log('DEBUG - ✅ Appuntamenti ricorrenti preparati (SENZA duplicati):', {
+      console.log('✅ useAppointmentSubmission - APPUNTAMENTI RICORRENTI PREPARATI:', {
         total: recurringAppointments.length,
         originalSelectedDates: selectedDates.length,
         excludedMainDate: format(date, 'yyyy-MM-dd'),
         processedDates: selectedDates.filter(d => format(d, 'yyyy-MM-dd') !== format(date, 'yyyy-MM-dd')).length,
         eventsPerDate: multipleEvents.length + 1,
-        dettagli: recurringAppointments.map(app => ({ date: app.date, time: app.time, service: app.serviceType }))
+        dettagli: recurringAppointments.map(app => ({ 
+          date: app.date, 
+          time: app.time, 
+          service: app.serviceType,
+          client: app.client 
+        }))
       });
 
       if (appointmentToEdit && updateAppointment) {
         await updateAppointment(mainAppointment);
         toast.success('Appuntamento modificato con successo!');
-        console.log('DEBUG - ✅ Appuntamento modificato');
+        console.log('✅ useAppointmentSubmission - Appuntamento modificato');
       } else if (addAppointment) {
-        console.log('DEBUG - 💾 Inizio processo di salvataggio con verifica conflitti...');
+        console.log('💾 useAppointmentSubmission - INIZIO PROCESSO DI SALVATAGGIO:', {
+          mainAppointment: 1,
+          additionalAppointments: additionalAppointments.length,
+          recurringAppointments: recurringAppointments.length,
+          totalToSave: 1 + additionalAppointments.length + recurringAppointments.length
+        });
         
         const { savedRecurringCount, failedSaves } = await saveAppointments(
           mainAppointment,
@@ -164,12 +203,13 @@ export const useAppointmentSubmission = ({
           failedSaves
         );
         
-        console.log('DEBUG - 🏆 Operazione completata (SENZA duplicati):', {
+        console.log('🏆 useAppointmentSubmission - RISULTATO FINALE:', {
           mainEvents: totalMainEvents,
           recurringEvents: savedRecurringCount,
           totalRecurringExpected: recurringAppointments.length,
           failedSaves: failedSaves.length,
-          successRate: recurringAppointments.length > 0 ? `${Math.round((savedRecurringCount / recurringAppointments.length) * 100)}%` : '100%'
+          successRate: recurringAppointments.length > 0 ? `${Math.round((savedRecurringCount / recurringAppointments.length) * 100)}%` : '100%',
+          successMessage
         });
         
         // Show appropriate message based on results
@@ -188,7 +228,7 @@ export const useAppointmentSubmission = ({
       onClose();
       
     } catch (error) {
-      console.error('❌ ERRORE nell\'operazione:', error);
+      console.error('❌ useAppointmentSubmission - ERRORE nell\'operazione:', error);
       toast.error('Errore nell\'operazione: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
     }
   };
