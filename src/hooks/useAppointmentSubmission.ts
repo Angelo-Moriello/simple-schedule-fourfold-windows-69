@@ -87,6 +87,7 @@ export const useAppointmentSubmission = ({
       multipleEvents: multipleEvents.length,
       selectedDates: selectedDates.length,
       selectedDatesDetails: selectedDates.map(d => format(d, 'yyyy-MM-dd')),
+      mainDate: format(date, 'yyyy-MM-dd'),
       existingAppointments: existingAppointments.length,
       isMobile: /Mobi|Android/i.test(navigator.userAgent)
     });
@@ -108,7 +109,7 @@ export const useAppointmentSubmission = ({
         appointmentToEdit?.id
       );
 
-      console.log('DEBUG - ✅ Appuntamento principale creato:', mainAppointment);
+      console.log('DEBUG - ✅ Appuntamento principale creato per data:', format(date, 'yyyy-MM-dd'));
 
       // Create additional appointments for multiple events on the same day
       const additionalAppointments = createAdditionalAppointments(
@@ -118,21 +119,24 @@ export const useAppointmentSubmission = ({
         multipleEvents
       );
 
-      console.log('DEBUG - ✅ Appuntamenti aggiuntivi preparati:', additionalAppointments.length);
+      console.log('DEBUG - ✅ Appuntamenti aggiuntivi preparati per data principale:', additionalAppointments.length);
 
-      // Create recurring appointments for each selected date
-      console.log('DEBUG - 📅 Preparazione appuntamenti ricorrenti per date:', selectedDates.map(d => format(d, 'yyyy-MM-dd')));
+      // Create recurring appointments for each selected date (ESCLUSA la data principale)
+      console.log('DEBUG - 📅 Preparazione appuntamenti ricorrenti, escludendo data principale...');
       
       const recurringAppointments = createRecurringAppointments(
         formData,
         finalClientId,
         selectedDates,
-        multipleEvents
+        multipleEvents,
+        date // Passa la data principale per escluderla
       );
 
-      console.log('DEBUG - ✅ Appuntamenti ricorrenti preparati:', {
+      console.log('DEBUG - ✅ Appuntamenti ricorrenti preparati (SENZA duplicati):', {
         total: recurringAppointments.length,
-        dates: selectedDates.length,
+        originalSelectedDates: selectedDates.length,
+        excludedMainDate: format(date, 'yyyy-MM-dd'),
+        processedDates: selectedDates.filter(d => format(d, 'yyyy-MM-dd') !== format(date, 'yyyy-MM-dd')).length,
         eventsPerDate: multipleEvents.length + 1,
         dettagli: recurringAppointments.map(app => ({ date: app.date, time: app.time, service: app.serviceType }))
       });
@@ -160,12 +164,12 @@ export const useAppointmentSubmission = ({
           failedSaves
         );
         
-        console.log('DEBUG - 🏆 Operazione completata:', {
+        console.log('DEBUG - 🏆 Operazione completata (SENZA duplicati):', {
           mainEvents: totalMainEvents,
           recurringEvents: savedRecurringCount,
           totalRecurringExpected: recurringAppointments.length,
           failedSaves: failedSaves.length,
-          successRate: `${Math.round((savedRecurringCount / recurringAppointments.length) * 100)}%`
+          successRate: recurringAppointments.length > 0 ? `${Math.round((savedRecurringCount / recurringAppointments.length) * 100)}%` : '100%'
         });
         
         // Show appropriate message based on results
