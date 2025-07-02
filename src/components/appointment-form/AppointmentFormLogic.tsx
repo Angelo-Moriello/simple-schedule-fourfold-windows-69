@@ -1,4 +1,3 @@
-
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
@@ -24,8 +23,9 @@ export const useAppointmentForm = ({
   date,
   addAppointment,
   updateAppointment,
-  onClose
-}: UseAppointmentFormProps) => {
+  onClose,
+  existingAppointments = []
+}: UseAppointmentFormProps & { existingAppointments?: Appointment[] }) => {
   const {
     formData,
     setFormData,
@@ -48,7 +48,8 @@ export const useAppointmentForm = ({
     date,
     addAppointment,
     updateAppointment,
-    onClose
+    onClose,
+    existingAppointments
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

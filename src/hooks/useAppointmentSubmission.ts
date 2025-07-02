@@ -30,6 +30,7 @@ interface UseAppointmentSubmissionProps {
   addAppointment?: (appointment: Appointment) => void;
   updateAppointment?: (appointment: Appointment) => void;
   onClose: () => void;
+  existingAppointments?: Appointment[];
 }
 
 export const useAppointmentSubmission = ({
@@ -37,7 +38,8 @@ export const useAppointmentSubmission = ({
   date,
   addAppointment,
   updateAppointment,
-  onClose
+  onClose,
+  existingAppointments = []
 }: UseAppointmentSubmissionProps) => {
   const { findExistingClient, createNewClient } = useClientOperations();
 
@@ -85,6 +87,7 @@ export const useAppointmentSubmission = ({
       multipleEvents: multipleEvents.length,
       selectedDates: selectedDates.length,
       selectedDatesDetails: selectedDates.map(d => format(d, 'yyyy-MM-dd')),
+      existingAppointments: existingAppointments.length,
       isMobile: /Mobi|Android/i.test(navigator.userAgent)
     });
     
@@ -139,37 +142,39 @@ export const useAppointmentSubmission = ({
         toast.success('Appuntamento modificato con successo!');
         console.log('DEBUG - ✅ Appuntamento modificato');
       } else if (addAppointment) {
-        console.log('DEBUG - 💾 Inizio processo di salvataggio sequenziale...');
+        console.log('DEBUG - 💾 Inizio processo di salvataggio con verifica conflitti...');
         
-        const { savedRecurringCount } = await saveAppointments(
+        const { savedRecurringCount, failedSaves } = await saveAppointments(
           mainAppointment,
           additionalAppointments,
           recurringAppointments,
-          addAppointment
+          addAppointment,
+          existingAppointments
         );
         
         const totalMainEvents = 1 + additionalAppointments.length;
         const successMessage = generateSuccessMessage(
           totalMainEvents,
           savedRecurringCount,
-          selectedDates.length
+          recurringAppointments.length,
+          failedSaves
         );
         
         console.log('DEBUG - 🏆 Operazione completata:', {
           mainEvents: totalMainEvents,
           recurringEvents: savedRecurringCount,
           totalRecurringExpected: recurringAppointments.length,
-          successRate: `${Math.round((savedRecurringCount / recurringAppointments.length) * 100)}%`,
-          expectedTotal: recurringAppointments.length
+          failedSaves: failedSaves.length,
+          successRate: `${Math.round((savedRecurringCount / recurringAppointments.length) * 100)}%`
         });
         
-        // Show success message if all or most appointments were saved
-        if (savedRecurringCount === recurringAppointments.length) {
+        // Show appropriate message based on results
+        if (savedRecurringCount === recurringAppointments.length && failedSaves.length === 0) {
           toast.success(successMessage);
         } else if (savedRecurringCount > 0) {
-          toast.warning(`${successMessage} Attenzione: solo ${savedRecurringCount}/${recurringAppointments.length} appuntamenti ricorrenti salvati.`);
+          toast.warning(successMessage);
         } else if (recurringAppointments.length > 0) {
-          toast.error(`Appuntamento principale creato, ma nessun appuntamento ricorrente è stato salvato.`);
+          toast.error(`Appuntamento principale creato, ma ${failedSaves.length} appuntamenti ricorrenti non sono stati salvati.`);
         } else {
           toast.success(successMessage);
         }

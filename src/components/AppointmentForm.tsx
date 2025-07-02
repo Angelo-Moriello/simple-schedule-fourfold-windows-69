@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Appointment, Employee } from '@/types/appointment';
 import AppointmentFormContainer from './appointment-form/AppointmentFormContainer';
@@ -53,7 +52,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     date,
     addAppointment,
     updateAppointment,
-    onClose
+    onClose,
+    existingAppointments: appointments // Pass existing appointments for conflict checking
   });
 
   // Carica servizi iniziali
