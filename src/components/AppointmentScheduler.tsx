@@ -93,6 +93,7 @@ const AppointmentScheduler = () => {
         selectedDate={selectedDate}
         appointmentToEdit={appointmentToEdit}
         employees={employees}
+        appointments={appointments} // Pass appointments to modals
         onCloseAppointmentForm={handleCloseAppointmentForm}
         onCloseEmployeeForm={handleCloseEmployeeForm}
         onCloseClientManager={handleCloseClientManager}

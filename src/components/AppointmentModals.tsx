@@ -14,6 +14,7 @@ interface AppointmentModalsProps {
   selectedDate: Date;
   appointmentToEdit: Appointment | null;
   employees: Employee[];
+  appointments?: Appointment[]; // Add this prop
   onCloseAppointmentForm: () => void;
   onCloseEmployeeForm: () => void;
   onCloseClientManager: () => void;
@@ -32,6 +33,7 @@ const AppointmentModals: React.FC<AppointmentModalsProps> = ({
   selectedDate,
   appointmentToEdit,
   employees,
+  appointments = [], // Default to empty array
   onCloseAppointmentForm,
   onCloseEmployeeForm,
   onCloseClientManager,
@@ -52,6 +54,7 @@ const AppointmentModals: React.FC<AppointmentModalsProps> = ({
         date={selectedDate}
         appointmentToEdit={appointmentToEdit}
         employees={employees}
+        existingAppointments={appointments} // Pass existing appointments
       />
 
       <EmployeeForm

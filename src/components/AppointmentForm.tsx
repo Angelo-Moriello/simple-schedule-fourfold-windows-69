@@ -16,6 +16,7 @@ interface AppointmentFormProps {
   date: Date;
   appointmentToEdit: Appointment | null;
   employees: Employee[];
+  existingAppointments?: Appointment[]; // Add this prop
 }
 
 const AppointmentForm: React.FC<AppointmentFormProps> = ({
@@ -27,7 +28,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   time,
   date,
   appointmentToEdit,
-  employees
+  employees,
+  existingAppointments = [] // Default to empty array
 }) => {
   const [serviceCategories, setServiceCategories] = useState({
     Parrucchiere: { name: 'Parrucchiere', services: [] },
@@ -53,7 +55,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     addAppointment,
     updateAppointment,
     onClose,
-    existingAppointments: [] // Pass empty array as fallback since appointments are not available in this component
+    existingAppointments // Pass the existing appointments
   });
 
   // Carica servizi iniziali
@@ -110,7 +112,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     servicesDetail: serviceCategories,
     formDataEmployeeId: formData.employeeId,
     multipleEvents: multipleEvents.length,
-    selectedDates: selectedDates.length
+    selectedDates: selectedDates.length,
+    existingAppointments: existingAppointments.length
   });
 
   return (
