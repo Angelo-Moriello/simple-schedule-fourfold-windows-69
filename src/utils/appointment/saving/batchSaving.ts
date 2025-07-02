@@ -19,28 +19,28 @@ export const saveAppointmentsBatch = async (
     return { savedCount: 0, failedSaves: [] };
   }
 
-  // Usa i delays corretti per ogni tipo di batch
+  // Seleziona il delay corretto per il tipo di batch
   const batchDelay = batchType === 'recurring' ? delays.recurringDelay : delays.additionalDelay;
   
-  console.log(`📋 INIZIO BATCH ${batchType.toUpperCase()} - TIMING REALE:`, {
+  console.log(`📋 INIZIO BATCH ${batchType.toUpperCase()} - CONFIGURAZIONE MOBILE:`, {
     appointmentsCount: appointments.length,
     batchDelay: batchDelay,
     saveDelay: delays.saveDelay,
-    connectionType: delays.connectionType,
-    totalEstimatedTime: `${(appointments.length * batchDelay) / 1000}s`
+    isMobile: /Mobi|Android/i.test(navigator.userAgent),
+    tempoTotaleStimato: `${(appointments.length * batchDelay) / 1000}s`
   });
 
-  // Progress toast
+  // Progress toast per batch grandi
   let progressToastId: string | number | undefined;
   if (appointments.length > 2) {
     progressToastId = toast.loading(`Salvando ${appointments.length} appuntamenti ${batchType}...`);
   }
 
-  // SALVATAGGIO SEQUENZIALE CON TEMPI CORRETTI
+  // SALVATAGGIO SEQUENZIALE CON DELAYS CORRETTI
   for (let i = 0; i < appointments.length; i++) {
     const appointment = appointments[i];
     
-    console.log(`💾 [${i + 1}/${appointments.length}] PROCESSANDO BATCH ${batchType}: ${appointment.client} - ${appointment.date} ${appointment.time}`);
+    console.log(`📝 [${i + 1}/${appointments.length}] PROCESSANDO ${batchType}: ${appointment.client} - ${appointment.date} ${appointment.time}`);
     
     try {
       const result = await saveAppointmentWithRetry(
@@ -64,15 +64,18 @@ export const saveAppointmentsBatch = async (
       failedSaves.push(`${appointment.date} ${appointment.time} - ${appointment.client}: ${errorMsg}`);
     }
     
-    // Aggiorna progress
+    // Aggiorna progress ogni 2 appuntamenti
     if (progressToastId && (i + 1) % 2 === 0) {
       toast.loading(`Salvati ${savedCount}/${appointments.length} appuntamenti...`, { id: progressToastId });
     }
     
-    // PAUSA OBBLIGATORIA TRA APPUNTAMENTI - Usa i delays effettivi
+    // PAUSA OBBLIGATORIA TRA APPUNTAMENTI DEL BATCH
     if (i < appointments.length - 1) {
-      console.log(`⏱️ PAUSA BATCH ${batchType} di ${batchDelay}ms prima del prossimo appuntamento...`);
+      console.log(`⏳ PAUSA BATCH ${batchType}: ${batchDelay}ms prima del prossimo appuntamento`);
+      const startWait = Date.now();
       await new Promise(resolve => setTimeout(resolve, batchDelay));
+      const endWait = Date.now();
+      console.log(`⏳ PAUSA BATCH COMPLETATA in ${endWait - startWait}ms`);
     }
   }
 
@@ -84,8 +87,7 @@ export const saveAppointmentsBatch = async (
     salvati: savedCount,
     totale: appointments.length,
     falliti: failedSaves.length,
-    successRate: `${Math.round((savedCount / appointments.length) * 100)}%`,
-    tempoTotale: `${(appointments.length * batchDelay) / 1000}s`
+    successRate: `${Math.round((savedCount / appointments.length) * 100)}%`
   });
 
   return { savedCount, failedSaves };

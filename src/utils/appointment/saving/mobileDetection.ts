@@ -16,19 +16,24 @@ export const getMobileDelays = () => {
   const isMobile = isMobileDevice();
   const connectionType = getConnectionType();
   
-  // Tempi drasticamente aumentati per mobile per garantire affidabilità
+  // Delays più conservativi per mobile per garantire stabilità
   const delays = {
-    saveDelay: isMobile ? 1200 : 400, // Tempo base tra salvataggi
-    retryDelay: (attempt: number) => isMobile ? attempt * 2000 : attempt * 800, // Tempo tra retry
-    additionalDelay: isMobile ? 2000 : 800, // Tempo tra appuntamenti aggiuntivi
-    recurringDelay: isMobile ? 2500 : 1000, // Tempo tra appuntamenti ricorrenti (più critico)
+    saveDelay: isMobile ? 1500 : 300, // Tempo base tra salvataggi (aumentato)
+    retryDelay: (attempt: number) => isMobile ? attempt * 2500 : attempt * 600, // Tempo tra retry (aumentato)
+    additionalDelay: isMobile ? 2500 : 600, // Tempo tra appuntamenti aggiuntivi (aumentato)
+    recurringDelay: isMobile ? 3000 : 800, // Tempo tra appuntamenti ricorrenti (aumentato)
     connectionType
   };
   
-  console.log('📱 DELAYS CONFIGURATI:', {
+  console.log('📱 MOBILE DELAYS CONFIGURATI:', {
     isMobile,
     connectionType,
-    delays
+    delays: {
+      saveDelay: `${delays.saveDelay}ms`,
+      retryDelayExample: `${delays.retryDelay(1)}ms (primo retry)`,
+      additionalDelay: `${delays.additionalDelay}ms`,
+      recurringDelay: `${delays.recurringDelay}ms`
+    }
   });
   
   return delays;
