@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
 
@@ -46,7 +45,7 @@ const saveAppointmentWithRetry = async (
         time: appointment.time,
         id: appointment.id.substring(0, 8),
         userAgent: navigator.userAgent.substring(0, 50),
-        connectionType: navigator.connection?.effectiveType || 'unknown',
+        connectionType: (navigator as any).connection?.effectiveType || 'unknown',
         timestamp: new Date().toISOString()
       });
       
@@ -117,7 +116,7 @@ export const saveAppointments = async (
   const deviceInfo = {
     isMobile,
     userAgent: navigator.userAgent,
-    connectionType: navigator.connection?.effectiveType || 'unknown',
+    connectionType: (navigator as any).connection?.effectiveType || 'unknown',
     timestamp: new Date().toISOString()
   };
   
@@ -209,7 +208,7 @@ export const saveAppointments = async (
           progress: `${i + 1}/${recurringAppointments.length}`,
           deviceInfo: {
             isMobile,
-            connection: navigator.connection?.effectiveType || 'unknown'
+            connection: (navigator as any).connection?.effectiveType || 'unknown'
           }
         });
         
