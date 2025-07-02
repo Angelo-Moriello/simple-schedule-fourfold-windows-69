@@ -22,12 +22,19 @@ export const saveAppointmentsBatch = async (
   // Seleziona il delay corretto per il tipo di batch
   const batchDelay = batchType === 'recurring' ? delays.recurringDelay : delays.additionalDelay;
   
-  console.log(`📋 INIZIO BATCH ${batchType.toUpperCase()} - CONFIGURAZIONE MOBILE:`, {
+  console.log(`📋 INIZIO BATCH ${batchType.toUpperCase()} - CONFIGURAZIONE CORRETTA:`, {
     appointmentsCount: appointments.length,
     batchDelay: batchDelay,
+    batchType: batchType === 'recurring' ? 'RICORRENTI' : 'AGGIUNTIVI',
     saveDelay: delays.saveDelay,
-    isMobile: /Mobi|Android/i.test(navigator.userAgent),
-    tempoTotaleStimato: `${(appointments.length * batchDelay) / 1000}s`
+    isMobile: delays.isMobile,
+    modalità: delays.isMobile ? 'MOBILE (DELAY LUNGHI)' : 'DESKTOP (DELAY CORTI)',
+    tempoTotaleStimato: `${Math.ceil((appointments.length * batchDelay) / 1000)}s`,
+    confrontoDelay: {
+      desktop: batchType === 'recurring' ? '800ms' : '600ms',
+      mobile: batchType === 'recurring' ? '4000ms' : '3000ms',
+      attuale: `${batchDelay}ms`
+    }
   });
 
   // Progress toast per batch grandi
@@ -69,13 +76,13 @@ export const saveAppointmentsBatch = async (
       toast.loading(`Salvati ${savedCount}/${appointments.length} appuntamenti...`, { id: progressToastId });
     }
     
-    // PAUSA OBBLIGATORIA TRA APPUNTAMENTI DEL BATCH
+    // PAUSA OBBLIGATORIA TRA APPUNTAMENTI DEL BATCH - DELAY CORRETTO
     if (i < appointments.length - 1) {
-      console.log(`⏳ PAUSA BATCH ${batchType}: ${batchDelay}ms prima del prossimo appuntamento`);
+      console.log(`⏳ PAUSA BATCH ${batchType} CORRETTA: ${batchDelay}ms (${delays.isMobile ? 'MOBILE' : 'DESKTOP'}) prima del prossimo appuntamento`);
       const startWait = Date.now();
       await new Promise(resolve => setTimeout(resolve, batchDelay));
       const endWait = Date.now();
-      console.log(`⏳ PAUSA BATCH COMPLETATA in ${endWait - startWait}ms`);
+      console.log(`⏳ PAUSA BATCH COMPLETATA in ${endWait - startWait}ms - delay richiesto: ${batchDelay}ms`);
     }
   }
 
@@ -87,7 +94,9 @@ export const saveAppointmentsBatch = async (
     salvati: savedCount,
     totale: appointments.length,
     falliti: failedSaves.length,
-    successRate: `${Math.round((savedCount / appointments.length) * 100)}%`
+    successRate: `${Math.round((savedCount / appointments.length) * 100)}%`,
+    tempoTotaleEffettivo: `circa ${Math.ceil((appointments.length * batchDelay) / 1000)}s`,
+    modalitàUsata: delays.isMobile ? 'MOBILE' : 'DESKTOP'
   });
 
   return { savedCount, failedSaves };
