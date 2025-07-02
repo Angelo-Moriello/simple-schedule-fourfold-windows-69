@@ -8,6 +8,7 @@ import ClientColorFields from './fields/ClientColorFields';
 import ContactFields from './fields/ContactFields';
 import DurationNotesFields from './fields/DurationNotesFields';
 import MultipleEventsManager from './MultipleEventsManager';
+import MultiDateSelector from './fields/MultiDateSelector';
 
 interface AppointmentFormFieldsProps {
   formData: Appointment;
@@ -107,6 +108,15 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
           selectedEmployee={selectedEmployee}
           mainEmployeeId={formData.employeeId.toString()}
           mainTime={formData.time}
+          mainDate={mainDate}
+        />
+      </div>
+
+      {/* Multi Date Selector - Full width */}
+      <div className="w-full">
+        <MultiDateSelector
+          selectedDates={selectedDates}
+          onDatesChange={onSelectedDatesChange}
           mainDate={mainDate}
         />
       </div>
