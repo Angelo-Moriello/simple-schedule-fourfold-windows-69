@@ -27,15 +27,15 @@ const ClientColorFields: React.FC<ClientColorFieldsProps> = ({
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Seleziona colore" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
           {appointmentColors.map((color) => (
-            <SelectItem key={color.value} value={color.value}>
+            <SelectItem key={color.value} value={color.value} className="hover:bg-gray-50">
               <div className="flex items-center gap-2">
                 <div 
-                  className="w-4 h-4 rounded-full border border-gray-300" 
+                  className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0" 
                   style={{ backgroundColor: color.value }}
                 />
-                {color.label}
+                <span className="text-gray-700">{color.label}</span>
               </div>
             </SelectItem>
           ))}

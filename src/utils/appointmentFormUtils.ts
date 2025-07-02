@@ -1,13 +1,13 @@
 
 export const appointmentColors = [
-  { label: 'Blu', value: 'bg-blue-100 border-blue-300 text-blue-800' },
-  { label: 'Verde', value: 'bg-green-100 border-green-300 text-green-800' },
-  { label: 'Giallo', value: 'bg-yellow-100 border-yellow-300 text-yellow-800' },
-  { label: 'Rosso', value: 'bg-red-100 border-red-300 text-red-800' },
-  { label: 'Viola', value: 'bg-purple-100 border-purple-300 text-purple-800' },
-  { label: 'Rosa', value: 'bg-pink-100 border-pink-300 text-pink-800' },
-  { label: 'Arancione', value: 'bg-orange-100 border-orange-300 text-orange-800' },
-  { label: 'Grigio', value: 'bg-gray-100 border-gray-300 text-gray-800' }
+  { label: 'Blu', value: '#3B82F6' },
+  { label: 'Verde', value: '#10B981' },
+  { label: 'Giallo', value: '#F59E0B' },
+  { label: 'Rosso', value: '#EF4444' },
+  { label: 'Viola', value: '#8B5CF6' },
+  { label: 'Rosa', value: '#EC4899' },
+  { label: 'Arancione', value: '#F97316' },
+  { label: 'Grigio', value: '#6B7280' }
 ];
 
 export const generateTimeSlots = () => {
