@@ -15,6 +15,11 @@ export const useAppointmentSaving = () => {
     addAppointment: ((appointment: Appointment) => void) | undefined,
     existingAppointments: Appointment[]
   ) => {
+    console.log('🔍 DEBUGGING - Start handleSaveAppointments:', {
+      addAppointmentExists: !!addAppointment,
+      addAppointmentType: typeof addAppointment
+    });
+
     if (!addAppointment) {
       console.error('addAppointment function is missing');
       toast.error('Errore interno: funzione di salvataggio mancante');
@@ -37,6 +42,8 @@ export const useAppointmentSaving = () => {
     });
     
     try {
+      console.log('🔍 DEBUGGING - About to call saveAppointments');
+      
       const result = await saveAppointments(
         mainAppointment,
         additionalAppointments,
@@ -44,6 +51,8 @@ export const useAppointmentSaving = () => {
         addAppointment,
         existingAppointments
       );
+      
+      console.log('🔍 DEBUGGING - saveAppointments returned:', result);
       
       const totalMainEvents = 1 + additionalAppointments.length;
       const successMessage = generateSuccessMessage(
@@ -75,6 +84,12 @@ export const useAppointmentSaving = () => {
       
     } catch (error) {
       console.error('❌ Errore critico nel processo di salvataggio:', error);
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('❌ Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        cause: error instanceof Error ? error.cause : undefined
+      });
       
       // Verifica se l'errore è solo locale controllando se l'appuntamento esiste su DB
       toast.error('Errore nel salvataggio. Ricarica la pagina per verificare se l\'appuntamento è stato creato.');
