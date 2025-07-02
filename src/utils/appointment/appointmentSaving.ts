@@ -1,6 +1,5 @@
-
 import { Appointment } from '@/types/appointment';
-import { saveAppointmentSafely, saveMultipleAppointments } from './saving/appointmentSaver';
+import { saveAppointmentSafely, saveMultipleAppointments, clearGeneratedIdsCache } from './saving/appointmentSaver';
 import { toast } from 'sonner';
 
 export const saveAppointments = async (
@@ -16,6 +15,9 @@ export const saveAppointments = async (
     recurringCount: recurringAppointments.length,
     totalToSave: 1 + additionalAppointments.length + recurringAppointments.length
   });
+
+  // Pulisce la cache degli ID all'inizio del processo
+  clearGeneratedIdsCache();
 
   const failedSaves: string[] = [];
 

@@ -9,6 +9,9 @@ interface SaveResult {
   error?: string;
 }
 
+// Set per tenere traccia degli ID generati in questa sessione
+const generatedIds = new Set<string>();
+
 // Genera un UUID v4 standard
 const generateStandardUUID = (): string => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -39,24 +42,42 @@ const checkIdExists = async (id: string): Promise<boolean> => {
   }
 };
 
-// Genera un ID unico garantito
-const generateUniqueId = async (maxRetries = 5): Promise<string> => {
+// Genera un ID unico garantito, controllando anche il set locale
+const generateUniqueId = async (maxRetries = 10): Promise<string> => {
   for (let i = 0; i < maxRetries; i++) {
     const id = generateStandardUUID();
+    
+    // Controlla prima nel set locale (più veloce)
+    if (generatedIds.has(id)) {
+      console.warn(`⚠️ ID duplicato nel set locale al tentativo ${i + 1}, rigenerando...`);
+      continue;
+    }
+    
+    // Poi controlla nel database
     const exists = await checkIdExists(id);
     
     if (!exists) {
       console.log(`✅ ID unico generato al tentativo ${i + 1}:`, id);
+      generatedIds.add(id); // Aggiungi al set locale
       return id;
     }
     
-    console.warn(`⚠️ ID duplicato rilevato al tentativo ${i + 1}, rigenerando...`);
+    console.warn(`⚠️ ID duplicato rilevato nel DB al tentativo ${i + 1}, rigenerando...`);
   }
   
-  // Fallback con timestamp per garantire unicità
-  const fallbackId = `${generateStandardUUID()}-${Date.now()}`;
-  console.log('🔄 Usando ID fallback con timestamp:', fallbackId);
+  // Fallback con timestamp e random per garantire unicità assoluta
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2);
+  const fallbackId = `${generateStandardUUID()}-${timestamp}-${random}`;
+  console.log('🔄 Usando ID fallback con timestamp e random:', fallbackId);
+  generatedIds.add(fallbackId);
   return fallbackId;
+};
+
+// Pulisce il set degli ID generati (chiamato all'inizio di un nuovo salvataggio)
+export const clearGeneratedIdsCache = () => {
+  generatedIds.clear();
+  console.log('🧹 Cache degli ID generati pulita');
 };
 
 export const saveAppointmentSafely = async (
@@ -64,7 +85,7 @@ export const saveAppointmentSafely = async (
   addAppointment: (appointment: Appointment) => void
 ): Promise<SaveResult> => {
   try {
-    // Genera un ID unico garantito
+    // Genera sempre un nuovo ID unico, ignorando quello esistente
     const uniqueId = await generateUniqueId();
     
     const appointmentWithUniqueId = {
@@ -121,6 +142,9 @@ export const saveMultipleAppointments = async (
     appointments: appointments.map(a => ({ client: a.client, date: a.date, time: a.time, originalId: a.id }))
   });
 
+  // Pulisce la cache degli ID prima di iniziare un nuovo batch di salvataggi
+  clearGeneratedIdsCache();
+
   for (let i = 0; i < appointments.length; i++) {
     const appointment = appointments[i];
     
@@ -149,7 +173,7 @@ export const saveMultipleAppointments = async (
 
     // Pausa più lunga tra i salvataggi per evitare conflitti
     if (i < appointments.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
     }
   }
 
