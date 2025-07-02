@@ -2,41 +2,71 @@
 export const isMobileDevice = (): boolean => {
   if (typeof navigator === 'undefined') return false;
   
-  // Controlli più approfonditi per dispositivi mobili
+  // Controlli multipli per garantire il rilevamento corretto
   const userAgent = navigator.userAgent.toLowerCase();
-  const mobileKeywords = [
-    'mobile', 'android', 'iphone', 'ipad', 'ipod', 
-    'blackberry', 'windows phone', 'opera mini',
-    'iemobile', 'wpdesktop', 'kindle', 'silk',
-    'fennec', 'maemo', 'webos'
+  console.log('🔍 USER AGENT COMPLETO:', navigator.userAgent);
+  
+  // Lista estesa di pattern mobile
+  const mobilePatterns = [
+    /android/i,
+    /webos/i,
+    /iphone/i,
+    /ipad/i,
+    /ipod/i,
+    /blackberry/i,
+    /windows phone/i,
+    /mobile/i,
+    /tablet/i,
+    /kindle/i,
+    /silk/i,
+    /opera mini/i,
+    /opera mobi/i
   ];
   
-  const isMobileUA = mobileKeywords.some(keyword => userAgent.includes(keyword));
+  const isMobileUA = mobilePatterns.some(pattern => pattern.test(navigator.userAgent));
   
-  // Controllo aggiuntivo basato su touch e dimensioni schermo
-  const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  const isSmallScreen = window.innerWidth <= 768 || window.innerHeight <= 1024;
+  // Controlli aggiuntivi più affidabili
+  const hasTouchScreen = 'ontouchstart' in window || 
+                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+                        (navigator as any).msMaxTouchPoints > 0;
   
-  const result = isMobileUA || (hasTouchScreen && isSmallScreen);
+  const isSmallScreen = window.innerWidth <= 768;
+  const hasSmallViewport = window.screen.width <= 768 || window.screen.availWidth <= 768;
   
-  console.log('🔍 RILEVAMENTO MOBILE DETTAGLIATO:', {
+  // Se anche uno solo di questi è vero, consideriamo mobile
+  const isMobileByUA = isMobileUA;
+  const isMobileByTouch = hasTouchScreen && isSmallScreen;
+  const isMobileByScreen = hasSmallViewport;
+  
+  // FORZA MOBILE se siamo in dubbio (più sicuro per il salvataggio)
+  const finalResult = isMobileByUA || isMobileByTouch || isMobileByScreen;
+  
+  console.log('📱 RILEVAMENTO MOBILE DETTAGLIATO V2:', {
     userAgent: navigator.userAgent,
-    userAgentLower: userAgent,
-    mobileKeywords: mobileKeywords.filter(k => userAgent.includes(k)),
-    isMobileUA,
-    hasTouchScreen,
-    isSmallScreen,
-    windowSize: { width: window.innerWidth, height: window.innerHeight },
-    maxTouchPoints: navigator.maxTouchPoints,
-    finalResult: result
+    checks: {
+      mobileUA: isMobileByUA,
+      touchAndSmall: isMobileByTouch,
+      smallScreen: isMobileByScreen
+    },
+    metrics: {
+      windowWidth: window.innerWidth,
+      screenWidth: window.screen.width,
+      availWidth: window.screen.availWidth,
+      maxTouchPoints: navigator.maxTouchPoints,
+      hasTouchStart: 'ontouchstart' in window
+    },
+    finalResult,
+    willUseMobileDelays: finalResult
   });
   
-  return result;
+  return finalResult;
 };
 
 export const getConnectionType = (): string => {
   try {
-    const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    const connection = (navigator as any).connection || 
+                      (navigator as any).mozConnection || 
+                      (navigator as any).webkitConnection;
     if (connection) {
       console.log('📶 CONNESSIONE RILEVATA:', {
         effectiveType: connection.effectiveType,
@@ -56,32 +86,35 @@ export const getMobileDelays = () => {
   const isMobile = isMobileDevice();
   const connectionType = getConnectionType();
   
-  // Delay molto più lunghi per mobile per garantire stabilità
+  // DELAY MOLTO PIÙ AGGRESSIVI per garantire funzionamento mobile
   const delays = {
-    saveDelay: isMobile ? 2000 : 300, // 2 secondi per mobile
-    retryDelay: (attempt: number) => isMobile ? attempt * 3000 : attempt * 600, // 3 secondi per retry mobile
-    additionalDelay: isMobile ? 3000 : 600, // 3 secondi tra appuntamenti aggiuntivi mobile
-    recurringDelay: isMobile ? 4000 : 800, // 4 secondi tra appuntamenti ricorrenti mobile
+    // Delay base aumentati significativamente
+    saveDelay: isMobile ? 3000 : 500,        // 3 secondi mobile vs 0.5 desktop
+    retryDelay: (attempt: number) => isMobile ? attempt * 4000 : attempt * 800, // 4s mobile vs 0.8s desktop
+    additionalDelay: isMobile ? 4000 : 800,   // 4 secondi tra appuntamenti aggiuntivi
+    recurringDelay: isMobile ? 6000 : 1000,   // 6 secondi tra ricorrenti mobile!
     connectionType,
-    isMobile // Aggiungiamo questo per debug
+    isMobile
   };
   
-  console.log('📱 MOBILE DELAYS CONFIGURATI - DETTAGLIO COMPLETO:', {
-    isMobile,
-    connectionType,
-    userAgent: navigator.userAgent,
-    windowSize: { width: window.innerWidth, height: window.innerHeight },
+  console.log('📱 MOBILE DELAYS V2 - AGGRESSIVI PER STABILITÀ:', {
+    rilevamento: {
+      isMobile,
+      userAgent: navigator.userAgent.substring(0, 100) + '...',
+      connectionType
+    },
     delays: {
       saveDelay: `${delays.saveDelay}ms`,
-      retryDelayExample: `${delays.retryDelay(1)}ms (primo retry)`,
+      retryExample: `${delays.retryDelay(1)}ms (primo retry)`,
       additionalDelay: `${delays.additionalDelay}ms`,
       recurringDelay: `${delays.recurringDelay}ms`
     },
     confronto: {
-      desktop: { saveDelay: '300ms', recurringDelay: '800ms' },
-      mobile: { saveDelay: '2000ms', recurringDelay: '4000ms' },
-      staUsando: isMobile ? 'MOBILE' : 'DESKTOP'
-    }
+      desktop: { saveDelay: '500ms', recurringDelay: '1000ms' },
+      mobile: { saveDelay: '3000ms', recurringDelay: '6000ms' },
+      modalitàAttiva: isMobile ? '🔴 MOBILE (DELAY LUNGHI)' : '🟢 DESKTOP (DELAY CORTI)'
+    },
+    tempoTotaleStimato: isMobile ? 'Circa 30-60 secondi per 5 appuntamenti' : 'Circa 5-10 secondi'
   });
   
   return delays;
