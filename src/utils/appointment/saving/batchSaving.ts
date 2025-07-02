@@ -2,7 +2,7 @@
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
 import { saveAppointmentWithRetry } from './retryMechanism';
-import { isMobileDevice } from './mobileDetection';
+import { getMobileDelays } from './mobileDetection';
 
 export const saveAppointmentsBatch = async (
   appointments: Appointment[],
@@ -10,7 +10,7 @@ export const saveAppointmentsBatch = async (
   existingAppointments: Appointment[],
   batchType: 'additional' | 'recurring'
 ): Promise<{ savedCount: number; failedSaves: string[] }> => {
-  const isMobile = isMobileDevice();
+  const delays = getMobileDelays();
   const failedSaves: string[] = [];
   let savedCount = 0;
 
@@ -19,7 +19,14 @@ export const saveAppointmentsBatch = async (
     return { savedCount: 0, failedSaves: [] };
   }
 
-  console.log(`📋 INIZIO BATCH ${batchType.toUpperCase()} - ${appointments.length} appuntamenti - MOBILE: ${isMobile}`);
+  const batchDelay = batchType === 'recurring' ? delays.recurringDelay : delays.additionalDelay;
+  
+  console.log(`📋 INIZIO BATCH ${batchType.toUpperCase()}:`, {
+    appointmentsCount: appointments.length,
+    batchDelay: batchDelay,
+    saveDelay: delays.saveDelay,
+    connectionType: delays.connectionType
+  });
 
   // Progress toast solo per batch grandi
   let progressToastId: string | number | undefined;
@@ -27,12 +34,11 @@ export const saveAppointmentsBatch = async (
     progressToastId = toast.loading(`Salvando ${appointments.length} appuntamenti...`);
   }
 
-  // SALVATAGGIO SEQUENZIALE SEMPLIFICATO
+  // SALVATAGGIO SEQUENZIALE CON TEMPI REALI
   for (let i = 0; i < appointments.length; i++) {
     const appointment = appointments[i];
     
-    console.log(`💾 [${i + 1}/${appointments.length}] PROCESSANDO:`, {
-      type: batchType,
+    console.log(`💾 [${i + 1}/${appointments.length}] PROCESSANDO BATCH ${batchType}:`, {
       date: appointment.date,
       time: appointment.time,
       client: appointment.client
@@ -65,11 +71,10 @@ export const saveAppointmentsBatch = async (
       toast.loading(`Salvati ${savedCount}/${appointments.length}...`, { id: progressToastId });
     }
     
-    // Pausa tra salvataggi - FONDAMENTALE
+    // PAUSA OBBLIGATORIA TRA SALVATAGGI usando i delays configurati
     if (i < appointments.length - 1) {
-      const delay = isMobile ? 800 : 300; // Ridotto ma sufficiente
-      console.log(`⏱️ Pausa di ${delay}ms prima del prossimo...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      console.log(`⏱️ PAUSA BATCH ${batchType} di ${batchDelay}ms prima del prossimo...`);
+      await new Promise(resolve => setTimeout(resolve, batchDelay));
     }
   }
 
@@ -81,7 +86,8 @@ export const saveAppointmentsBatch = async (
     salvati: savedCount,
     totale: appointments.length,
     falliti: failedSaves.length,
-    successRate: `${Math.round((savedCount / appointments.length) * 100)}%`
+    successRate: `${Math.round((savedCount / appointments.length) * 100)}%`,
+    totalTimeEstimate: `${(appointments.length * batchDelay) / 1000}s`
   });
 
   return { savedCount, failedSaves };

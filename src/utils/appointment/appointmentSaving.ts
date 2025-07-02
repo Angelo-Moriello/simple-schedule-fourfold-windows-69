@@ -3,7 +3,7 @@ import { Appointment } from '@/types/appointment';
 import { saveAppointmentWithRetry } from './saving/retryMechanism';
 import { saveAppointmentsBatch } from './saving/batchSaving';
 import { generateSuccessMessage } from './saving/successMessage';
-import { isMobileDevice } from './saving/mobileDetection';
+import { getMobileDelays } from './saving/mobileDetection';
 
 export const saveAppointments = async (
   mainAppointment: Appointment,
@@ -12,14 +12,15 @@ export const saveAppointments = async (
   addAppointment: (appointment: Appointment) => void,
   existingAppointments: Appointment[] = []
 ) => {
-  const isMobile = isMobileDevice();
+  const delays = getMobileDelays();
   
-  console.log('🚀 INIZIO PROCESSO SALVATAGGIO OTTIMIZZATO:', {
-    isMobile,
+  console.log('🚀 INIZIO PROCESSO SALVATAGGIO CON TEMPI REALI:', {
+    delays: delays,
     mainAppointment: mainAppointment.date,
     additionalCount: additionalAppointments.length,
     recurringCount: recurringAppointments.length,
-    totalToSave: 1 + additionalAppointments.length + recurringAppointments.length
+    totalToSave: 1 + additionalAppointments.length + recurringAppointments.length,
+    estimatedTime: `${((additionalAppointments.length * delays.additionalDelay) + (recurringAppointments.length * delays.recurringDelay)) / 1000}s`
   });
 
   const failedSaves: string[] = [];
@@ -38,9 +39,10 @@ export const saveAppointments = async (
     failedSaves.push(`Principale: ${errorMsg}`);
   }
 
-  // Pausa minima tra fasi
+  // Pausa tra fasi usando i delays configurati
   if (additionalAppointments.length > 0 || recurringAppointments.length > 0) {
-    await new Promise(resolve => setTimeout(resolve, isMobile ? 500 : 200));
+    console.log(`⏱️ PAUSA TRA FASI di ${delays.saveDelay}ms`);
+    await new Promise(resolve => setTimeout(resolve, delays.saveDelay));
   }
 
   // 2. Salva appuntamenti aggiuntivi
@@ -54,18 +56,19 @@ export const saveAppointments = async (
     );
     failedSaves.push(...additionalResult.failedSaves);
     
-    // Pausa prima dei ricorrenti
+    // Pausa prima dei ricorrenti usando i delays configurati
     if (recurringAppointments.length > 0) {
-      await new Promise(resolve => setTimeout(resolve, isMobile ? 500 : 200));
+      console.log(`⏱️ PAUSA PRIMA RICORRENTI di ${delays.saveDelay}ms`);
+      await new Promise(resolve => setTimeout(resolve, delays.saveDelay));
     }
   }
 
   // 3. Salva appuntamenti ricorrenti - LA PARTE PIÙ CRITICA
   if (recurringAppointments.length > 0) {
-    console.log('📋 3. Salvando appuntamenti ricorrenti - FASE CRITICA:', {
+    console.log('📋 3. Salvando appuntamenti ricorrenti - FASE CRITICA CON TEMPI REALI:', {
       count: recurringAppointments.length,
-      dates: recurringAppointments.map(a => a.date).slice(0, 5), // primi 5 per debug
-      isMobile
+      recurringDelay: delays.recurringDelay,
+      estimatedTime: `${(recurringAppointments.length * delays.recurringDelay) / 1000}s`
     });
     
     const recurringResult = await saveAppointmentsBatch(

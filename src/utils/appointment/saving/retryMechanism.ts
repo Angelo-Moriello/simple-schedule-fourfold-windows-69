@@ -2,7 +2,7 @@
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
 import { checkTimeConflicts } from './conflictDetection';
-import { isMobileDevice } from './mobileDetection';
+import { getMobileDelays } from './mobileDetection';
 
 export interface SaveResult {
   success: boolean;
@@ -15,17 +15,20 @@ export const saveAppointmentWithRetry = async (
   existingAppointments: Appointment[],
   index: number,
   total: number,
-  maxRetries = 2 // Ridotto drasticamente per mobile
+  maxRetries = 2
 ): Promise<SaveResult> => {
-  const isMobile = isMobileDevice();
+  const delays = getMobileDelays();
+  
+  console.log(`🔄 [${index + 1}/${total}] SALVATAGGIO TENTATIVO - Delays configurati:`, {
+    client: appointment.client,
+    date: appointment.date,
+    time: appointment.time,
+    saveDelay: delays.saveDelay,
+    connectionType: delays.connectionType
+  });
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    console.log(`🔄 [${index + 1}/${total}] SALVATAGGIO TENTATIVO ${attempt}/${maxRetries}`, {
-      client: appointment.client,
-      date: appointment.date,
-      time: appointment.time,
-      mobile: isMobile
-    });
+    console.log(`💾 [${index + 1}/${total}] TENTATIVO ${attempt}/${maxRetries}`);
     
     try {
       // Verifica conflitti solo se necessario
@@ -37,15 +40,15 @@ export const saveAppointmentWithRetry = async (
         }
       }
       
-      // SALVATAGGIO DIRETTO SENZA COMPLICAZIONI
-      console.log(`💾 [${index + 1}/${total}] SALVATAGGIO DIRETTO`);
+      // SALVATAGGIO DIRETTO
+      console.log(`💾 [${index + 1}/${total}] SALVANDO...`);
       addAppointment(appointment);
       
-      // Pausa minima ma sufficiente
-      const delay = isMobile ? 500 : 200;
-      await new Promise(resolve => setTimeout(resolve, delay));
+      // PAUSA OBBLIGATORIA usando i delays configurati
+      console.log(`⏱️ [${index + 1}/${total}] PAUSA di ${delays.saveDelay}ms`);
+      await new Promise(resolve => setTimeout(resolve, delays.saveDelay));
       
-      console.log(`✅ [${index + 1}/${total}] SALVATO con successo`);
+      console.log(`✅ [${index + 1}/${total}] SALVATO con successo dopo ${delays.saveDelay}ms`);
       return { success: true };
       
     } catch (error) {
@@ -57,8 +60,9 @@ export const saveAppointmentWithRetry = async (
         return { success: false, error: errorMsg };
       }
       
-      // Pausa breve tra retry
-      const retryDelay = isMobile ? 1000 : 500;
+      // Pausa tra retry usando i delays configurati
+      const retryDelay = delays.retryDelay(attempt);
+      console.log(`⏱️ [${index + 1}/${total}] RETRY in ${retryDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
   }
