@@ -1,18 +1,9 @@
 
 import { toast } from 'sonner';
 import { validateAppointment } from './saving/appointmentValidator';
+import { Appointment } from '@/types/appointment';
 
-interface MultipleEvent {
-  id: string;
-  employeeId: string;
-  time: string;
-  serviceType: string;
-  title: string;
-  duration: string;
-  notes: string;
-}
-
-export const validateAppointmentForm = (formData: any, multipleEvents: MultipleEvent[] = []) => {
+export const validateAppointmentForm = (formData: any, multipleEvents: Appointment[] = []) => {
   // Validazione base del form
   if (!formData.client?.trim()) {
     toast.error('Il nome del cliente è obbligatorio');
@@ -58,7 +49,7 @@ export const validateAppointmentForm = (formData: any, multipleEvents: MultipleE
       return false;
     }
 
-    if (!event.duration || parseInt(event.duration) <= 0) {
+    if (!event.duration || event.duration <= 0) {
       toast.error(`Evento ${i + 1}: durata non valida`);
       return false;
     }

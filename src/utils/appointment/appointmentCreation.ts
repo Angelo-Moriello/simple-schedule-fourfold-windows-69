@@ -1,3 +1,4 @@
+
 import { Appointment } from '@/types/appointment';
 import { generateUUID } from '@/utils/appointmentFormUtils';
 import { format } from 'date-fns';
@@ -25,29 +26,19 @@ export const createAppointmentFromData = (
   };
 };
 
-interface MultipleEvent {
-  id: string;
-  employeeId: string;
-  time: string;
-  serviceType: string;
-  title: string;
-  duration: string;
-  notes: string;
-}
-
 export const createAdditionalAppointments = (
   formData: any,
   clientId: string,
   dateStr: string,
-  multipleEvents: MultipleEvent[]
+  multipleEvents: Appointment[]
 ): Appointment[] => {
   return multipleEvents.map(event => 
     createAppointmentFromData(
       { 
         ...formData, 
-        employeeId: event.employeeId, 
+        employeeId: event.employeeId.toString(), 
         time: event.time, 
-        duration: event.duration, 
+        duration: event.duration.toString(), 
         serviceType: event.serviceType, 
         title: event.title, 
         notes: event.notes 
@@ -62,7 +53,7 @@ export const createRecurringAppointments = (
   formData: any,
   clientId: string,
   selectedDates: Date[],
-  multipleEvents: MultipleEvent[],
+  multipleEvents: Appointment[],
   mainDate: Date
 ): Appointment[] => {
   const recurringAppointments: Appointment[] = [];
@@ -107,9 +98,9 @@ export const createRecurringAppointments = (
       const recurringAdditionalAppointment = createAppointmentFromData(
         { 
           ...formData, 
-          employeeId: event.employeeId, 
+          employeeId: event.employeeId.toString(), 
           time: event.time, 
-          duration: event.duration, 
+          duration: event.duration.toString(), 
           serviceType: event.serviceType, 
           title: event.title, 
           notes: event.notes 

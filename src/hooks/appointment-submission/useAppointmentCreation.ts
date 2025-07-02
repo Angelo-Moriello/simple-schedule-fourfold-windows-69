@@ -2,23 +2,12 @@
 import { Appointment } from '@/types/appointment';
 import { format } from 'date-fns';
 
-// Non genera più ID qui - sarà fatto dal saver che controlla l'unicità
-interface MultipleEvent {
-  id: string;
-  employeeId: string;
-  time: string;
-  serviceType: string;
-  title: string;
-  duration: string;
-  notes: string;
-}
-
 export const useAppointmentCreation = () => {
   const createAppointments = (
     formData: any,
     finalClientId: string,
     date: Date,
-    multipleEvents: MultipleEvent[],
+    multipleEvents: Appointment[],
     selectedDates: Date[],
     appointmentToEdit: Appointment | null
   ) => {
@@ -59,12 +48,12 @@ export const useAppointmentCreation = () => {
     const additionalAppointments: Appointment[] = multipleEvents.map((event, index) => {
       return {
         id: `temp-additional-${index}`, // ID temporaneo, sarà sostituito
-        employeeId: parseInt(event.employeeId),
+        employeeId: event.employeeId,
         date: format(date, 'yyyy-MM-dd'),
         time: event.time,
         title: event.title || '',
         client: formData.client,
-        duration: parseInt(event.duration),
+        duration: event.duration,
         notes: event.notes || '',
         email: formData.email || '',
         phone: formData.phone || '',
@@ -101,7 +90,7 @@ export const useAppointmentCreation = () => {
         return selectedDateString !== mainDateString;
       });
 
-      console.log('DEBUG - Date filtrate (senza data principale):', {
+      console.log('DEBUG - Date filterate (senza data principale):', {
         original: selectedDates.length,
         filtered: filteredDates.length,
         excluded: mainDateString,
