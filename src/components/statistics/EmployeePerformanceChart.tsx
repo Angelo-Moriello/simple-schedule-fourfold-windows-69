@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Users, AlertCircle } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface EmployeeStats {
   name: string;
@@ -15,6 +16,8 @@ interface EmployeePerformanceChartProps {
 }
 
 const EmployeePerformanceChart: React.FC<EmployeePerformanceChartProps> = ({ employeeStats }) => {
+  const isMobile = useIsMobile();
+
   // Genera colori diversi per ogni dipendente se non specificati
   const getEmployeeColor = (index: number, originalColor?: string) => {
     const colors = [
@@ -68,60 +71,62 @@ const EmployeePerformanceChart: React.FC<EmployeePerformanceChartProps> = ({ emp
       </CardHeader>
       <CardContent className="p-4 sm:p-6 lg:p-8">
         <div className="space-y-6">
-          {/* Grafico a barre orizzontali migliorato */}
-          <div className="h-64 sm:h-80 lg:h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={employeeStats} layout="horizontal" margin={{ top: 20, right: 30, left: 80, bottom: 20 }}>
-                <defs>
-                  {employeeStats.map((_, index) => (
-                    <linearGradient key={index} id={`employeeGradient${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor={getEmployeeColor(index, employeeStats[index]?.color)} />
-                      <stop offset="100%" stopColor={`${getEmployeeColor(index, employeeStats[index]?.color)}CC`} />
-                    </linearGradient>
-                  ))}
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(200, 200, 200, 0.3)" />
-                <XAxis 
-                  type="number" 
-                  tick={{ fill: '#374151', fontSize: 12 }}
-                  tickLine={{ stroke: '#9CA3AF' }}
-                  axisLine={{ stroke: '#9CA3AF' }}
-                />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  tick={{ fill: '#374151', fontSize: 12 }}
-                  tickLine={{ stroke: '#9CA3AF' }}
-                  axisLine={{ stroke: '#9CA3AF' }}
-                  width={120}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    border: '1px solid rgba(229, 231, 235, 0.8)',
-                    borderRadius: '12px',
-                    backdropFilter: 'blur(8px)',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                    fontSize: '14px'
-                  }}
-                  formatter={(value: any) => [`${value} appuntamenti`, 'Totale']}
-                  labelFormatter={(name: any) => `Dipendente: ${name}`}
-                />
-                <Bar 
-                  dataKey="appuntamenti" 
-                  name="Appuntamenti"
-                  radius={[0, 8, 8, 0]}
-                >
-                  {employeeStats.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={`url(#employeeGradient${index})`}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {/* Grafico a barre orizzontali - nascosto in modalità mobile */}
+          {!isMobile && (
+            <div className="h-64 sm:h-80 lg:h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={employeeStats} layout="horizontal" margin={{ top: 20, right: 30, left: 80, bottom: 20 }}>
+                  <defs>
+                    {employeeStats.map((_, index) => (
+                      <linearGradient key={index} id={`employeeGradient${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor={getEmployeeColor(index, employeeStats[index]?.color)} />
+                        <stop offset="100%" stopColor={`${getEmployeeColor(index, employeeStats[index]?.color)}CC`} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(200, 200, 200, 0.3)" />
+                  <XAxis 
+                    type="number" 
+                    tick={{ fill: '#374151', fontSize: 12 }}
+                    tickLine={{ stroke: '#9CA3AF' }}
+                    axisLine={{ stroke: '#9CA3AF' }}
+                  />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    tick={{ fill: '#374151', fontSize: 12 }}
+                    tickLine={{ stroke: '#9CA3AF' }}
+                    axisLine={{ stroke: '#9CA3AF' }}
+                    width={120}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      border: '1px solid rgba(229, 231, 235, 0.8)',
+                      borderRadius: '12px',
+                      backdropFilter: 'blur(8px)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                      fontSize: '14px'
+                    }}
+                    formatter={(value: any) => [`${value} appuntamenti`, 'Totale']}
+                    labelFormatter={(name: any) => `Dipendente: ${name}`}
+                  />
+                  <Bar 
+                    dataKey="appuntamenti" 
+                    name="Appuntamenti"
+                    radius={[0, 8, 8, 0]}
+                  >
+                    {employeeStats.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={`url(#employeeGradient${index})`}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           {/* Legenda dettagliata */}
           <div className="bg-gradient-to-r from-gray-50 to-green-50/30 rounded-xl p-4 border border-gray-200/50">
