@@ -9,16 +9,6 @@ import ContactFields from './fields/ContactFields';
 import DurationNotesFields from './fields/DurationNotesFields';
 import MultipleEventsManager from './MultipleEventsManager';
 
-interface MultipleEvent {
-  id: string;
-  employeeId: string;
-  time: string;
-  serviceType: string;
-  title: string;
-  duration: string;
-  notes: string;
-}
-
 interface AppointmentFormFieldsProps {
   formData: Appointment;
   setFormData: (data: Appointment) => void;
@@ -28,8 +18,8 @@ interface AppointmentFormFieldsProps {
   availableServices: string[];
   selectedEmployee?: Employee;
   appointmentToEdit: Appointment | null;
-  multipleEvents: MultipleEvent[];
-  onMultipleEventsChange: (events: MultipleEvent[]) => void;
+  multipleEvents: Appointment[];
+  onMultipleEventsChange: (events: Appointment[]) => void;
   selectedDates: Date[];
   onSelectedDatesChange: (dates: Date[]) => void;
   mainDate: Date;
@@ -117,6 +107,7 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
           selectedEmployee={selectedEmployee}
           mainEmployeeId={formData.employeeId.toString()}
           mainTime={formData.time}
+          mainDate={mainDate}
         />
       </div>
     </div>

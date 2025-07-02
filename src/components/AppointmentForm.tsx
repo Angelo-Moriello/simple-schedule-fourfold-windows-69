@@ -8,16 +8,6 @@ import { useAppointmentForm, appointmentColors, generateTimeSlots } from './appo
 import { getStoredServices, setupServicesRealtimeListener } from '@/utils/serviceStorage';
 import { format } from 'date-fns';
 
-interface MultipleEvent {
-  id: string;
-  employeeId: string;
-  time: string;
-  serviceType: string;
-  title: string;
-  duration: string;
-  notes: string;
-}
-
 interface AppointmentFormProps {
   isOpen: boolean;
   onClose: () => void;
