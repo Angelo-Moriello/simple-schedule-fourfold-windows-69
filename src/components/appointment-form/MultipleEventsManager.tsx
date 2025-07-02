@@ -3,30 +3,22 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { X, Plus } from 'lucide-react';
-import { Employee } from '@/types/appointment';
+import { Employee, Appointment } from '@/types/appointment';
 import EmployeeTimeFields from './fields/EmployeeTimeFields';
 import ServiceTitleFields from './fields/ServiceTitleFields';
 import DurationNotesFields from './fields/DurationNotesFields';
-
-interface MultipleEvent {
-  id: string;
-  employeeId: string;
-  time: string;
-  serviceType: string;
-  title: string;
-  duration: string;
-  notes: string;
-}
+import { format } from 'date-fns';
 
 interface MultipleEventsManagerProps {
-  events: MultipleEvent[];
-  onEventsChange: (events: MultipleEvent[]) => void;
+  events: Appointment[];
+  onEventsChange: (events: Appointment[]) => void;
   employees: Employee[];
   timeSlots: string[];
   availableServices: string[];
   selectedEmployee: Employee | undefined;
   mainEmployeeId: string;
   mainTime: string;
+  mainDate: Date;
 }
 
 const MultipleEventsManager: React.FC<MultipleEventsManagerProps> = ({
@@ -37,17 +29,24 @@ const MultipleEventsManager: React.FC<MultipleEventsManagerProps> = ({
   availableServices,
   selectedEmployee,
   mainEmployeeId,
-  mainTime
+  mainTime,
+  mainDate
 }) => {
   const addEvent = () => {
-    const newEvent: MultipleEvent = {
+    const newEvent: Appointment = {
       id: Date.now().toString(),
-      employeeId: mainEmployeeId,
+      employeeId: parseInt(mainEmployeeId) || 0,
+      date: format(mainDate, 'yyyy-MM-dd'),
       time: '',
       serviceType: '',
       title: '',
-      duration: '30',
-      notes: ''
+      client: '',
+      duration: 30,
+      notes: '',
+      email: '',
+      phone: '',
+      color: 'bg-blue-500',
+      clientId: ''
     };
     onEventsChange([...events, newEvent]);
   };
@@ -56,15 +55,15 @@ const MultipleEventsManager: React.FC<MultipleEventsManagerProps> = ({
     onEventsChange(events.filter(event => event.id !== eventId));
   };
 
-  const updateEvent = (eventId: string, field: string, value: string) => {
+  const updateEvent = (eventId: string, updatedEvent: Appointment) => {
     onEventsChange(events.map(event => 
-      event.id === eventId ? { ...event, [field]: value } : event
+      event.id === eventId ? updatedEvent : event
     ));
   };
 
-  const isTimeConflict = (eventTime: string, eventDuration: string, excludeId: string) => {
+  const isTimeConflict = (eventTime: string, eventDuration: number, excludeId: string) => {
     const eventStart = new Date(`2000-01-01T${eventTime}:00`);
-    const eventEnd = new Date(eventStart.getTime() + parseInt(eventDuration) * 60000);
+    const eventEnd = new Date(eventStart.getTime() + eventDuration * 60000);
     
     // Check against main appointment
     if (mainTime && eventTime) {
@@ -81,7 +80,7 @@ const MultipleEventsManager: React.FC<MultipleEventsManagerProps> = ({
       if (event.id === excludeId || !event.time) return false;
       
       const otherStart = new Date(`2000-01-01T${event.time}:00`);
-      const otherEnd = new Date(otherStart.getTime() + parseInt(event.duration) * 60000);
+      const otherEnd = new Date(otherStart.getTime() + event.duration * 60000);
       
       return (eventStart < otherEnd && eventEnd > otherStart);
     });
@@ -110,7 +109,7 @@ const MultipleEventsManager: React.FC<MultipleEventsManagerProps> = ({
       )}
 
       {events.map((event, index) => {
-        const eventEmployee = employees.find(emp => emp.id === parseInt(event.employeeId));
+        const eventEmployee = employees.find(emp => emp.id === event.employeeId);
         const eventAvailableServices = eventEmployee && availableServices.length > 0 ? availableServices : [];
         const hasTimeConflict = event.time && isTimeConflict(event.time, event.duration, event.id);
 
@@ -141,13 +140,7 @@ const MultipleEventsManager: React.FC<MultipleEventsManagerProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <EmployeeTimeFields
                   formData={event}
-                  setFormData={(data) => {
-                    Object.keys(data).forEach(key => {
-                      if (data[key] !== event[key]) {
-                        updateEvent(event.id, key, data[key]);
-                      }
-                    });
-                  }}
+                  setFormData={(updatedData) => updateEvent(event.id, updatedData)}
                   employees={employees}
                   timeSlots={timeSlots}
                 />
@@ -155,26 +148,14 @@ const MultipleEventsManager: React.FC<MultipleEventsManagerProps> = ({
                 <div className="space-y-4">
                   <ServiceTitleFields
                     formData={event}
-                    setFormData={(data) => {
-                      Object.keys(data).forEach(key => {
-                        if (data[key] !== event[key]) {
-                          updateEvent(event.id, key, data[key]);
-                        }
-                      });
-                    }}
+                    setFormData={(updatedData) => updateEvent(event.id, updatedData)}
                     availableServices={eventAvailableServices}
                     selectedEmployee={eventEmployee}
                   />
 
                   <DurationNotesFields
                     formData={event}
-                    setFormData={(data) => {
-                      Object.keys(data).forEach(key => {
-                        if (data[key] !== event[key]) {
-                          updateEvent(event.id, key, data[key]);
-                        }
-                      });
-                    }}
+                    setFormData={(updatedData) => updateEvent(event.id, updatedData)}
                   />
                 </div>
               </div>
