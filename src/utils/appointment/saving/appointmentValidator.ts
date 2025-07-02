@@ -28,6 +28,11 @@ export const validateAppointment = (appointment: Appointment): { isValid: boolea
     errors.push('Durata non valida');
   }
 
+  // Verifica che l'ID sia valido (formato UUID)
+  if (!appointment.id || !appointment.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    errors.push('ID appuntamento non valido');
+  }
+
   return {
     isValid: errors.length === 0,
     errors
@@ -57,4 +62,12 @@ export const checkTimeConflicts = (
     }
   }
   return false;
+};
+
+// Nuova funzione per verificare conflitti di ID
+export const checkIdConflicts = (
+  newAppointment: Appointment,
+  existingAppointments: Appointment[]
+): boolean => {
+  return existingAppointments.some(existing => existing.id === newAppointment.id);
 };

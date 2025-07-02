@@ -8,26 +8,42 @@ interface SaveResult {
   error?: string;
 }
 
+// Genera un UUID unico per ogni chiamata
+const generateUniqueId = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export const saveAppointmentSafely = async (
   appointment: Appointment,
   addAppointment: (appointment: Appointment) => void
 ): Promise<SaveResult> => {
   try {
-    console.log('💾 Salvando appuntamento:', {
-      client: appointment.client,
-      date: appointment.date,
-      time: appointment.time,
-      id: appointment.id
+    // Genera un nuovo ID unico per ogni appuntamento per evitare conflitti
+    const appointmentWithUniqueId = {
+      ...appointment,
+      id: generateUniqueId()
+    };
+
+    console.log('💾 Salvando appuntamento con ID unico:', {
+      client: appointmentWithUniqueId.client,
+      date: appointmentWithUniqueId.date,
+      time: appointmentWithUniqueId.time,
+      id: appointmentWithUniqueId.id,
+      originalId: appointment.id
     });
 
     // Salva su Supabase PRIMA
-    await addAppointmentToSupabase(appointment);
-    console.log('✅ Appuntamento salvato su Supabase:', appointment.id);
+    await addAppointmentToSupabase(appointmentWithUniqueId);
+    console.log('✅ Appuntamento salvato su Supabase:', appointmentWithUniqueId.id);
     
     // Solo se il salvataggio su Supabase è riuscito, aggiorna lo stato locale
     try {
-      addAppointment(appointment);
-      console.log('✅ Stato locale aggiornato con successo:', appointment.id);
+      addAppointment(appointmentWithUniqueId);
+      console.log('✅ Stato locale aggiornato con successo:', appointmentWithUniqueId.id);
     } catch (localError) {
       console.warn('⚠️ Errore aggiornamento stato locale (ma salvato su DB):', localError);
       // Non considerare questo un errore critico dato che il salvataggio su DB è riuscito
@@ -40,7 +56,8 @@ export const saveAppointmentSafely = async (
     console.error('❌ Errore nel salvare appuntamento:', {
       appointmentId: appointment.id,
       client: appointment.client,
-      error: errorMsg
+      error: errorMsg,
+      fullError: error
     });
     
     return { success: false, error: errorMsg };
@@ -57,7 +74,7 @@ export const saveMultipleAppointments = async (
 
   console.log('🚀 Inizio salvataggio multiplo:', {
     totalAppointments: appointments.length,
-    appointments: appointments.map(a => ({ client: a.client, date: a.date, time: a.time }))
+    appointments: appointments.map(a => ({ client: a.client, date: a.date, time: a.time, originalId: a.id }))
   });
 
   for (let i = 0; i < appointments.length; i++) {
@@ -66,7 +83,8 @@ export const saveMultipleAppointments = async (
     console.log(`📝 Salvando appuntamento ${i + 1}/${appointments.length}:`, {
       client: appointment.client,
       date: appointment.date,
-      time: appointment.time
+      time: appointment.time,
+      originalId: appointment.id
     });
 
     const result = await saveAppointmentSafely(appointment, addAppointment);
@@ -87,7 +105,7 @@ export const saveMultipleAppointments = async (
 
     // Pausa breve tra i salvataggi per evitare sovraccarico
     if (i < appointments.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
   }
 
