@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -23,7 +23,7 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
 }) => {
   const [showCalendar, setShowCalendar] = useState(false);
 
-  const handleDateSelect = (date: Date | undefined) => {
+  const handleDateSelect = useCallback((date: Date | undefined) => {
     if (!date) return;
 
     // Don't allow selecting the main appointment date
@@ -32,30 +32,44 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
     }
 
     const dateString = format(date, 'yyyy-MM-dd');
-    const isAlreadySelected = selectedDates.some(
-      selectedDate => format(selectedDate, 'yyyy-MM-dd') === dateString
-    );
+    
+    // Use functional update to ensure we're working with the latest state
+    onDatesChange((prevDates) => {
+      const isAlreadySelected = prevDates.some(
+        selectedDate => format(selectedDate, 'yyyy-MM-dd') === dateString
+      );
 
-    if (isAlreadySelected) {
-      // Remove date if already selected
-      onDatesChange(selectedDates.filter(
-        selectedDate => format(selectedDate, 'yyyy-MM-dd') !== dateString
-      ));
-    } else {
-      // Add date if not selected
-      onDatesChange([...selectedDates, date]);
-    }
-  };
+      if (isAlreadySelected) {
+        // Remove date if already selected
+        const newDates = prevDates.filter(
+          selectedDate => format(selectedDate, 'yyyy-MM-dd') !== dateString
+        );
+        console.log('DEBUG - Data rimossa:', dateString, 'Date rimanenti:', newDates.length);
+        return newDates;
+      } else {
+        // Add date if not selected
+        const newDates = [...prevDates, date];
+        console.log('DEBUG - Data aggiunta:', dateString, 'Totale date:', newDates.length);
+        return newDates;
+      }
+    });
+  }, [mainDate, onDatesChange]);
 
-  const removeDate = (dateToRemove: Date) => {
-    onDatesChange(selectedDates.filter(
-      date => format(date, 'yyyy-MM-dd') !== format(dateToRemove, 'yyyy-MM-dd')
-    ));
-  };
+  const removeDate = useCallback((dateToRemove: Date) => {
+    const dateString = format(dateToRemove, 'yyyy-MM-dd');
+    onDatesChange((prevDates) => {
+      const newDates = prevDates.filter(
+        date => format(date, 'yyyy-MM-dd') !== dateString
+      );
+      console.log('DEBUG - Data rimossa manualmente:', dateString, 'Date rimanenti:', newDates.length);
+      return newDates;
+    });
+  }, [onDatesChange]);
 
-  const clearAllDates = () => {
+  const clearAllDates = useCallback(() => {
+    console.log('DEBUG - Cancellazione di tutte le date');
     onDatesChange([]);
-  };
+  }, [onDatesChange]);
 
   return (
     <div className="space-y-4">
@@ -118,7 +132,7 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
                 .sort((a, b) => a.getTime() - b.getTime())
                 .map((date, index) => (
                   <div
-                    key={index}
+                    key={`${format(date, 'yyyy-MM-dd')}-${index}`}
                     className="flex items-center gap-1 bg-white border border-blue-300 rounded-md px-2 py-1"
                   >
                     <span className="text-xs text-blue-800">

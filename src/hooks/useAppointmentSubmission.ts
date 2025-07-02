@@ -122,7 +122,7 @@ export const useAppointmentSubmission = ({
   ) => {
     console.log('DEBUG - Submit con formData:', formData);
     console.log('DEBUG - Submit con eventi multipli:', multipleEvents);
-    console.log('DEBUG - Submit con date multiple:', selectedDates);
+    console.log('DEBUG - Submit con date multiple (totale):', selectedDates.length, selectedDates.map(d => format(d, 'yyyy-MM-dd')));
     
     if (!validateForm(formData, multipleEvents)) {
       return;
@@ -150,30 +150,34 @@ export const useAppointmentSubmission = ({
         )
       );
 
-      // Create recurring appointments for selected dates
-      const recurringAppointments: Appointment[] = selectedDates.flatMap(selectedDate => {
+      // Create recurring appointments for selected dates - Process each date individually
+      const recurringAppointments: Appointment[] = [];
+      
+      for (const selectedDate of selectedDates) {
+        const dateStr = format(selectedDate, 'yyyy-MM-dd');
+        console.log('DEBUG - Processando data ricorrente:', dateStr);
+        
+        // Base appointment for this date
         const baseRecurringAppointment = createAppointment(
           formData,
           finalClientId,
-          format(selectedDate, 'yyyy-MM-dd')
+          dateStr
         );
+        recurringAppointments.push(baseRecurringAppointment);
 
-        const appointments = [baseRecurringAppointment];
-
-        // Include additional events on each selected date
-        multipleEvents.forEach(event => {
-          appointments.push(createAppointment(
+        // Additional events for this date
+        for (const event of multipleEvents) {
+          const additionalRecurringAppointment = createAppointment(
             { ...formData, employeeId: event.employeeId, time: event.time, duration: event.duration, serviceType: event.serviceType, title: event.title, notes: event.notes },
             finalClientId,
-            format(selectedDate, 'yyyy-MM-dd')
-          ));
-        });
-
-        return appointments;
-      });
+            dateStr
+          );
+          recurringAppointments.push(additionalRecurringAppointment);
+        }
+      }
 
       console.log('DEBUG - Salvataggio appuntamenti aggiuntivi:', additionalAppointments);
-      console.log('DEBUG - Salvataggio appuntamenti ricorrenti:', recurringAppointments);
+      console.log('DEBUG - Salvataggio appuntamenti ricorrenti (totale):', recurringAppointments.length);
 
       if (appointmentToEdit && updateAppointment) {
         await updateAppointment(mainAppointment);
@@ -187,9 +191,14 @@ export const useAppointmentSubmission = ({
           await addAppointment(additionalAppointment);
         }
 
-        // Save recurring appointments for selected dates
+        // Save recurring appointments for selected dates - one by one to ensure all are saved
         for (const recurringAppointment of recurringAppointments) {
-          await addAppointment(recurringAppointment);
+          try {
+            await addAppointment(recurringAppointment);
+            console.log('DEBUG - Appuntamento ricorrente salvato:', format(new Date(recurringAppointment.date), 'yyyy-MM-dd'));
+          } catch (error) {
+            console.error('Errore nel salvare appuntamento ricorrente:', recurringAppointment.date, error);
+          }
         }
         
         const totalMainEvents = 1 + additionalAppointments.length;
