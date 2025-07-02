@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
 import { format } from 'date-fns';
@@ -80,12 +79,11 @@ export const useAppointmentSubmission = ({
     multipleEvents: MultipleEvent[],
     selectedDates: Date[]
   ) => {
-    console.log('DEBUG - 🚀 Submit iniziato con:', {
+    console.log('DEBUG - 🚀 Submit iniziato:', {
       formData: formData,
       multipleEvents: multipleEvents.length,
       selectedDates: selectedDates.length,
       selectedDatesDetails: selectedDates.map(d => format(d, 'yyyy-MM-dd')),
-      userAgent: navigator.userAgent,
       isMobile: /Mobi|Android/i.test(navigator.userAgent)
     });
     
@@ -116,7 +114,7 @@ export const useAppointmentSubmission = ({
         multipleEvents
       );
 
-      console.log('DEBUG - ✅ Appuntamenti aggiuntivi per stesso giorno preparati:', additionalAppointments.length);
+      console.log('DEBUG - ✅ Appuntamenti aggiuntivi preparati:', additionalAppointments.length);
 
       // Create recurring appointments for each selected date
       console.log('DEBUG - 📅 Preparazione appuntamenti ricorrenti per date:', selectedDates.map(d => format(d, 'yyyy-MM-dd')));
@@ -131,7 +129,8 @@ export const useAppointmentSubmission = ({
       console.log('DEBUG - ✅ Appuntamenti ricorrenti preparati:', {
         total: recurringAppointments.length,
         dates: selectedDates.length,
-        eventsPerDate: multipleEvents.length + 1
+        eventsPerDate: multipleEvents.length + 1,
+        dettagli: recurringAppointments.map(app => ({ date: app.date, time: app.time, service: app.serviceType }))
       });
 
       if (appointmentToEdit && updateAppointment) {
@@ -155,26 +154,25 @@ export const useAppointmentSubmission = ({
           selectedDates.length
         );
         
-        console.log('DEBUG - ✅ Operazione completata:', {
+        console.log('DEBUG - 🏆 Operazione completata:', {
           mainEvents: totalMainEvents,
           recurringEvents: savedRecurringCount,
-          totalRecurringDates: selectedDates.length,
-          expectedRecurringEvents: recurringAppointments.length,
-          success: savedRecurringCount === recurringAppointments.length
+          totalRecurringExpected: recurringAppointments.length,
+          successRate: `${Math.round((savedRecurringCount / recurringAppointments.length) * 100)}%`
         });
         
-        if (savedRecurringCount < recurringAppointments.length) {
-          console.warn('DEBUG - ⚠️ Non tutti gli appuntamenti ricorrenti sono stati salvati');
-          toast.warning(`${successMessage} Attenzione: alcuni appuntamenti ricorrenti potrebbero non essere stati salvati correttamente.`);
+        // Show appropriate message based on success rate
+        if (savedRecurringCount === 0 && recurringAppointments.length > 0) {
+          toast.error(`Appuntamento principale creato, ma nessun appuntamento ricorrente è stato salvato. Riprova.`);
+        } else if (savedRecurringCount < recurringAppointments.length && savedRecurringCount > 0) {
+          toast.warning(`${successMessage} Attenzione: solo ${savedRecurringCount}/${recurringAppointments.length} appuntamenti ricorrenti sono stati salvati.`);
         } else {
           toast.success(successMessage);
         }
       }
 
-      // Aggiungi un piccolo delay prima di chiudere per permettere il completamento su mobile
-      setTimeout(() => {
-        onClose();
-      }, 100);
+      // Close immediately on successful completion
+      onClose();
       
     } catch (error) {
       console.error('❌ ERRORE nell\'operazione:', error);
