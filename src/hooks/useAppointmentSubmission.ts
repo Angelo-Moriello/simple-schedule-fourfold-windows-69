@@ -120,9 +120,12 @@ export const useAppointmentSubmission = ({
     multipleEvents: MultipleEvent[],
     selectedDates: Date[]
   ) => {
-    console.log('DEBUG - Submit con formData:', formData);
-    console.log('DEBUG - Submit con eventi multipli:', multipleEvents);
-    console.log('DEBUG - Submit con date multiple (totale):', selectedDates.length, selectedDates.map(d => format(d, 'yyyy-MM-dd')));
+    console.log('DEBUG - Submit iniziato con:', {
+      formData: formData,
+      multipleEvents: multipleEvents.length,
+      selectedDates: selectedDates.length,
+      selectedDatesDetails: selectedDates.map(d => format(d, 'yyyy-MM-dd'))
+    });
     
     if (!validateForm(formData, multipleEvents)) {
       return;
@@ -139,9 +142,9 @@ export const useAppointmentSubmission = ({
         appointmentToEdit?.id
       );
 
-      console.log('DEBUG - Salvataggio appuntamento principale:', mainAppointment);
+      console.log('DEBUG - Appuntamento principale creato:', mainAppointment);
 
-      // Create additional appointments for multiple events
+      // Create additional appointments for multiple events on the same day
       const additionalAppointments: Appointment[] = multipleEvents.map(event => 
         createAppointment(
           { ...formData, employeeId: event.employeeId, time: event.time, duration: event.duration, serviceType: event.serviceType, title: event.title, notes: event.notes },
@@ -150,34 +153,41 @@ export const useAppointmentSubmission = ({
         )
       );
 
-      // Create recurring appointments for selected dates - Process each date individually
+      console.log('DEBUG - Appuntamenti aggiuntivi per stesso giorno:', additionalAppointments.length);
+
+      // Create recurring appointments for each selected date
       const recurringAppointments: Appointment[] = [];
       
-      for (const selectedDate of selectedDates) {
+      console.log('DEBUG - Inizio processamento date ricorrenti, totale date:', selectedDates.length);
+      
+      for (let i = 0; i < selectedDates.length; i++) {
+        const selectedDate = selectedDates[i];
         const dateStr = format(selectedDate, 'yyyy-MM-dd');
-        console.log('DEBUG - Processando data ricorrente:', dateStr);
+        console.log(`DEBUG - Processando data ricorrente ${i + 1}/${selectedDates.length}:`, dateStr);
         
-        // Base appointment for this date
-        const baseRecurringAppointment = createAppointment(
+        // Main appointment for this recurring date
+        const recurringMainAppointment = createAppointment(
           formData,
           finalClientId,
           dateStr
         );
-        recurringAppointments.push(baseRecurringAppointment);
+        recurringAppointments.push(recurringMainAppointment);
+        console.log('DEBUG - Appuntamento ricorrente principale aggiunto per:', dateStr);
 
-        // Additional events for this date
-        for (const event of multipleEvents) {
-          const additionalRecurringAppointment = createAppointment(
+        // Additional events for this recurring date
+        for (let j = 0; j < multipleEvents.length; j++) {
+          const event = multipleEvents[j];
+          const recurringAdditionalAppointment = createAppointment(
             { ...formData, employeeId: event.employeeId, time: event.time, duration: event.duration, serviceType: event.serviceType, title: event.title, notes: event.notes },
             finalClientId,
             dateStr
           );
-          recurringAppointments.push(additionalRecurringAppointment);
+          recurringAppointments.push(recurringAdditionalAppointment);
+          console.log(`DEBUG - Appuntamento ricorrente aggiuntivo ${j + 1} aggiunto per:`, dateStr);
         }
       }
 
-      console.log('DEBUG - Salvataggio appuntamenti aggiuntivi:', additionalAppointments);
-      console.log('DEBUG - Salvataggio appuntamenti ricorrenti (totale):', recurringAppointments.length);
+      console.log('DEBUG - Totale appuntamenti ricorrenti da salvare:', recurringAppointments.length);
 
       if (appointmentToEdit && updateAppointment) {
         await updateAppointment(mainAppointment);
@@ -185,29 +195,41 @@ export const useAppointmentSubmission = ({
       } else if (addAppointment) {
         // Save main appointment
         await addAppointment(mainAppointment);
+        console.log('DEBUG - Appuntamento principale salvato');
         
         // Save additional appointments for same day
-        for (const additionalAppointment of additionalAppointments) {
+        for (let i = 0; i < additionalAppointments.length; i++) {
+          const additionalAppointment = additionalAppointments[i];
           await addAppointment(additionalAppointment);
+          console.log(`DEBUG - Appuntamento aggiuntivo ${i + 1} salvato per stesso giorno`);
         }
 
-        // Save recurring appointments for selected dates - one by one to ensure all are saved
-        for (const recurringAppointment of recurringAppointments) {
+        // Save all recurring appointments one by one
+        let savedRecurringCount = 0;
+        for (let i = 0; i < recurringAppointments.length; i++) {
+          const recurringAppointment = recurringAppointments[i];
           try {
             await addAppointment(recurringAppointment);
-            console.log('DEBUG - Appuntamento ricorrente salvato:', format(new Date(recurringAppointment.date), 'yyyy-MM-dd'));
+            savedRecurringCount++;
+            console.log(`DEBUG - Appuntamento ricorrente ${i + 1}/${recurringAppointments.length} salvato per data:`, recurringAppointment.date);
           } catch (error) {
-            console.error('Errore nel salvare appuntamento ricorrente:', recurringAppointment.date, error);
+            console.error(`Errore salvando appuntamento ricorrente ${i + 1}:`, recurringAppointment.date, error);
           }
         }
         
         const totalMainEvents = 1 + additionalAppointments.length;
-        const totalRecurringEvents = recurringAppointments.length;
         
         let successMessage = `${totalMainEvents} appuntament${totalMainEvents > 1 ? 'i creati' : 'o creato'} con successo!`;
-        if (totalRecurringEvents > 0) {
-          successMessage += ` Inoltre ${totalRecurringEvents} appuntament${totalRecurringEvents > 1 ? 'i ricorrenti creati' : 'o ricorrente creato'} per le date selezionate.`;
+        if (savedRecurringCount > 0) {
+          const uniqueRecurringDates = [...new Set(recurringAppointments.map(apt => apt.date))].length;
+          successMessage += ` Inoltre ${savedRecurringCount} appuntament${savedRecurringCount > 1 ? 'i ricorrenti creati' : 'o ricorrente creato'} per ${uniqueRecurringDates} date selezionate.`;
         }
+        
+        console.log('DEBUG - Operazione completata:', {
+          mainEvents: totalMainEvents,
+          recurringEvents: savedRecurringCount,
+          totalRecurringDates: selectedDates.length
+        });
         
         toast.success(successMessage);
       }

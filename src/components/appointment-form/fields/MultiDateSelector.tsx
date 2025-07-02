@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
+
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -21,12 +22,6 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
   mainDate
 }) => {
   const [showCalendar, setShowCalendar] = useState(false);
-  const datesRef = useRef<Date[]>(selectedDates);
-
-  // Keep ref in sync with props
-  React.useEffect(() => {
-    datesRef.current = selectedDates;
-  }, [selectedDates]);
 
   const handleDateSelect = useCallback((date: Date | undefined) => {
     if (!date) return;
@@ -37,9 +32,8 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
     }
 
     const dateString = format(date, 'yyyy-MM-dd');
-    const currentDates = datesRef.current;
     
-    const isAlreadySelected = currentDates.some(
+    const isAlreadySelected = selectedDates.some(
       selectedDate => format(selectedDate, 'yyyy-MM-dd') === dateString
     );
 
@@ -47,41 +41,34 @@ const MultiDateSelector: React.FC<MultiDateSelectorProps> = ({
     
     if (isAlreadySelected) {
       // Remove date if already selected
-      newDates = currentDates.filter(
+      newDates = selectedDates.filter(
         selectedDate => format(selectedDate, 'yyyy-MM-dd') !== dateString
       );
       console.log('DEBUG - Data rimossa:', dateString, 'Date rimanenti:', newDates.length);
     } else {
       // Add date if not selected
-      newDates = [...currentDates, date];
+      newDates = [...selectedDates, date];
       console.log('DEBUG - Data aggiunta:', dateString, 'Totale date:', newDates.length);
     }
     
-    // Update ref immediately
-    datesRef.current = newDates;
-    // Then update parent state
+    console.log('DEBUG - Nuove date selezionate:', newDates.map(d => format(d, 'yyyy-MM-dd')));
     onDatesChange(newDates);
-  }, [mainDate, onDatesChange]);
+  }, [selectedDates, mainDate, onDatesChange]);
 
   const removeDate = useCallback((dateToRemove: Date) => {
     const dateString = format(dateToRemove, 'yyyy-MM-dd');
-    const currentDates = datesRef.current;
     
-    const newDates = currentDates.filter(
+    const newDates = selectedDates.filter(
       date => format(date, 'yyyy-MM-dd') !== dateString
     );
     
     console.log('DEBUG - Data rimossa manualmente:', dateString, 'Date rimanenti:', newDates.length);
-    
-    // Update ref immediately
-    datesRef.current = newDates;
-    // Then update parent state
+    console.log('DEBUG - Date dopo rimozione:', newDates.map(d => format(d, 'yyyy-MM-dd')));
     onDatesChange(newDates);
-  }, [onDatesChange]);
+  }, [selectedDates, onDatesChange]);
 
   const clearAllDates = useCallback(() => {
     console.log('DEBUG - Cancellazione di tutte le date');
-    datesRef.current = [];
     onDatesChange([]);
   }, [onDatesChange]);
 
