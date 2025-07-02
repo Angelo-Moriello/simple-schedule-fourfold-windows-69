@@ -27,46 +27,102 @@ const checkTimeConflicts = async (
   return false;
 };
 
-// Funzione per salvare un singolo appuntamento con retry
-const saveAppointmentWithRetry = async (
+// Sistema di coda per serializzare le operazioni di salvataggio
+class AppointmentSaveQueue {
+  private queue: Array<() => Promise<void>> = [];
+  private isProcessing = false;
+
+  async add<T>(operation: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const result = await operation();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      this.processQueue();
+    });
+  }
+
+  private async processQueue() {
+    if (this.isProcessing || this.queue.length === 0) {
+      return;
+    }
+
+    this.isProcessing = true;
+    console.log('DEBUG - 🔄 Inizio processamento coda, elementi:', this.queue.length);
+
+    while (this.queue.length > 0) {
+      const operation = this.queue.shift();
+      if (operation) {
+        try {
+          await operation();
+          // Pausa più lunga tra operazioni per evitare sovraccarico
+          await new Promise(resolve => setTimeout(resolve, 800));
+        } catch (error) {
+          console.error('DEBUG - ❌ Errore nella coda:', error);
+        }
+      }
+    }
+
+    this.isProcessing = false;
+    console.log('DEBUG - ✅ Coda completata');
+  }
+}
+
+const saveQueue = new AppointmentSaveQueue();
+
+// Funzione per salvare un singolo appuntamento con retry avanzato
+const saveAppointmentWithAdvancedRetry = async (
   appointment: Appointment,
   addAppointment: (appointment: Appointment) => void,
   existingAppointments: Appointment[],
-  maxRetries = 3
+  maxRetries = 5
 ): Promise<boolean> => {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`DEBUG - Tentativo ${attempt}/${maxRetries} per salvare appuntamento:`, {
-        client: appointment.client,
-        date: appointment.date,
-        time: appointment.time
-      });
-      
-      const hasConflict = await checkTimeConflicts(appointment, existingAppointments);
-      if (hasConflict) {
-        console.warn(`DEBUG - ⚠️ Conflitto rilevato per ${appointment.client} alle ${appointment.time} del ${appointment.date}`);
-        toast.warning(`Conflitto rilevato per ${appointment.client} il ${appointment.date} alle ${appointment.time}`);
+  return saveQueue.add(async () => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`DEBUG - 💾 Tentativo ${attempt}/${maxRetries} per salvare:`, {
+          client: appointment.client,
+          date: appointment.date,
+          time: appointment.time,
+          id: appointment.id.substring(0, 8)
+        });
+        
+        // Verifica conflitti solo se necessario
+        if (existingAppointments.length > 0) {
+          const hasConflict = await checkTimeConflicts(appointment, existingAppointments);
+          if (hasConflict) {
+            console.warn(`DEBUG - ⚠️ Conflitto rilevato per ${appointment.client} alle ${appointment.time} del ${appointment.date}`);
+            toast.warning(`Conflitto rilevato per ${appointment.client} il ${appointment.date} alle ${appointment.time}`);
+          }
+        }
+        
+        await addAppointment(appointment);
+        console.log(`DEBUG - ✅ Appuntamento salvato con successo al tentativo ${attempt}`);
+        return true;
+        
+      } catch (error) {
+        console.error(`DEBUG - ❌ Errore al tentativo ${attempt}:`, error);
+        
+        if (attempt === maxRetries) {
+          console.error(`DEBUG - ❌ Fallito dopo ${maxRetries} tentativi:`, error);
+          return false;
+        }
+        
+        // Backoff esponenziale con jitter per evitare thundering herd
+        const baseDelay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+        const jitter = Math.random() * 1000;
+        const delay = baseDelay + jitter;
+        
+        console.log(`DEBUG - ⏱️ Attesa ${Math.round(delay)}ms prima del prossimo tentativo`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-      
-      await addAppointment(appointment);
-      console.log(`DEBUG - ✅ Appuntamento salvato con successo al tentativo ${attempt}`);
-      return true;
-      
-    } catch (error) {
-      console.error(`DEBUG - ❌ Errore al tentativo ${attempt}:`, error);
-      
-      if (attempt === maxRetries) {
-        console.error(`DEBUG - ❌ Fallito dopo ${maxRetries} tentativi:`, error);
-        return false;
-      }
-      
-      // Attendi prima del prossimo tentativo
-      const delay = attempt * 1000; // 1s, 2s, 3s
-      console.log(`DEBUG - ⏱️ Attesa ${delay}ms prima del prossimo tentativo`);
-      await new Promise(resolve => setTimeout(resolve, delay));
     }
-  }
-  return false;
+    return false;
+  });
 };
 
 export const saveAppointments = async (
@@ -76,7 +132,7 @@ export const saveAppointments = async (
   addAppointment: (appointment: Appointment) => void,
   existingAppointments: Appointment[] = []
 ) => {
-  console.log('DEBUG - 🚀 Inizio salvataggio appuntamenti:', {
+  console.log('DEBUG - 🚀 Inizio salvataggio ottimizzato per mobile:', {
     mainAppointment: mainAppointment,
     additionalCount: additionalAppointments.length,
     recurringCount: recurringAppointments.length,
@@ -88,64 +144,83 @@ export const saveAppointments = async (
   let savedRecurringCount = 0;
   const failedSaves: string[] = [];
 
-  // Save main appointment with retry
   try {
-    const mainSaved = await saveAppointmentWithRetry(mainAppointment, addAppointment, existingAppointments);
+    // 1. Salva appuntamento principale
+    console.log('DEBUG - 📋 Salvataggio appuntamento principale...');
+    const mainSaved = await saveAppointmentWithAdvancedRetry(mainAppointment, addAppointment, existingAppointments);
     if (!mainSaved) {
-      throw new Error('Impossibile salvare appuntamento principale dopo 3 tentativi');
+      throw new Error('Impossibile salvare appuntamento principale');
     }
     console.log('DEBUG - ✅ Appuntamento principale salvato');
-  } catch (error) {
-    console.error('ERRORE - Salvataggio appuntamento principale:', error);
-    throw error;
-  }
-  
-  // Save additional appointments for same day with retry
-  for (let i = 0; i < additionalAppointments.length; i++) {
-    const additionalAppointment = additionalAppointments[i];
-    try {
-      const additionalSaved = await saveAppointmentWithRetry(additionalAppointment, addAppointment, existingAppointments);
-      if (additionalSaved) {
-        console.log(`DEBUG - ✅ Appuntamento aggiuntivo ${i + 1}/${additionalAppointments.length} salvato`);
-      } else {
-        failedSaves.push(`Evento aggiuntivo ${i + 1}`);
-      }
-    } catch (error) {
-      console.error(`ERRORE - Salvataggio appuntamento aggiuntivo ${i + 1}:`, error);
-      failedSaves.push(`Evento aggiuntivo ${i + 1}`);
-    }
-  }
 
-  // Save recurring appointments with improved sequential processing for mobile
-  console.log(`DEBUG - 📱 Processamento di ${recurringAppointments.length} appuntamenti ricorrenti`);
-  
-  for (let i = 0; i < recurringAppointments.length; i++) {
-    const recurringAppointment = recurringAppointments[i];
-    
-    try {
-      console.log(`DEBUG - 💾 Salvando appuntamento ricorrente ${i + 1}/${recurringAppointments.length} per data:`, recurringAppointment.date);
-      
-      const recurringSaved = await saveAppointmentWithRetry(recurringAppointment, addAppointment, existingAppointments, 2); // Meno retry per ricorrenti
-      
-      if (recurringSaved) {
-        savedRecurringCount++;
-        console.log(`DEBUG - ✅ Appuntamento ricorrente ${i + 1} salvato! Progresso: ${savedRecurringCount}/${recurringAppointments.length}`);
-      } else {
-        console.error(`DEBUG - ❌ Appuntamento ricorrente ${i + 1} fallito dopo tentativi`);
-        failedSaves.push(`Ricorrente ${i + 1} (${recurringAppointment.date})`);
+    // 2. Salva appuntamenti aggiuntivi per lo stesso giorno
+    if (additionalAppointments.length > 0) {
+      console.log(`DEBUG - 📋 Salvataggio ${additionalAppointments.length} appuntamenti aggiuntivi...`);
+      for (let i = 0; i < additionalAppointments.length; i++) {
+        const additionalAppointment = additionalAppointments[i];
+        try {
+          const additionalSaved = await saveAppointmentWithAdvancedRetry(additionalAppointment, addAppointment, existingAppointments);
+          if (additionalSaved) {
+            console.log(`DEBUG - ✅ Appuntamento aggiuntivo ${i + 1}/${additionalAppointments.length} salvato`);
+          } else {
+            failedSaves.push(`Evento aggiuntivo ${i + 1}`);
+          }
+        } catch (error) {
+          console.error(`ERRORE - Salvataggio appuntamento aggiuntivo ${i + 1}:`, error);
+          failedSaves.push(`Evento aggiuntivo ${i + 1}`);
+        }
       }
-      
-      // Pausa più lunga su mobile per evitare race conditions
-      if (isMobile && i < recurringAppointments.length - 1) {
-        const delay = Math.min(300 + (i * 50), 1000); // Da 300ms a 1s max
-        await new Promise(resolve => setTimeout(resolve, delay));
-        console.log(`DEBUG - ⏱️ Pausa di ${delay}ms dopo ${i + 1} salvataggi`);
-      }
-      
-    } catch (error) {
-      console.error(`❌ Errore salvando appuntamento ricorrente ${i + 1} per ${recurringAppointment.date}:`, error);
-      failedSaves.push(`Ricorrente ${i + 1} (${recurringAppointment.date})`);
     }
+
+    // 3. Salva appuntamenti ricorrenti con sistema ottimizzato
+    if (recurringAppointments.length > 0) {
+      console.log(`DEBUG - 📅 Salvataggio ${recurringAppointments.length} appuntamenti ricorrenti...`);
+      
+      // Mostra progress per operazioni lunghe
+      if (recurringAppointments.length > 5) {
+        toast.loading(`Salvando ${recurringAppointments.length} appuntamenti ricorrenti...`, {
+          id: 'recurring-save-progress'
+        });
+      }
+      
+      for (let i = 0; i < recurringAppointments.length; i++) {
+        const recurringAppointment = recurringAppointments[i];
+        
+        try {
+          console.log(`DEBUG - 💾 Salvando ricorrente ${i + 1}/${recurringAppointments.length}:`, recurringAppointment.date);
+          
+          const recurringSaved = await saveAppointmentWithAdvancedRetry(recurringAppointment, addAppointment, existingAppointments);
+          
+          if (recurringSaved) {
+            savedRecurringCount++;
+            console.log(`DEBUG - ✅ Ricorrente ${i + 1} salvato! Progresso: ${savedRecurringCount}/${recurringAppointments.length}`);
+            
+            // Aggiorna progress per operazioni lunghe
+            if (recurringAppointments.length > 5) {
+              toast.loading(`Salvati ${savedRecurringCount}/${recurringAppointments.length} appuntamenti...`, {
+                id: 'recurring-save-progress'
+              });
+            }
+          } else {
+            console.error(`DEBUG - ❌ Ricorrente ${i + 1} fallito`);
+            failedSaves.push(`Ricorrente ${i + 1} (${recurringAppointment.date})`);
+          }
+          
+        } catch (error) {
+          console.error(`❌ Errore salvando ricorrente ${i + 1} per ${recurringAppointment.date}:`, error);
+          failedSaves.push(`Ricorrente ${i + 1} (${recurringAppointment.date})`);
+        }
+      }
+      
+      // Chiudi progress toast
+      if (recurringAppointments.length > 5) {
+        toast.dismiss('recurring-save-progress');
+      }
+    }
+    
+  } catch (error) {
+    console.error('ERRORE CRITICO nel salvataggio:', error);
+    throw error;
   }
   
   console.log('DEBUG - 🏁 Salvataggio completato:', {
@@ -154,10 +229,6 @@ export const saveAppointments = async (
     failedSaves: failedSaves.length,
     successRate: recurringAppointments.length > 0 ? `${Math.round((savedRecurringCount / recurringAppointments.length) * 100)}%` : '100%'
   });
-  
-  if (failedSaves.length > 0) {
-    console.warn('DEBUG - ⚠️ Salvataggi falliti:', failedSaves);
-  }
   
   return { savedRecurringCount, failedSaves };
 };
