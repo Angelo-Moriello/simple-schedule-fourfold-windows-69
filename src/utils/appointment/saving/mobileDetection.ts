@@ -33,15 +33,15 @@ export const isMobileDevice = (): boolean => {
   const isSmallScreen = window.innerWidth <= 768;
   const hasSmallViewport = window.screen.width <= 768 || window.screen.availWidth <= 768;
   
-  // Se anche uno solo di questi è vero, consideriamo mobile
+  // FORZA MOBILE se uno qualsiasi di questi è vero
   const isMobileByUA = isMobileUA;
   const isMobileByTouch = hasTouchScreen && isSmallScreen;
   const isMobileByScreen = hasSmallViewport;
   
-  // FORZA MOBILE se siamo in dubbio (più sicuro per il salvataggio)
+  // FORZA MOBILE se abbiamo qualsiasi indicatore mobile
   const finalResult = isMobileByUA || isMobileByTouch || isMobileByScreen;
   
-  console.log('📱 RILEVAMENTO MOBILE DETTAGLIATO V2:', {
+  console.log('📱 RILEVAMENTO MOBILE DETTAGLIATO V3 - AGGRESSIVO:', {
     userAgent: navigator.userAgent,
     checks: {
       mobileUA: isMobileByUA,
@@ -56,7 +56,11 @@ export const isMobileDevice = (): boolean => {
       hasTouchStart: 'ontouchstart' in window
     },
     finalResult,
-    willUseMobileDelays: finalResult
+    willUseMobileDelays: finalResult,
+    reason: finalResult ? 
+      (isMobileByUA ? 'USER_AGENT' : 
+       isMobileByTouch ? 'TOUCH_AND_SMALL' : 
+       isMobileByScreen ? 'SMALL_SCREEN' : 'UNKNOWN') : 'DESKTOP'
   });
   
   return finalResult;
@@ -86,18 +90,18 @@ export const getMobileDelays = () => {
   const isMobile = isMobileDevice();
   const connectionType = getConnectionType();
   
-  // DELAY MOLTO PIÙ AGGRESSIVI per garantire funzionamento mobile
+  // DELAY ANCORA PIÙ AGGRESSIVI - RADDOPPIAMO I TEMPI
   const delays = {
-    // Delay base aumentati significativamente
-    saveDelay: isMobile ? 3000 : 500,        // 3 secondi mobile vs 0.5 desktop
-    retryDelay: (attempt: number) => isMobile ? attempt * 4000 : attempt * 800, // 4s mobile vs 0.8s desktop
-    additionalDelay: isMobile ? 4000 : 800,   // 4 secondi tra appuntamenti aggiuntivi
-    recurringDelay: isMobile ? 6000 : 1000,   // 6 secondi tra ricorrenti mobile!
+    // Delay base ultra-aumentati per garantire funzionamento mobile
+    saveDelay: isMobile ? 5000 : 500,        // 5 secondi mobile vs 0.5 desktop
+    retryDelay: (attempt: number) => isMobile ? attempt * 6000 : attempt * 800, // 6s mobile vs 0.8s desktop
+    additionalDelay: isMobile ? 7000 : 800,   // 7 secondi tra appuntamenti aggiuntivi
+    recurringDelay: isMobile ? 10000 : 1000,  // 10 secondi tra ricorrenti mobile!
     connectionType,
     isMobile
   };
   
-  console.log('📱 MOBILE DELAYS V2 - AGGRESSIVI PER STABILITÀ:', {
+  console.log('📱 MOBILE DELAYS V3 - ULTRA-AGGRESSIVI PER MASSIMA STABILITÀ:', {
     rilevamento: {
       isMobile,
       userAgent: navigator.userAgent.substring(0, 100) + '...',
@@ -111,10 +115,11 @@ export const getMobileDelays = () => {
     },
     confronto: {
       desktop: { saveDelay: '500ms', recurringDelay: '1000ms' },
-      mobile: { saveDelay: '3000ms', recurringDelay: '6000ms' },
-      modalitàAttiva: isMobile ? '🔴 MOBILE (DELAY LUNGHI)' : '🟢 DESKTOP (DELAY CORTI)'
+      mobile: { saveDelay: '5000ms', recurringDelay: '10000ms' },
+      modalitàAttiva: isMobile ? '🔴 MOBILE (DELAY ULTRA-LUNGHI)' : '🟢 DESKTOP (DELAY CORTI)'
     },
-    tempoTotaleStimato: isMobile ? 'Circa 30-60 secondi per 5 appuntamenti' : 'Circa 5-10 secondi'
+    tempoTotaleStimato: isMobile ? 'Circa 60-120 secondi per 5 appuntamenti' : 'Circa 5-10 secondi',
+    note: isMobile ? 'ATTENZIONE: Tempi molto lunghi per garantire il salvataggio su mobile' : 'Tempi standard desktop'
   });
   
   return delays;
