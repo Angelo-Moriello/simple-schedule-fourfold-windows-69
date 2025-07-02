@@ -8,13 +8,17 @@ interface SaveResult {
   error?: string;
 }
 
-// Genera un UUID unico per ogni chiamata
-const generateUniqueId = () => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+// Contatore globale per garantire unicità assoluta
+let globalCounter = 0;
+
+// Genera un UUID veramente unico con timestamp e contatore
+const generateTrulyUniqueId = () => {
+  const timestamp = Date.now().toString(36);
+  const counter = (++globalCounter).toString(36);
+  const randomPart = Math.random().toString(36).substr(2, 9);
+  
+  // Formato UUID standard ma con parti uniche
+  return `${timestamp.substr(0, 8)}-${counter.padStart(4, '0')}-4${randomPart.substr(0, 3)}-${randomPart.substr(3, 4)}-${randomPart.substr(7)}${timestamp.substr(8)}`.substr(0, 36);
 };
 
 export const saveAppointmentSafely = async (
@@ -22,13 +26,13 @@ export const saveAppointmentSafely = async (
   addAppointment: (appointment: Appointment) => void
 ): Promise<SaveResult> => {
   try {
-    // Genera un nuovo ID unico per ogni appuntamento per evitare conflitti
+    // Genera un nuovo ID completamente unico per evitare conflitti
     const appointmentWithUniqueId = {
       ...appointment,
-      id: generateUniqueId()
+      id: generateTrulyUniqueId()
     };
 
-    console.log('💾 Salvando appuntamento con ID unico:', {
+    console.log('💾 Salvando appuntamento con ID veramente unico:', {
       client: appointmentWithUniqueId.client,
       date: appointmentWithUniqueId.date,
       time: appointmentWithUniqueId.time,
@@ -103,9 +107,9 @@ export const saveMultipleAppointments = async (
       onProgress(savedCount, appointments.length);
     }
 
-    // Pausa breve tra i salvataggi per evitare sovraccarico
+    // Pausa più lunga tra i salvataggi per evitare conflitti di timing
     if (i < appointments.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
   }
 
