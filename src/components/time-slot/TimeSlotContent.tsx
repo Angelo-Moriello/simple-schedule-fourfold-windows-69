@@ -57,32 +57,29 @@ const TimeSlotContent: React.FC<TimeSlotContentProps> = ({
     }
   };
 
-  const getBackgroundColorFromClass = (colorClass: string) => {
-    const colorMap: { [key: string]: string } = {
-      'bg-blue-100 border-blue-300 text-blue-800': '#dbeafe',
-      'bg-green-100 border-green-300 text-green-800': '#dcfce7',
-      'bg-yellow-100 border-yellow-300 text-yellow-800': '#fef3c7',
-      'bg-red-100 border-red-300 text-red-800': '#fee2e2',
-      'bg-purple-100 border-purple-300 text-purple-800': '#f3e8ff',
-      'bg-pink-100 border-pink-300 text-pink-800': '#fce7f3',
-      'bg-orange-100 border-orange-300 text-orange-800': '#fed7aa',
-      'bg-gray-100 border-gray-300 text-gray-800': '#f3f4f6'
+  // Helper function to get colors from hex value
+  const getColorsFromHex = (colorValue: string) => {
+    // If it's already a hex color, use it directly
+    if (colorValue.startsWith('#')) {
+      return {
+        backgroundColor: `${colorValue}20`, // Add transparency
+        borderColor: colorValue
+      };
+    }
+    
+    // Fallback for old CSS classes - convert to colors
+    const colorMap: { [key: string]: { backgroundColor: string; borderColor: string } } = {
+      'bg-blue-100 border-blue-300 text-blue-800': { backgroundColor: '#dbeafe', borderColor: '#93c5fd' },
+      'bg-green-100 border-green-300 text-green-800': { backgroundColor: '#dcfce7', borderColor: '#86efac' },
+      'bg-yellow-100 border-yellow-300 text-yellow-800': { backgroundColor: '#fef3c7', borderColor: '#fde047' },
+      'bg-red-100 border-red-300 text-red-800': { backgroundColor: '#fee2e2', borderColor: '#fca5a5' },
+      'bg-purple-100 border-purple-300 text-purple-800': { backgroundColor: '#f3e8ff', borderColor: '#c4b5fd' },
+      'bg-pink-100 border-pink-300 text-pink-800': { backgroundColor: '#fce7f3', borderColor: '#f9a8d4' },
+      'bg-orange-100 border-orange-300 text-orange-800': { backgroundColor: '#fed7aa', borderColor: '#fdba74' },
+      'bg-gray-100 border-gray-300 text-gray-800': { backgroundColor: '#f3f4f6', borderColor: '#d1d5db' }
     };
-    return colorMap[colorClass] || '#f3f4f6';
-  };
-
-  const getBorderColorFromClass = (colorClass: string) => {
-    const colorMap: { [key: string]: string } = {
-      'bg-blue-100 border-blue-300 text-blue-800': '#93c5fd',
-      'bg-green-100 border-green-300 text-green-800': '#86efac',
-      'bg-yellow-100 border-yellow-300 text-yellow-800': '#fde047',
-      'bg-red-100 border-red-300 text-red-800': '#fca5a5',
-      'bg-purple-100 border-purple-300 text-purple-800': '#c4b5fd',
-      'bg-pink-100 border-pink-300 text-pink-800': '#f9a8d4',
-      'bg-orange-100 border-orange-300 text-orange-800': '#fdba74',
-      'bg-gray-100 border-gray-300 text-gray-800': '#d1d5db'
-    };
-    return colorMap[colorClass] || '#d1d5db';
+    
+    return colorMap[colorValue] || { backgroundColor: '#f3f4f6', borderColor: '#d1d5db' };
   };
 
   // Check if this is a vacation slot from the occupation info
@@ -108,15 +105,14 @@ const TimeSlotContent: React.FC<TimeSlotContentProps> = ({
 
   // Slot occupato parzialmente
   if (isPartiallyOccupied && occupiedBy) {
-    const backgroundColor = getBackgroundColorFromClass(occupiedBy.color);
-    const borderColor = getBorderColorFromClass(occupiedBy.color);
+    const colors = getColorsFromHex(occupiedBy.color);
     
     return (
       <div 
         className="p-3 border-2 rounded-lg relative overflow-hidden"
         style={{ 
-          backgroundColor: backgroundColor,
-          borderColor: borderColor
+          backgroundColor: colors.backgroundColor,
+          borderColor: colors.borderColor
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-300/30 to-transparent animate-pulse"></div>
@@ -176,15 +172,14 @@ const TimeSlotContent: React.FC<TimeSlotContentProps> = ({
       ? `${durationHours}h ${durationMinutes}min`
       : `${durationMinutes}min`;
 
-    const backgroundColor = getBackgroundColorFromClass(appointment.color);
-    const borderColor = getBorderColorFromClass(appointment.color);
+    const colors = getColorsFromHex(appointment.color);
 
     return (
       <div 
         className="p-3 rounded-lg border-2 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
         style={{ 
-          backgroundColor: backgroundColor,
-          borderColor: borderColor
+          backgroundColor: colors.backgroundColor,
+          borderColor: colors.borderColor
         }}
         onClick={handleEditClick}
       >
@@ -193,7 +188,7 @@ const TimeSlotContent: React.FC<TimeSlotContentProps> = ({
           <div className="flex items-center space-x-1">
             <Badge 
               className="text-xs text-white font-medium"
-              style={{ backgroundColor: borderColor }}
+              style={{ backgroundColor: colors.borderColor }}
             >
               {durationText}
             </Badge>
