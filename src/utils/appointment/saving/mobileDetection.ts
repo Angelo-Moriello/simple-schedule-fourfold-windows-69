@@ -41,7 +41,7 @@ export const isMobileDevice = (): boolean => {
   // FORZA MOBILE se abbiamo qualsiasi indicatore mobile
   const finalResult = isMobileByUA || isMobileByTouch || isMobileByScreen;
   
-  console.log('📱 RILEVAMENTO MOBILE DETTAGLIATO V3 - AGGRESSIVO:', {
+  console.log('📱 RILEVAMENTO MOBILE DETTAGLIATO V4 - SUPER AGGRESSIVO:', {
     userAgent: navigator.userAgent,
     checks: {
       mobileUA: isMobileByUA,
@@ -90,18 +90,18 @@ export const getMobileDelays = () => {
   const isMobile = isMobileDevice();
   const connectionType = getConnectionType();
   
-  // DELAY ANCORA PIÙ AGGRESSIVI - RADDOPPIAMO I TEMPI
+  // DELAY MASSIMI - TRIPLICATI PER MOBILE PROBLEMATICI
   const delays = {
-    // Delay base ultra-aumentati per garantire funzionamento mobile
-    saveDelay: isMobile ? 5000 : 500,        // 5 secondi mobile vs 0.5 desktop
-    retryDelay: (attempt: number) => isMobile ? attempt * 6000 : attempt * 800, // 6s mobile vs 0.8s desktop
-    additionalDelay: isMobile ? 7000 : 800,   // 7 secondi tra appuntamenti aggiuntivi
-    recurringDelay: isMobile ? 10000 : 1000,  // 10 secondi tra ricorrenti mobile!
+    // Delay base massimi per garantire funzionamento mobile
+    saveDelay: isMobile ? 8000 : 500,        // 8 secondi mobile vs 0.5 desktop
+    retryDelay: (attempt: number) => isMobile ? attempt * 10000 : attempt * 800, // 10s mobile vs 0.8s desktop
+    additionalDelay: isMobile ? 12000 : 800,   // 12 secondi tra appuntamenti aggiuntivi
+    recurringDelay: isMobile ? 15000 : 1000,  // 15 secondi tra ricorrenti mobile!
     connectionType,
     isMobile
   };
   
-  console.log('📱 MOBILE DELAYS V3 - ULTRA-AGGRESSIVI PER MASSIMA STABILITÀ:', {
+  console.log('📱 MOBILE DELAYS V4 - MASSIMI ASSOLUTI PER STABILITÀ:', {
     rilevamento: {
       isMobile,
       userAgent: navigator.userAgent.substring(0, 100) + '...',
@@ -115,11 +115,11 @@ export const getMobileDelays = () => {
     },
     confronto: {
       desktop: { saveDelay: '500ms', recurringDelay: '1000ms' },
-      mobile: { saveDelay: '5000ms', recurringDelay: '10000ms' },
-      modalitàAttiva: isMobile ? '🔴 MOBILE (DELAY ULTRA-LUNGHI)' : '🟢 DESKTOP (DELAY CORTI)'
+      mobile: { saveDelay: '8000ms', recurringDelay: '15000ms' },
+      modalitàAttiva: isMobile ? '🔴 MOBILE (DELAY MASSIMI)' : '🟢 DESKTOP (DELAY CORTI)'
     },
-    tempoTotaleStimato: isMobile ? 'Circa 60-120 secondi per 5 appuntamenti' : 'Circa 5-10 secondi',
-    note: isMobile ? 'ATTENZIONE: Tempi molto lunghi per garantire il salvataggio su mobile' : 'Tempi standard desktop'
+    tempoTotaleStimato: isMobile ? 'Circa 120-300 secondi per 5 appuntamenti' : 'Circa 5-10 secondi',
+    note: isMobile ? 'ATTENZIONE: Tempi massimi per garantire il salvataggio su mobile' : 'Tempi standard desktop'
   });
   
   return delays;

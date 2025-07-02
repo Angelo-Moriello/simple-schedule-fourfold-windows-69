@@ -15,11 +15,11 @@ export const saveAppointmentWithRetry = async (
   existingAppointments: Appointment[],
   index: number,
   total: number,
-  maxRetries = 7 // Aumentato a 7 per mobile ultra-robusto
+  maxRetries = 10 // Aumentato a 10 per mobile ultra-robusto
 ): Promise<SaveResult> => {
   const delays = getMobileDelays();
   
-  console.log(`🔄 [${index + 1}/${total}] INIZIO SALVATAGGIO MOBILE V3 - ULTRA-ROBUSTO:`, {
+  console.log(`🔄 [${index + 1}/${total}] INIZIO SALVATAGGIO MOBILE V4 - MASSIMA ROBUSTEZZA:`, {
     appointment: `${appointment.client} - ${appointment.date} ${appointment.time}`,
     mobileDelays: {
       saveDelay: `${delays.saveDelay}ms`,
@@ -27,9 +27,9 @@ export const saveAppointmentWithRetry = async (
       isMobile: delays.isMobile
     },
     maxRetries,
-    modalità: delays.isMobile ? '📱 MOBILE (RETRY ULTRA-AGGRESSIVI V3)' : '💻 DESKTOP (RETRY STANDARD)',
+    modalità: delays.isMobile ? '📱 MOBILE (RETRY MASSIMI V4)' : '💻 DESKTOP (RETRY STANDARD)',
     stimaTempoMassimo: delays.isMobile ? 
-      `${Math.ceil((delays.saveDelay + maxRetries * delays.retryDelay(3)) / 1000)}s` : 
+      `${Math.ceil((delays.saveDelay + maxRetries * delays.retryDelay(5)) / 1000)}s` : 
       `${Math.ceil((delays.saveDelay + maxRetries * delays.retryDelay(3)) / 1000)}s`
   });
   
@@ -51,11 +51,12 @@ export const saveAppointmentWithRetry = async (
         isMobile: delays.isMobile,
         saveDelay: delays.saveDelay,
         nextRetryDelay: delays.retryDelay(attempt)
-      }
+      },
+      timestamp: new Date().toISOString()
     });
     
     try {
-      // Verifica conflitti
+      // Verifica conflitti con logging dettagliato
       if (existingAppointments.length > 0) {
         console.log(`🔍 [${index + 1}/${total}] Verifica conflitti per ${appointment.client}...`);
         const hasConflict = await checkTimeConflicts(appointment, existingAppointments);
@@ -66,15 +67,21 @@ export const saveAppointmentWithRetry = async (
               date: appointment.date,
               time: appointment.time
             },
-            conflictType: 'TIME_OVERLAP'
+            conflictType: 'TIME_OVERLAP',
+            timestamp: new Date().toISOString()
           });
           toast.warning(`Conflitto per ${appointment.client} il ${appointment.date}`);
         }
       }
       
-      // PAUSA PRE-SALVATAGGIO - DELAY MOBILE ULTRA-OTTIMIZZATO
-      console.log(`⏳ [${index + 1}/${total}] PAUSA PRE-SALVATAGGIO V3: ${delays.saveDelay}ms (${delays.isMobile ? '📱 MOBILE ULTRA-LENTO' : '💻 DESKTOP VELOCE'})`);
+      // PAUSA PRE-SALVATAGGIO - DELAY MOBILE MASSIMO
+      console.log(`⏳ [${index + 1}/${total}] PAUSA PRE-SALVATAGGIO V4: ${delays.saveDelay}ms (${delays.isMobile ? '📱 MOBILE MASSIMO' : '💻 DESKTOP VELOCE'})`, {
+        startTime: new Date().toISOString()
+      });
       await new Promise(resolve => setTimeout(resolve, delays.saveDelay));
+      console.log(`⏳ [${index + 1}/${total}] PAUSA PRE-SALVATAGGIO COMPLETATA`, {
+        endTime: new Date().toISOString()
+      });
       
       // SALVATAGGIO CON LOGGING ULTRA-DETTAGLIATO
       console.log(`💾 [${index + 1}/${total}] ESECUZIONE SALVATAGGIO ${appointment.client}... (tentativo ${attempt}/${maxRetries})`, {
@@ -83,14 +90,29 @@ export const saveAppointmentWithRetry = async (
           date: appointment.date,
           time: appointment.time,
           attempt: attempt,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          appointmentId: appointment.id,
+          employeeId: appointment.employeeId,
+          serviceType: appointment.serviceType
         }
       });
       
       const startTime = Date.now();
       
-      // SALVATAGGIO EFFETTIVO
-      addAppointment(appointment);
+      // SALVATAGGIO EFFETTIVO CON TRY-CATCH INTERNO
+      try {
+        addAppointment(appointment);
+        console.log(`🎯 [${index + 1}/${total}] CHIAMATA addAppointment COMPLETATA per ${appointment.client}`, {
+          timestamp: new Date().toISOString()
+        });
+      } catch (addError) {
+        console.error(`❌ [${index + 1}/${total}] ERRORE IN addAppointment:`, {
+          error: addError,
+          appointment: appointment.client,
+          timestamp: new Date().toISOString()
+        });
+        throw addError;
+      }
       
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -107,10 +129,15 @@ export const saveAppointmentWithRetry = async (
         }
       });
       
-      // PAUSA POST-SALVATAGGIO - PIÙ LUNGA PER MOBILE V3
+      // PAUSA POST-SALVATAGGIO - PIÙ LUNGA PER MOBILE V4
       const postDelay = delays.isMobile ? Math.floor(delays.saveDelay / 2) : Math.floor(delays.saveDelay / 3);
-      console.log(`⏳ [${index + 1}/${total}] PAUSA POST-SALVATAGGIO V3: ${postDelay}ms`);
+      console.log(`⏳ [${index + 1}/${total}] PAUSA POST-SALVATAGGIO V4: ${postDelay}ms`, {
+        startTime: new Date().toISOString()
+      });
       await new Promise(resolve => setTimeout(resolve, postDelay));
+      console.log(`⏳ [${index + 1}/${total}] PAUSA POST-SALVATAGGIO COMPLETATA`, {
+        endTime: new Date().toISOString()
+      });
       
       return { success: true };
       
@@ -122,7 +149,9 @@ export const saveAppointmentWithRetry = async (
           attempt: attempt,
           maxRetries: maxRetries,
           client: appointment.client,
-          error: error
+          error: error,
+          stack: error instanceof Error ? error.stack : 'No stack',
+          timestamp: new Date().toISOString()
         }
       });
       
@@ -140,20 +169,26 @@ export const saveAppointmentWithRetry = async (
         return { success: false, error: errorMsg };
       }
       
-      // Pausa progressiva tra i retry - DELAY MOBILE ULTRA-OTTIMIZZATO V3
+      // Pausa progressiva tra i retry - DELAY MOBILE MASSIMO V4
       const retryDelay = delays.retryDelay(attempt);
-      console.log(`⏱️ [${index + 1}/${total}] PAUSA RETRY ${attempt} V3: ${retryDelay}ms (${delays.isMobile ? '📱 MOBILE ULTRA-LENTO' : '💻 DESKTOP VELOCE'})`, {
+      console.log(`⏱️ [${index + 1}/${total}] PAUSA RETRY ${attempt} V4: ${retryDelay}ms (${delays.isMobile ? '📱 MOBILE MASSIMO' : '💻 DESKTOP VELOCE'})`, {
         retry_info: {
           attempt: attempt,
           nextAttempt: attempt + 1,
           maxRetries: maxRetries,
           retryDelay: `${retryDelay}ms`,
           isMobile: delays.isMobile,
-          client: appointment.client
+          client: appointment.client,
+          startTime: new Date().toISOString()
         }
       });
       
       await new Promise(resolve => setTimeout(resolve, retryDelay));
+      
+      console.log(`⏱️ [${index + 1}/${total}] PAUSA RETRY ${attempt} COMPLETATA`, {
+        endTime: new Date().toISOString(),
+        nextAttempt: attempt + 1
+      });
     }
   }
   

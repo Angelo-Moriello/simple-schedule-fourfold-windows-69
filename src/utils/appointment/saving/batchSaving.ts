@@ -21,38 +21,43 @@ export const saveAppointmentsBatch = async (
 
   const batchDelay = batchType === 'recurring' ? delays.recurringDelay : delays.additionalDelay;
   
-  console.log(`🚀 INIZIO BATCH ${batchType.toUpperCase()} - DELAY ULTRA-OTTIMIZZATI PER MOBILE V3:`, {
+  console.log(`🚀 INIZIO BATCH ${batchType.toUpperCase()} - DELAY MASSIMI PER MOBILE V4:`, {
     appointmentsCount: appointments.length,
     batchDelay: `${batchDelay}ms`,
     batchType: batchType === 'recurring' ? '🔴 RICORRENTI (CRITICI)' : '🟡 AGGIUNTIVI (IMPORTANTI)',
     saveDelay: `${delays.saveDelay}ms`,
     isMobile: delays.isMobile,
-    modalità: delays.isMobile ? '📱 MOBILE (DELAY ULTRA-LUNGHI V3)' : '💻 DESKTOP (DELAY NORMALI)',
+    modalità: delays.isMobile ? '📱 MOBILE (DELAY MASSIMI V4)' : '💻 DESKTOP (DELAY NORMALI)',
     tempoTotaleStimato: `${Math.ceil((appointments.length * batchDelay) / 1000)}s`,
     confrontoDelay: {
       desktop: batchType === 'recurring' ? '1000ms' : '800ms',
-      mobile: batchType === 'recurring' ? '10000ms' : '7000ms',
+      mobile: batchType === 'recurring' ? '15000ms' : '12000ms',
       attuale: `${batchDelay}ms`,
-      differenza: delays.isMobile ? '+700-1000% rispetto desktop' : 'standard'
+      differenza: delays.isMobile ? '+1400-1800% rispetto desktop' : 'standard'
     },
     dettagliAppuntamenti: appointments.map((app, i) => ({
       index: i + 1,
       client: app.client,
       date: app.date,
       time: app.time,
-      service: app.serviceType
-    }))
+      service: app.serviceType,
+      id: app.id,
+      employeeId: app.employeeId
+    })),
+    timestamp: new Date().toISOString()
   });
 
   // Progress toast per batch grandi con info mobile dettagliate
   let progressToastId: string | number | undefined;
   if (appointments.length > 1) {
+    const tempoStimato = Math.ceil((appointments.length * batchDelay) / 1000);
     const mobileWarning = delays.isMobile ? 
-      ` (mobile: circa ${Math.ceil((appointments.length * batchDelay) / 1000)}s richiesti)` : '';
+      ` (mobile: circa ${tempoStimato}s richiesti - DELAY MASSIMI)` : '';
+    console.log(`📱 Progress toast per ${appointments.length} appuntamenti${mobileWarning}`);
     progressToastId = toast.loading(`Salvando ${appointments.length} appuntamenti ${batchType}${mobileWarning}...`);
   }
 
-  // SALVATAGGIO SEQUENZIALE CON DELAY MOBILE ULTRA-OTTIMIZZATI
+  // SALVATAGGIO SEQUENZIALE CON DELAY MOBILE MASSIMI
   for (let i = 0; i < appointments.length; i++) {
     const appointment = appointments[i];
     
@@ -72,11 +77,14 @@ export const saveAppointmentsBatch = async (
         batchType,
         remainingTime: `${Math.ceil(((appointments.length - i - 1) * batchDelay) / 1000)}s`,
         isMobile: delays.isMobile
-      }
+      },
+      timestamp: new Date().toISOString()
     });
     
     try {
-      console.log(`🔄 [${i + 1}/${appointments.length}] INIZIO SALVATAGGIO CON RETRY per ${appointment.client}...`);
+      console.log(`🔄 [${i + 1}/${appointments.length}] INIZIO SALVATAGGIO CON RETRY per ${appointment.client}...`, {
+        timestamp: new Date().toISOString()
+      });
       
       const result = await saveAppointmentWithRetry(
         appointment, 
@@ -92,14 +100,16 @@ export const saveAppointmentsBatch = async (
           client: appointment.client,
           savedCount,
           totalExpected: appointments.length,
-          percentComplete: Math.round((savedCount / appointments.length) * 100)
+          percentComplete: Math.round((savedCount / appointments.length) * 100),
+          timestamp: new Date().toISOString()
         });
       } else {
         console.error(`❌ [${i + 1}/${appointments.length}] FALLIMENTO SALVATAGGIO:`, {
           client: appointment.client,
           error: result.error,
           savedSoFar: savedCount,
-          totalExpected: appointments.length
+          totalExpected: appointments.length,
+          timestamp: new Date().toISOString()
         });
         failedSaves.push(`${appointment.date} ${appointment.time} - ${appointment.client}: ${result.error}`);
       }
@@ -109,27 +119,32 @@ export const saveAppointmentsBatch = async (
         client: appointment.client,
         error: errorMsg,
         errorObject: error,
+        stack: error instanceof Error ? error.stack : 'No stack',
         savedSoFar: savedCount,
-        totalExpected: appointments.length
+        totalExpected: appointments.length,
+        timestamp: new Date().toISOString()
       });
       failedSaves.push(`${appointment.date} ${appointment.time} - ${appointment.client}: ${errorMsg}`);
     }
     
     // Aggiorna progress ogni appuntamento per mobile con dettagli
     if (progressToastId) {
+      const tempoRimanente = Math.ceil((appointments.length - i - 1) * batchDelay / 1000);
       const mobileInfo = delays.isMobile ? 
-        ` (mobile: ${Math.ceil((appointments.length - i - 1) * batchDelay / 1000)}s rimanenti)` : '';
+        ` (mobile: ${tempoRimanente}s rimanenti)` : '';
+      console.log(`📱 Aggiorno progress: ${savedCount}/${appointments.length}${mobileInfo}`);
       toast.loading(`Salvati ${savedCount}/${appointments.length}${mobileInfo}...`, { id: progressToastId });
     }
     
-    // PAUSA OBBLIGATORIA TRA APPUNTAMENTI - DELAY MOBILE ULTRA-OTTIMIZZATO
+    // PAUSA OBBLIGATORIA TRA APPUNTAMENTI - DELAY MOBILE MASSIMO
     if (i < appointments.length - 1) {
-      console.log(`⏳ PAUSA BATCH ${batchType.toUpperCase()} MOBILE V3: ${batchDelay}ms (${delays.isMobile ? '📱 MOBILE ULTRA-LENTO' : '💻 DESKTOP VELOCE'}) prima del prossimo`, {
+      console.log(`⏳ PAUSA BATCH ${batchType.toUpperCase()} MOBILE V4: ${batchDelay}ms (${delays.isMobile ? '📱 MOBILE MASSIMO' : '💻 DESKTOP VELOCE'}) prima del prossimo`, {
         currentAppointment: i + 1,
         nextAppointment: i + 2,
         totalAppointments: appointments.length,
-        delayType: delays.isMobile ? 'MOBILE_ULTRA_SLOW' : 'DESKTOP_FAST',
-        delayMs: batchDelay
+        delayType: delays.isMobile ? 'MOBILE_MASSIMO' : 'DESKTOP_FAST',
+        delayMs: batchDelay,
+        startTime: new Date().toISOString()
       });
       
       const startWait = Date.now();
@@ -140,18 +155,20 @@ export const saveAppointmentsBatch = async (
         actualDelay: endWait - startWait,
         requestedDelay: batchDelay,
         difference: Math.abs((endWait - startWait) - batchDelay),
-        isAccurate: Math.abs((endWait - startWait) - batchDelay) < 100
+        isAccurate: Math.abs((endWait - startWait) - batchDelay) < 100,
+        endTime: new Date().toISOString()
       });
     }
   }
 
   if (progressToastId) {
+    console.log(`📱 Dismissing progress toast`);
     toast.dismiss(progressToastId);
   }
 
   const successRate = Math.round((savedCount / appointments.length) * 100);
   
-  console.log(`🏁 BATCH ${batchType.toUpperCase()} COMPLETATO - RISULTATI FINALI:`, {
+  console.log(`🏁 BATCH ${batchType.toUpperCase()} COMPLETATO - RISULTATI FINALI V4:`, {
     risultati: {
       salvati: savedCount,
       totale: appointments.length,
@@ -160,7 +177,7 @@ export const saveAppointmentsBatch = async (
     },
     tempi: {
       tempoTotaleEffettivo: `circa ${Math.ceil((appointments.length * batchDelay) / 1000)}s`,
-      modalitàUsata: delays.isMobile ? '📱 MOBILE (DELAY ULTRA-LUNGHI V3)' : '💻 DESKTOP (DELAY CORTI)',
+      modalitàUsata: delays.isMobile ? '📱 MOBILE (DELAY MASSIMI V4)' : '💻 DESKTOP (DELAY CORTI)',
       delayPerAppuntamento: `${batchDelay}ms`
     },
     valutazione: {
@@ -170,7 +187,8 @@ export const saveAppointmentsBatch = async (
         `${failedSaves.length} appuntamenti non salvati` : 
         'Tutti gli appuntamenti salvati correttamente'
     },
-    dettagliFallimenti: failedSaves.length > 0 ? failedSaves : 'Nessun fallimento'
+    dettagliFallimenti: failedSaves.length > 0 ? failedSaves : 'Nessun fallimento',
+    timestamp: new Date().toISOString()
   });
 
   return { savedCount, failedSaves };
