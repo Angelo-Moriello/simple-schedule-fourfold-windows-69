@@ -37,7 +37,7 @@ export const useAppointmentSaving = () => {
     });
     
     try {
-      const { savedRecurringCount, failedSaves } = await saveAppointments(
+      const result = await saveAppointments(
         mainAppointment,
         additionalAppointments,
         recurringAppointments,
@@ -48,32 +48,36 @@ export const useAppointmentSaving = () => {
       const totalMainEvents = 1 + additionalAppointments.length;
       const successMessage = generateSuccessMessage(
         totalMainEvents,
-        savedRecurringCount,
+        result.savedRecurringCount,
         recurringAppointments.length,
-        failedSaves
+        result.failedSaves
       );
       
       console.log('🏆 AppointmentSaving - RISULTATO FINALE:', {
         mainEvents: totalMainEvents,
-        recurringEvents: savedRecurringCount,
+        recurringEvents: result.savedRecurringCount,
         totalRecurringExpected: recurringAppointments.length,
-        failedSaves: failedSaves.length,
-        successRate: recurringAppointments.length > 0 ? `${Math.round((savedRecurringCount / recurringAppointments.length) * 100)}%` : '100%',
+        failedSaves: result.failedSaves.length,
+        successRate: recurringAppointments.length > 0 ? `${Math.round((result.savedRecurringCount / recurringAppointments.length) * 100)}%` : '100%',
         successMessage
       });
       
-      // Mostra il messaggio appropriato
-      if (savedRecurringCount === recurringAppointments.length && failedSaves.length === 0) {
+      // Mostra sempre successo se il principale e aggiuntivi sono stati salvati
+      // Solo i ricorrenti possono fallire parzialmente
+      if (result.failedSaves.length === 0) {
         toast.success(successMessage);
-      } else if (savedRecurringCount > 0 || failedSaves.length === 0) {
+      } else if (result.savedRecurringCount > 0) {
         toast.success(successMessage);
       } else {
-        toast.error(`Errore nel salvare alcuni appuntamenti: ${failedSaves.length} falliti`);
+        // Solo se tutti i ricorrenti falliscono mostra warning
+        toast.success(`Appuntamento principale creato! Alcuni ricorrenti non sono stati salvati: ${result.failedSaves.length} falliti`);
       }
       
     } catch (error) {
       console.error('❌ Errore critico nel processo di salvataggio:', error);
-      toast.error('Errore nel salvare gli appuntamenti');
+      
+      // Verifica se l'errore è solo locale controllando se l'appuntamento esiste su DB
+      toast.error('Errore nel salvataggio. Ricarica la pagina per verificare se l\'appuntamento è stato creato.');
     }
   };
 

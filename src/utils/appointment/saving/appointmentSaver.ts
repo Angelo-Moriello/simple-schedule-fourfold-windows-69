@@ -20,13 +20,19 @@ export const saveAppointmentSafely = async (
       id: appointment.id
     });
 
-    // Salva su Supabase
+    // Salva su Supabase PRIMA
     await addAppointmentToSupabase(appointment);
+    console.log('✅ Appuntamento salvato su Supabase:', appointment.id);
     
-    // Aggiorna lo stato locale
-    addAppointment(appointment);
+    // Solo se il salvataggio su Supabase è riuscito, aggiorna lo stato locale
+    try {
+      addAppointment(appointment);
+      console.log('✅ Stato locale aggiornato con successo:', appointment.id);
+    } catch (localError) {
+      console.warn('⚠️ Errore aggiornamento stato locale (ma salvato su DB):', localError);
+      // Non considerare questo un errore critico dato che il salvataggio su DB è riuscito
+    }
     
-    console.log('✅ Appuntamento salvato con successo:', appointment.id);
     return { success: true };
     
   } catch (error) {
