@@ -2,15 +2,7 @@
 import { Appointment } from '@/types/appointment';
 import { format } from 'date-fns';
 
-// Genera un UUID v4 standard
-const generateStandardUUID = (): string => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
-
+// Non genera più ID qui - sarà fatto dal saver che controlla l'unicità
 interface MultipleEvent {
   id: string;
   employeeId: string;
@@ -39,10 +31,9 @@ export const useAppointmentCreation = () => {
       clientId: finalClientId
     });
 
-    // 1. Crea appuntamento principale con ID UUID standard
-    const mainAppointmentId = appointmentToEdit?.id || generateStandardUUID();
+    // 1. Crea appuntamento principale - ID verrà generato dal saver
     const mainAppointment: Appointment = {
-      id: mainAppointmentId,
+      id: appointmentToEdit?.id || 'temp-main-id', // ID temporaneo, sarà sostituito
       employeeId: parseInt(formData.employeeId),
       date: format(date, 'yyyy-MM-dd'),
       time: formData.time,
@@ -61,14 +52,13 @@ export const useAppointmentCreation = () => {
       date: mainAppointment.date,
       client: mainAppointment.client,
       time: mainAppointment.time,
-      id: mainAppointment.id
+      tempId: mainAppointment.id
     });
 
-    // 2. Crea appuntamenti aggiuntivi con ID UUID standard
+    // 2. Crea appuntamenti aggiuntivi - ID verranno generati dal saver
     const additionalAppointments: Appointment[] = multipleEvents.map((event, index) => {
-      const additionalId = generateStandardUUID();
       return {
-        id: additionalId,
+        id: `temp-additional-${index}`, // ID temporaneo, sarà sostituito
         employeeId: parseInt(event.employeeId),
         date: format(date, 'yyyy-MM-dd'),
         time: event.time,
@@ -86,10 +76,10 @@ export const useAppointmentCreation = () => {
 
     console.log('✅ Appuntamenti aggiuntivi preparati:', {
       count: additionalAppointments.length,
-      dates: additionalAppointments.map(a => ({ date: a.date, time: a.time, id: a.id }))
+      dates: additionalAppointments.map(a => ({ date: a.date, time: a.time, tempId: a.id }))
     });
 
-    // 3. Crea appuntamenti ricorrenti con ID UUID standard
+    // 3. Crea appuntamenti ricorrenti - ID verranno generati dal saver
     console.log('📅 CREAZIONE RICORRENTI - INPUT DETTAGLIATO:', {
       selectedDates,
       mainDateToExclude: format(date, 'yyyy-MM-dd'),
@@ -119,9 +109,8 @@ export const useAppointmentCreation = () => {
       });
 
       filteredDates.forEach((selectedDate, index) => {
-        const recurringId = generateStandardUUID();
         const recurringAppointment: Appointment = {
-          id: recurringId,
+          id: `temp-recurring-${index}`, // ID temporaneo, sarà sostituito
           employeeId: parseInt(formData.employeeId),
           date: format(selectedDate, 'yyyy-MM-dd'),
           time: formData.time,
@@ -142,7 +131,7 @@ export const useAppointmentCreation = () => {
           date: recurringAppointment.date,
           client: recurringAppointment.client,
           time: recurringAppointment.time,
-          id: recurringAppointment.id
+          tempId: recurringAppointment.id
         });
       });
     }
@@ -151,7 +140,7 @@ export const useAppointmentCreation = () => {
       totalCreated: recurringAppointments.length,
       expectedCount: selectedDates ? selectedDates.length - 1 : -2,
       selectedDatesWereValid: selectedDates && Array.isArray(selectedDates),
-      dateDetails: recurringAppointments.map(a => ({ date: a.date, time: a.time, id: a.id }))
+      dateDetails: recurringAppointments.map(a => ({ date: a.date, time: a.time, tempId: a.id }))
     });
 
     return {

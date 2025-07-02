@@ -82,6 +82,12 @@ export const useAppointmentSaving = () => {
         toast.success(`Appuntamento principale creato! Alcuni ricorrenti non sono stati salvati: ${result.failedSaves.length} falliti`);
       }
       
+      // Forza il refresh dei dati per aggiornare la UI
+      console.log('🔄 Triggering page refresh to update data...');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
     } catch (error) {
       console.error('❌ Errore critico nel processo di salvataggio:', error);
       console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
@@ -90,8 +96,11 @@ export const useAppointmentSaving = () => {
         message: error instanceof Error ? error.message : 'Unknown error'
       });
       
-      // Verifica se l'errore è solo locale controllando se l'appuntamento esiste su DB
-      toast.error('Errore nel salvataggio. Ricarica la pagina per verificare se l\'appuntamento è stato creato.');
+      // Mostra errore ma forza comunque il refresh per verificare se è stato salvato
+      toast.error('Errore nel salvataggio. La pagina verrà ricaricata per verificare lo stato.');
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     }
   };
 

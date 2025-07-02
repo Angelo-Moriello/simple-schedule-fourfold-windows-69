@@ -2,6 +2,7 @@
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
 import { addAppointmentToSupabase } from '@/utils/supabase/appointmentMutations';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SaveResult {
   success: boolean;
@@ -17,35 +18,76 @@ const generateStandardUUID = (): string => {
   });
 };
 
+// Controlla se un ID esiste già nel database
+const checkIdExists = async (id: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('id', id)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 = nessun risultato trovato
+      console.warn('Errore nel controllare ID esistente:', error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.warn('Errore nel controllo ID:', error);
+    return false;
+  }
+};
+
+// Genera un ID unico garantito
+const generateUniqueId = async (maxRetries = 5): Promise<string> => {
+  for (let i = 0; i < maxRetries; i++) {
+    const id = generateStandardUUID();
+    const exists = await checkIdExists(id);
+    
+    if (!exists) {
+      console.log(`✅ ID unico generato al tentativo ${i + 1}:`, id);
+      return id;
+    }
+    
+    console.warn(`⚠️ ID duplicato rilevato al tentativo ${i + 1}, rigenerando...`);
+  }
+  
+  // Fallback con timestamp per garantire unicità
+  const fallbackId = `${generateStandardUUID()}-${Date.now()}`;
+  console.log('🔄 Usando ID fallback con timestamp:', fallbackId);
+  return fallbackId;
+};
+
 export const saveAppointmentSafely = async (
   appointment: Appointment,
   addAppointment: (appointment: Appointment) => void
 ): Promise<SaveResult> => {
   try {
-    // Genera un nuovo ID UUID standard se necessario
-    const appointmentWithValidId = {
+    // Genera un ID unico garantito
+    const uniqueId = await generateUniqueId();
+    
+    const appointmentWithUniqueId = {
       ...appointment,
-      id: appointment.id && appointment.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) 
-        ? appointment.id 
-        : generateStandardUUID()
+      id: uniqueId
     };
 
-    console.log('💾 Salvando appuntamento con ID UUID standard:', {
-      client: appointmentWithValidId.client,
-      date: appointmentWithValidId.date,
-      time: appointmentWithValidId.time,
-      id: appointmentWithValidId.id,
+    console.log('💾 Salvando appuntamento con ID unico:', {
+      client: appointmentWithUniqueId.client,
+      date: appointmentWithUniqueId.date,
+      time: appointmentWithUniqueId.time,
+      id: appointmentWithUniqueId.id,
       originalId: appointment.id
     });
 
     // Salva su Supabase PRIMA
-    await addAppointmentToSupabase(appointmentWithValidId);
-    console.log('✅ Appuntamento salvato su Supabase:', appointmentWithValidId.id);
+    await addAppointmentToSupabase(appointmentWithUniqueId);
+    console.log('✅ Appuntamento salvato su Supabase:', appointmentWithUniqueId.id);
     
     // Solo se il salvataggio su Supabase è riuscito, aggiorna lo stato locale
     try {
-      addAppointment(appointmentWithValidId);
-      console.log('✅ Stato locale aggiornato con successo:', appointmentWithValidId.id);
+      addAppointment(appointmentWithUniqueId);
+      console.log('✅ Stato locale aggiornato con successo:', appointmentWithUniqueId.id);
     } catch (localError) {
       console.warn('⚠️ Errore aggiornamento stato locale (ma salvato su DB):', localError);
       // Non considerare questo un errore critico dato che il salvataggio su DB è riuscito
@@ -105,9 +147,9 @@ export const saveMultipleAppointments = async (
       onProgress(savedCount, appointments.length);
     }
 
-    // Pausa tra i salvataggi per evitare conflitti
+    // Pausa più lunga tra i salvataggi per evitare conflitti
     if (i < appointments.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
 
