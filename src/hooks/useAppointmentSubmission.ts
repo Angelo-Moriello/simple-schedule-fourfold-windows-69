@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
 import { format } from 'date-fns';
@@ -43,48 +42,38 @@ export const useAppointmentSubmission = ({
     multipleEvents: MultipleEvent[],
     selectedDates: Date[]
   ) => {
-    console.log('🚀 useAppointmentSubmission - INIZIO SUBMIT:', {
+    console.log('🚀 SUBMIT - DATI RICEVUTI IN DETTAGLIO:', {
       formData: {
         client: formData.client,
         time: formData.time,
         employeeId: formData.employeeId
       },
       multipleEvents: multipleEvents.length,
-      selectedDates: selectedDates?.length || 0,
-      selectedDatesDetails: selectedDates?.map(d => format(d, 'yyyy-MM-dd')) || [],
+      selectedDatesRAW: selectedDates,
+      selectedDatesFormatted: selectedDates?.map(d => format(d, 'yyyy-MM-dd HH:mm:ss')) || [],
+      selectedDatesCount: selectedDates?.length || 0,
+      selectedDatesType: typeof selectedDates,
+      selectedDatesIsArray: Array.isArray(selectedDates),
       mainDate: format(date, 'yyyy-MM-dd'),
-      existingAppointments: existingAppointments.length,
-      isMobile: /Mobi|Android/i.test(navigator.userAgent),
-      dataTypes: {
-        selectedDates: typeof selectedDates,
-        isArray: Array.isArray(selectedDates),
-        formData: typeof formData,
-        multipleEvents: typeof multipleEvents
-      }
+      isMobile: /Mobi|Android/i.test(navigator.userAgent)
     });
     
-    // Validazione dati di input
-    if (!selectedDates) {
-      console.log('⚠️ useAppointmentSubmission - selectedDates è null/undefined, inizializzazione array vuoto');
+    // Validazione e pulizia selectedDates
+    if (!selectedDates || !Array.isArray(selectedDates)) {
+      console.log('⚠️ selectedDates non valido, inizializzazione array vuoto');
       selectedDates = [];
-    }
-    
-    if (!Array.isArray(selectedDates)) {
-      console.error('❌ useAppointmentSubmission - selectedDates non è un array!', {
-        selectedDates,
-        type: typeof selectedDates
-      });
-      selectedDates = [];
+    } else {
+      console.log('✅ selectedDates valido:', selectedDates.map(d => format(d, 'yyyy-MM-dd')));
     }
     
     if (!validateAppointmentForm(formData, multipleEvents)) {
-      console.log('❌ useAppointmentSubmission - Validazione fallita');
+      console.log('❌ Validazione fallita');
       return;
     }
 
     try {
       const finalClientId = await handleClientCreation(formData, appointmentToEdit);
-      console.log('✅ useAppointmentSubmission - Cliente preparato:', finalClientId);
+      console.log('✅ Cliente preparato:', finalClientId);
 
       const { mainAppointment, additionalAppointments, recurringAppointments } = createAppointments(
         formData,
@@ -95,10 +84,17 @@ export const useAppointmentSubmission = ({
         appointmentToEdit
       );
 
+      console.log('🎯 APPUNTAMENTI CREATI - RIEPILOGO FINALE:', {
+        mainAppointment: 1,
+        additionalAppointments: additionalAppointments.length,
+        recurringAppointments: recurringAppointments.length,
+        totalToSave: 1 + additionalAppointments.length + recurringAppointments.length
+      });
+
       if (appointmentToEdit && updateAppointment) {
         await updateAppointment(mainAppointment);
         toast.success('Appuntamento modificato con successo!');
-        console.log('✅ useAppointmentSubmission - Appuntamento modificato');
+        console.log('✅ Appuntamento modificato');
       } else {
         await handleSaveAppointments(
           mainAppointment,
@@ -109,11 +105,10 @@ export const useAppointmentSubmission = ({
         );
       }
 
-      // Close form after successful operation
       onClose();
       
     } catch (error) {
-      console.error('❌ useAppointmentSubmission - ERRORE nell\'operazione:', error);
+      console.error('❌ ERRORE nell\'operazione:', error);
       toast.error('Errore nell\'operazione: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
     }
   };

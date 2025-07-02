@@ -2,7 +2,7 @@
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
 import { checkTimeConflicts } from './conflictDetection';
-import { isMobileDevice, getMobileDelays } from './mobileDetection';
+import { isMobileDevice } from './mobileDetection';
 
 export interface SaveResult {
   success: boolean;
@@ -15,64 +15,50 @@ export const saveAppointmentWithRetry = async (
   existingAppointments: Appointment[],
   index: number,
   total: number,
-  maxRetries = 3 // Ridotto per evitare loop infiniti
+  maxRetries = 2 // Ridotto drasticamente per mobile
 ): Promise<SaveResult> => {
   const isMobile = isMobileDevice();
-  const delays = getMobileDelays();
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    console.log(`🔄 [${index + 1}/${total}] TENTATIVO ${attempt}/${maxRetries} - MOBILE: ${isMobile}`, {
+    console.log(`🔄 [${index + 1}/${total}] SALVATAGGIO TENTATIVO ${attempt}/${maxRetries}`, {
       client: appointment.client,
       date: appointment.date,
       time: appointment.time,
-      id: appointment.id.substring(0, 8),
-      timestamp: new Date().toISOString()
+      mobile: isMobile
     });
     
     try {
-      // Verifica conflitti solo se ci sono appuntamenti esistenti
+      // Verifica conflitti solo se necessario
       if (existingAppointments.length > 0) {
         const hasConflict = await checkTimeConflicts(appointment, existingAppointments);
         if (hasConflict) {
-          console.warn(`⚠️ Conflitto rilevato per ${appointment.client} alle ${appointment.time} del ${appointment.date}`);
-          toast.warning(`Conflitto rilevato per ${appointment.client} il ${appointment.date} alle ${appointment.time}`);
+          console.warn(`⚠️ Conflitto per ${appointment.client} - ${appointment.date} ${appointment.time}`);
+          toast.warning(`Conflitto per ${appointment.client} il ${appointment.date}`);
         }
       }
       
-      // SALVATAGGIO ULTRA-SEMPLIFICATO
+      // SALVATAGGIO DIRETTO SENZA COMPLICAZIONI
       console.log(`💾 [${index + 1}/${total}] SALVATAGGIO DIRETTO`);
-      
-      // Chiamata diretta al salvataggio
       addAppointment(appointment);
       
-      // Pausa OBBLIGATORIA per mobile
-      const saveDelay = isMobile ? 800 : 300; // Aumentato significativamente per mobile
-      await new Promise(resolve => setTimeout(resolve, saveDelay));
+      // Pausa minima ma sufficiente
+      const delay = isMobile ? 500 : 200;
+      await new Promise(resolve => setTimeout(resolve, delay));
       
-      console.log(`✅ [${index + 1}/${total}] SALVATO CON SUCCESSO al tentativo ${attempt}`);
+      console.log(`✅ [${index + 1}/${total}] SALVATO con successo`);
       return { success: true };
       
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Errore sconosciuto';
-      console.error(`❌ [${index + 1}/${total}] ERRORE tentativo ${attempt}/${maxRetries}:`, {
-        error: errorMsg,
-        appointment: {
-          client: appointment.client,
-          date: appointment.date,
-          time: appointment.time
-        },
-        timestamp: new Date().toISOString()
-      });
+      console.error(`❌ [${index + 1}/${total}] ERRORE tentativo ${attempt}:`, errorMsg);
       
       if (attempt === maxRetries) {
-        console.error(`❌ [${index + 1}/${total}] FALLITO DEFINITIVAMENTE dopo ${maxRetries} tentativi`);
-        // NON BLOCCARE IL PROCESSO - continua con il prossimo
+        console.error(`❌ [${index + 1}/${total}] FALLITO dopo ${maxRetries} tentativi`);
         return { success: false, error: errorMsg };
       }
       
-      // Pausa progressiva tra retry (aumentata per mobile)
-      const retryDelay = isMobile ? attempt * 1500 : attempt * 700;
-      console.log(`⏱️ [${index + 1}/${total}] Pausa retry di ${retryDelay}ms...`);
+      // Pausa breve tra retry
+      const retryDelay = isMobile ? 1000 : 500;
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
   }

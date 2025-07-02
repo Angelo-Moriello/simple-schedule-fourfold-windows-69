@@ -26,6 +26,15 @@ export const useAppointmentCreation = () => {
     selectedDates: Date[],
     appointmentToEdit: Appointment | null
   ) => {
+    console.log('🔧 AppointmentCreation - INIZIO CREAZIONE APPUNTAMENTI:', {
+      mainDate: format(date, 'yyyy-MM-dd'),
+      selectedDatesInput: selectedDates?.map(d => format(d, 'yyyy-MM-dd')) || [],
+      selectedDatesCount: selectedDates?.length || 0,
+      multipleEventsCount: multipleEvents.length,
+      formDataValid: !!formData.client,
+      clientId: finalClientId
+    });
+
     // Create main appointment
     const mainAppointment = createAppointmentFromData(
       formData,
@@ -34,7 +43,11 @@ export const useAppointmentCreation = () => {
       appointmentToEdit?.id
     );
 
-    console.log('✅ AppointmentCreation - Appuntamento principale creato per:', format(date, 'yyyy-MM-dd'));
+    console.log('✅ Appuntamento principale creato:', {
+      date: mainAppointment.date,
+      client: mainAppointment.client,
+      time: mainAppointment.time
+    });
 
     // Create additional appointments for multiple events on the same day
     const additionalAppointments = createAdditionalAppointments(
@@ -44,35 +57,39 @@ export const useAppointmentCreation = () => {
       multipleEvents
     );
 
-    console.log('✅ AppointmentCreation - Appuntamenti aggiuntivi preparati:', additionalAppointments.length);
+    console.log('✅ Appuntamenti aggiuntivi preparati:', {
+      count: additionalAppointments.length,
+      dates: additionalAppointments.map(a => ({ date: a.date, time: a.time }))
+    });
 
-    // Create recurring appointments for each selected date (ESCLUSA la data principale)
-    console.log('📅 AppointmentCreation - PREPARAZIONE RICORRENTI con date:', {
-      selectedDatesInput: selectedDates.map(d => format(d, 'yyyy-MM-dd')),
-      selectedDatesCount: selectedDates.length,
+    // PARTE CRITICA: Create recurring appointments
+    console.log('📅 CREAZIONE RICORRENTI - INPUT DETTAGLIATO:', {
+      selectedDates: selectedDates?.map(d => ({
+        original: d,
+        formatted: format(d, 'yyyy-MM-dd'),
+        isMainDate: format(d, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+      })) || [],
       mainDateToExclude: format(date, 'yyyy-MM-dd'),
-      multipleEventsCount: multipleEvents.length
+      willCreateRecurring: selectedDates && selectedDates.length > 0
     });
     
     const recurringAppointments = createRecurringAppointments(
       formData,
       finalClientId,
-      selectedDates,
+      selectedDates || [], // Assicuriamoci che non sia undefined
       multipleEvents,
-      date // Passa la data principale per escluderla
+      date
     );
 
-    console.log('✅ AppointmentCreation - APPUNTAMENTI RICORRENTI PREPARATI:', {
-      total: recurringAppointments.length,
-      originalSelectedDates: selectedDates.length,
-      excludedMainDate: format(date, 'yyyy-MM-dd'),
-      processedDates: selectedDates.filter(d => format(d, 'yyyy-MM-dd') !== format(date, 'yyyy-MM-dd')).length,
-      eventsPerDate: multipleEvents.length + 1,
-      dettagli: recurringAppointments.map(app => ({ 
+    console.log('🎯 APPUNTAMENTI RICORRENTI CREATI - RISULTATO FINALE:', {
+      totalCreated: recurringAppointments.length,
+      expectedCount: selectedDates ? (selectedDates.length - 1) * (multipleEvents.length + 1) : 0, // -1 per escludere main date
+      selectedDatesWereValid: !!selectedDates && selectedDates.length > 0,
+      dateDetails: recurringAppointments.map(app => ({ 
         date: app.date, 
         time: app.time, 
-        service: app.serviceType,
-        client: app.client 
+        client: app.client,
+        service: app.serviceType
       }))
     });
 

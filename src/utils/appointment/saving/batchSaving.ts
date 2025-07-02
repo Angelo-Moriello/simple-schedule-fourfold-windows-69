@@ -2,7 +2,7 @@
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
 import { saveAppointmentWithRetry } from './retryMechanism';
-import { isMobileDevice, getMobileDelays } from './mobileDetection';
+import { isMobileDevice } from './mobileDetection';
 
 export const saveAppointmentsBatch = async (
   appointments: Appointment[],
@@ -15,27 +15,27 @@ export const saveAppointmentsBatch = async (
   let savedCount = 0;
 
   if (appointments.length === 0) {
+    console.log(`📋 BATCH ${batchType} - Nessun appuntamento da salvare`);
     return { savedCount: 0, failedSaves: [] };
   }
 
   console.log(`📋 INIZIO BATCH ${batchType.toUpperCase()} - ${appointments.length} appuntamenti - MOBILE: ${isMobile}`);
 
-  // Progress toast SOLO per operazioni lunghe
+  // Progress toast solo per batch grandi
   let progressToastId: string | number | undefined;
-  if (appointments.length > 5 && batchType === 'recurring') {
-    progressToastId = toast.loading(`Salvando ${appointments.length} appuntamenti ricorrenti...`);
+  if (appointments.length > 3) {
+    progressToastId = toast.loading(`Salvando ${appointments.length} appuntamenti...`);
   }
 
-  // SALVATAGGIO SEQUENZIALE ULTRA-ROBUSTO
+  // SALVATAGGIO SEQUENZIALE SEMPLIFICATO
   for (let i = 0; i < appointments.length; i++) {
     const appointment = appointments[i];
     
-    console.log(`💾 [${i + 1}/${appointments.length}] PROCESSANDO ${batchType.toUpperCase()}:`, {
+    console.log(`💾 [${i + 1}/${appointments.length}] PROCESSANDO:`, {
+      type: batchType,
       date: appointment.date,
       time: appointment.time,
-      client: appointment.client,
-      progress: `${i + 1}/${appointments.length}`,
-      isMobile
+      client: appointment.client
     });
     
     try {
@@ -49,39 +49,30 @@ export const saveAppointmentsBatch = async (
       
       if (result.success) {
         savedCount++;
-        console.log(`✅ [${i + 1}/${appointments.length}] ${batchType.toUpperCase()} SALVATO! Progresso: ${savedCount}/${appointments.length}`);
+        console.log(`✅ [${i + 1}/${appointments.length}] SALVATO! Total: ${savedCount}/${appointments.length}`);
       } else {
-        console.error(`❌ [${i + 1}/${appointments.length}] ${batchType.toUpperCase()} FALLITO:`, result.error);
-        failedSaves.push(`${batchType} ${i + 1} (${appointment.date}): ${result.error}`);
-        // CONTINUA COMUNQUE - non fermare il processo
+        console.error(`❌ [${i + 1}/${appointments.length}] FALLITO:`, result.error);
+        failedSaves.push(`${appointment.date} ${appointment.time}: ${result.error}`);
       }
-    } catch (criticalError) {
-      const errorMsg = criticalError instanceof Error ? criticalError.message : 'Errore critico sconosciuto';
-      console.error(`💥 [${i + 1}/${appointments.length}] ERRORE CRITICO:`, {
-        error: errorMsg,
-        appointment: appointment.date
-      });
-      failedSaves.push(`${batchType} ${i + 1} (${appointment.date}): ${errorMsg}`);
-      // CONTINUA COMUNQUE - non fermare il processo
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Errore critico';
+      console.error(`💥 [${i + 1}/${appointments.length}] ERRORE CRITICO:`, errorMsg);
+      failedSaves.push(`${appointment.date} ${appointment.time}: ${errorMsg}`);
     }
     
-    // Aggiorna progress toast periodicamente
-    if (progressToastId && (i + 1) % 3 === 0) {
-      toast.loading(`Salvati ${savedCount}/${appointments.length} appuntamenti...`, {
-        id: progressToastId
-      });
+    // Aggiorna progress
+    if (progressToastId && (i + 1) % 2 === 0) {
+      toast.loading(`Salvati ${savedCount}/${appointments.length}...`, { id: progressToastId });
     }
     
-    // PAUSA FONDAMENTALE TRA SALVATAGGI - MAI SALTARE
+    // Pausa tra salvataggi - FONDAMENTALE
     if (i < appointments.length - 1) {
-      // Pausa aumentata significativamente per mobile
-      const delay = isMobile ? 2000 : 800; // Raddoppiato per mobile
-      console.log(`⏱️ [${i + 1}/${appointments.length}] PAUSA OBBLIGATORIA di ${delay}ms prima di continuare...`);
+      const delay = isMobile ? 800 : 300; // Ridotto ma sufficiente
+      console.log(`⏱️ Pausa di ${delay}ms prima del prossimo...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
 
-  // Chiudi progress toast
   if (progressToastId) {
     toast.dismiss(progressToastId);
   }
