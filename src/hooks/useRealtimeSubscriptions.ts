@@ -10,7 +10,9 @@ interface UseRealtimeSubscriptionsProps {
 }
 
 // Helper function to get client info by ID
-const getClientInfo = async (clientId: string) => {
+const getClientInfo = async (clientId: string | null) => {
+  if (!clientId) return null;
+  
   try {
     const { data, error } = await supabase
       .from('clients')
@@ -62,7 +64,7 @@ export const useRealtimeSubscriptions = ({
                 console.log('DEBUG - Recupero info cliente per realtime INSERT:', payload.new.client_id);
                 const clientInfo = await getClientInfo(payload.new.client_id);
                 if (clientInfo) {
-                  clientName = clientInfo.name;
+                  clientName = clientInfo.name || clientName;
                   clientEmail = clientInfo.email || payload.new.email || '';
                   clientPhone = clientInfo.phone || payload.new.phone || '';
                 }
@@ -100,7 +102,7 @@ export const useRealtimeSubscriptions = ({
               if ((!clientName || clientName.trim() === '') && payload.new.client_id) {
                 const clientInfo = await getClientInfo(payload.new.client_id);
                 if (clientInfo) {
-                  clientName = clientInfo.name;
+                  clientName = clientInfo.name || clientName;
                   clientEmail = clientInfo.email || payload.new.email || '';
                   clientPhone = clientInfo.phone || payload.new.phone || '';
                 }

@@ -15,7 +15,7 @@ const isMobile = () => {
 // Configurazione ottimizzata per mobile
 const supabaseOptions = {
   db: {
-    schema: 'public',
+    schema: 'public' as const,
   },
   auth: {
     autoRefreshToken: true,

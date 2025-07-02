@@ -20,7 +20,11 @@ export const getClientAppointmentsFromSupabase = async (clientId: string): Promi
     
     console.log('DEBUG - Appuntamenti raw da DB:', appointmentsData);
     
-    const appointments = appointmentsData?.map(app => ({
+    if (!appointmentsData) {
+      return [];
+    }
+    
+    const appointments = appointmentsData.map(app => ({
       id: app.id,
       employeeId: app.employee_id,
       date: app.date,
@@ -34,7 +38,7 @@ export const getClientAppointmentsFromSupabase = async (clientId: string): Promi
       color: app.color,
       serviceType: app.service_type,
       clientId: app.client_id
-    })) || [];
+    }));
     
     console.log('DEBUG - Appuntamenti trasformati per cliente', clientId, ':', appointments.length, appointments);
     return appointments;

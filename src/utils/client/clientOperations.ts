@@ -16,7 +16,19 @@ export const loadClientsFromSupabase = async (): Promise<Client[]> => {
     }
     
     console.log('DEBUG - Clienti caricati da DB:', data?.length || 0, data);
-    return data || [];
+    
+    // Convert Supabase data to Client interface
+    const clients: Client[] = (data || []).map(row => ({
+      id: row.id,
+      name: row.name,
+      email: row.email || undefined,
+      phone: row.phone || undefined,
+      notes: row.notes || undefined,
+      created_at: row.created_at || undefined,
+      updated_at: row.updated_at || undefined
+    }));
+    
+    return clients;
   } catch (error) {
     console.error('DEBUG - Errore nel caricare i clienti da Supabase:', error);
     return [];
@@ -38,7 +50,19 @@ export const addClientToSupabase = async (client: Omit<Client, 'id' | 'created_a
     }
     
     console.log('DEBUG - Cliente aggiunto con successo:', data);
-    return data;
+    
+    // Convert Supabase data to Client interface
+    const newClient: Client = {
+      id: data.id,
+      name: data.name,
+      email: data.email || undefined,
+      phone: data.phone || undefined,
+      notes: data.notes || undefined,
+      created_at: data.created_at || undefined,
+      updated_at: data.updated_at || undefined
+    };
+    
+    return newClient;
   } catch (error) {
     console.error('DEBUG - Errore nell\'aggiungere cliente su Supabase:', error);
     throw error;
