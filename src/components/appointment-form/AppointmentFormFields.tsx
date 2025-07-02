@@ -14,7 +14,7 @@ interface AppointmentFormFieldsProps {
   setFormData: (data: Appointment) => void;
   employees: Employee[];
   timeSlots: string[];
-  appointmentColors: string[];
+  appointmentColors: { label: string; value: string; }[];
   availableServices: string[];
   selectedEmployee?: Employee;
   appointmentToEdit: Appointment | null;
@@ -45,78 +45,68 @@ const AppointmentFormFields: React.FC<AppointmentFormFieldsProps> = ({
       {/* Client Selection - Full width on mobile */}
       <div className="w-full">
         <ClientAutocomplete
-          value={formData.client}
-          onChange={(value) => setFormData({ ...formData, client: value })}
-          onClientIdChange={(clientId) => setFormData({ ...formData, clientId })}
-          onEmailChange={(email) => setFormData({ ...formData, email })}
-          onPhoneChange={(phone) => setFormData({ ...formData, phone })}
+          formData={formData}
+          setFormData={setFormData}
         />
       </div>
 
       {/* Service and Title - Stack on mobile, side by side on larger screens */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <ServiceTitleFields
-          serviceType={formData.serviceType}
-          title={formData.title}
+          formData={formData}
+          setFormData={setFormData}
           availableServices={availableServices}
           selectedEmployee={selectedEmployee}
-          onServiceTypeChange={(serviceType) => setFormData({ ...formData, serviceType })}
-          onTitleChange={(title) => setFormData({ ...formData, title })}
         />
       </div>
 
       {/* Employee and Time - Stack on mobile, side by side on larger screens */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <EmployeeTimeFields
-          employeeId={formData.employeeId}
-          time={formData.time}
+          formData={formData}
+          setFormData={setFormData}
           employees={employees}
           timeSlots={timeSlots}
-          onEmployeeIdChange={(employeeId) => setFormData({ ...formData, employeeId })}
-          onTimeChange={(time) => setFormData({ ...formData, time })}
         />
       </div>
 
       {/* Color Selection - Full width */}
       <div className="w-full">
         <ClientColorFields
-          color={formData.color}
-          colors={appointmentColors}
-          onColorChange={(color) => setFormData({ ...formData, color })}
+          formData={formData}
+          setFormData={setFormData}
+          appointmentColors={appointmentColors}
         />
       </div>
 
       {/* Contact Fields - Stack on mobile, side by side on larger screens */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <ContactFields
-          email={formData.email}
-          phone={formData.phone}
-          onEmailChange={(email) => setFormData({ ...formData, email })}
-          onPhoneChange={(phone) => setFormData({ ...formData, phone })}
+          formData={formData}
+          setFormData={setFormData}
+          appointmentToEdit={appointmentToEdit}
         />
       </div>
 
       {/* Duration and Notes - Stack on mobile, side by side on larger screens */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <DurationNotesFields
-          duration={formData.duration}
-          notes={formData.notes}
-          onDurationChange={(duration) => setFormData({ ...formData, duration })}
-          onNotesChange={(notes) => setFormData({ ...formData, notes })}
+          formData={formData}
+          setFormData={setFormData}
         />
       </div>
 
       {/* Multiple Events Manager - Full width */}
       <div className="w-full">
         <MultipleEventsManager
-          mainDate={mainDate}
-          mainAppointment={formData}
-          multipleEvents={multipleEvents}
-          onMultipleEventsChange={onMultipleEventsChange}
-          selectedDates={selectedDates}
-          onSelectedDatesChange={onSelectedDatesChange}
+          events={multipleEvents}
+          onEventsChange={onMultipleEventsChange}
           employees={employees}
-          appointmentToEdit={appointmentToEdit}
+          timeSlots={timeSlots}
+          availableServices={availableServices}
+          selectedEmployee={selectedEmployee}
+          mainEmployeeId={formData.employeeId.toString()}
+          mainTime={formData.time}
         />
       </div>
     </div>

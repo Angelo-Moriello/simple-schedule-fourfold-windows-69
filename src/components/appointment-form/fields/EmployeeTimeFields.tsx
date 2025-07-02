@@ -26,9 +26,9 @@ const EmployeeTimeFields: React.FC<EmployeeTimeFieldsProps> = ({
           Dipendente <span className="text-red-500">*</span>
         </Label>
         <Select
-          value={formData.employeeId}
+          value={formData.employeeId?.toString()}
           onValueChange={(value) => {
-            setFormData({ ...formData, employeeId: value, serviceType: '' });
+            setFormData({ ...formData, employeeId: parseInt(value), serviceType: '' });
           }}
         >
           <SelectTrigger className="h-11">

@@ -22,8 +22,8 @@ const DurationNotesFields: React.FC<DurationNotesFieldsProps> = ({
           Durata <span className="text-red-500">*</span>
         </Label>
         <Select
-          value={formData.duration}
-          onValueChange={(value) => setFormData({ ...formData, duration: value })}
+          value={formData.duration?.toString()}
+          onValueChange={(value) => setFormData({ ...formData, duration: parseInt(value) })}
         >
           <SelectTrigger className="h-11">
             <SelectValue />
