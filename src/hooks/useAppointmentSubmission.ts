@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 import { Appointment } from '@/types/appointment';
 import { format } from 'date-fns';
@@ -5,16 +6,6 @@ import { validateAppointmentForm } from '@/utils/appointment/appointmentValidati
 import { useClientHandling } from './appointment-submission/useClientHandling';
 import { useAppointmentCreation } from './appointment-submission/useAppointmentCreation';
 import { useAppointmentSaving } from './appointment-submission/useAppointmentSaving';
-
-interface MultipleEvent {
-  id: string;
-  employeeId: string;
-  time: string;
-  serviceType: string;
-  title: string;
-  duration: string;
-  notes: string;
-}
 
 interface UseAppointmentSubmissionProps {
   appointmentToEdit: Appointment | null;
@@ -39,7 +30,7 @@ export const useAppointmentSubmission = ({
 
   const submitAppointment = async (
     formData: any,
-    multipleEvents: MultipleEvent[],
+    multipleEvents: Appointment[],
     selectedDates: Date[]
   ) => {
     console.log('🚀 SUBMIT - DATI RICEVUTI IN DETTAGLIO:', {

@@ -1,18 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { Appointment } from '@/types/appointment';
 import { appointmentColors } from '@/utils/appointmentFormUtils';
 import { getStoredServices, refreshServices } from '@/utils/serviceStorage';
-
-interface MultipleEvent {
-  id: string;
-  employeeId: string;
-  time: string;
-  serviceType: string;
-  title: string;
-  duration: string;
-  notes: string;
-}
 
 interface UseAppointmentFormStateProps {
   isOpen: boolean;
@@ -44,7 +33,7 @@ export const useAppointmentFormState = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [serviceCategories, setServiceCategories] = useState(getStoredServices());
-  const [multipleEvents, setMultipleEvents] = useState<MultipleEvent[]>([]);
+  const [multipleEvents, setMultipleEvents] = useState<Appointment[]>([]);
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
 
   // Listen for service updates
