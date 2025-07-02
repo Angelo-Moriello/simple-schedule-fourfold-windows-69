@@ -87,8 +87,7 @@ export const useAppointmentSaving = () => {
       console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       console.error('❌ Error details:', {
         name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        cause: error instanceof Error ? error.cause : undefined
+        message: error instanceof Error ? error.message : 'Unknown error'
       });
       
       // Verifica se l'errore è solo locale controllando se l'appuntamento esiste su DB
