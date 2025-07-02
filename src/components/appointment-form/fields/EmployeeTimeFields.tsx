@@ -1,13 +1,12 @@
 
 import React from 'react';
+import { Appointment, Employee } from '@/types/appointment';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Employee } from '@/types/appointment';
-import { User, Clock } from 'lucide-react';
 
 interface EmployeeTimeFieldsProps {
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: Appointment;
+  setFormData: (data: Appointment) => void;
   employees: Employee[];
   timeSlots: string[];
 }
@@ -18,60 +17,68 @@ const EmployeeTimeFields: React.FC<EmployeeTimeFieldsProps> = ({
   employees,
   timeSlots
 }) => {
+  // Filter out employees without valid IDs
+  const validEmployees = employees.filter(emp => emp.id && emp.name && emp.name.trim() !== '');
+  
+  // Filter out empty time slots
+  const validTimeSlots = timeSlots.filter(slot => slot && slot.trim() !== '');
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="space-y-2">
-        <Label htmlFor="employee" className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <User className="h-4 w-4 text-blue-600" />
-          Dipendente <span className="text-red-500">*</span>
+    <>
+      <div>
+        <Label htmlFor="employeeId" className="text-sm font-medium text-gray-700 mb-1 block">
+          Dipendente
         </Label>
-        <Select
-          value={formData.employeeId?.toString()}
-          onValueChange={(value) => {
-            setFormData({ ...formData, employeeId: parseInt(value), serviceType: '' });
-          }}
+        <Select 
+          value={formData.employeeId?.toString() || ''} 
+          onValueChange={(value) => setFormData({ ...formData, employeeId: parseInt(value) })}
         >
-          <SelectTrigger className="h-11">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Seleziona dipendente" />
           </SelectTrigger>
           <SelectContent>
-            {employees.map(employee => (
-              <SelectItem key={employee.id} value={employee.id.toString()}>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  {employee.name} <span className="text-gray-500 text-xs">({employee.specialization})</span>
-                </div>
+            {validEmployees.length > 0 ? (
+              validEmployees.map((employee) => (
+                <SelectItem key={employee.id} value={employee.id.toString()}>
+                  {employee.name} - {employee.specialization}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="no-employees" disabled>
+                Nessun dipendente disponibile
               </SelectItem>
-            ))}
+            )}
           </SelectContent>
         </Select>
       </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="time" className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <Clock className="h-4 w-4 text-blue-600" />
-          Orario <span className="text-red-500">*</span>
+
+      <div>
+        <Label htmlFor="time" className="text-sm font-medium text-gray-700 mb-1 block">
+          Orario
         </Label>
-        <Select
-          value={formData.time}
+        <Select 
+          value={formData.time || ''} 
           onValueChange={(value) => setFormData({ ...formData, time: value })}
         >
-          <SelectTrigger className="h-11">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Seleziona orario" />
           </SelectTrigger>
-          <SelectContent className="max-h-60 overflow-y-auto">
-            {timeSlots.map(time => (
-              <SelectItem key={time} value={time}>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-3 w-3 text-gray-400" />
-                  {time}
-                </div>
+          <SelectContent>
+            {validTimeSlots.length > 0 ? (
+              validTimeSlots.map((slot) => (
+                <SelectItem key={slot} value={slot}>
+                  {slot}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="no-slots" disabled>
+                Nessun orario disponibile
               </SelectItem>
-            ))}
+            )}
           </SelectContent>
         </Select>
       </div>
-    </div>
+    </>
   );
 };
 
