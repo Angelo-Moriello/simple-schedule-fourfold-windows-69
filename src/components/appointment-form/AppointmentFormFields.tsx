@@ -9,6 +9,16 @@ import ContactFields from './fields/ContactFields';
 import DurationNotesFields from './fields/DurationNotesFields';
 import MultipleEventsManager from './MultipleEventsManager';
 
+interface MultipleEvent {
+  id: string;
+  employeeId: string;
+  time: string;
+  serviceType: string;
+  title: string;
+  duration: string;
+  notes: string;
+}
+
 interface AppointmentFormFieldsProps {
   formData: Appointment;
   setFormData: (data: Appointment) => void;
@@ -18,8 +28,8 @@ interface AppointmentFormFieldsProps {
   availableServices: string[];
   selectedEmployee?: Employee;
   appointmentToEdit: Appointment | null;
-  multipleEvents: Appointment[];
-  onMultipleEventsChange: (events: Appointment[]) => void;
+  multipleEvents: MultipleEvent[];
+  onMultipleEventsChange: (events: MultipleEvent[]) => void;
   selectedDates: Date[];
   onSelectedDatesChange: (dates: Date[]) => void;
   mainDate: Date;

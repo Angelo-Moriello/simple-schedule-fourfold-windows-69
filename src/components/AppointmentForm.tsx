@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Appointment, Employee } from '@/types/appointment';
 import AppointmentFormContainer from './appointment-form/AppointmentFormContainer';
@@ -5,6 +6,17 @@ import AppointmentFormFields from './appointment-form/AppointmentFormFields';
 import AppointmentFormActions from './appointment-form/AppointmentFormActions';
 import { useAppointmentForm, appointmentColors, generateTimeSlots } from './appointment-form/AppointmentFormLogic';
 import { getStoredServices, setupServicesRealtimeListener } from '@/utils/serviceStorage';
+import { format } from 'date-fns';
+
+interface MultipleEvent {
+  id: string;
+  employeeId: string;
+  time: string;
+  serviceType: string;
+  title: string;
+  duration: string;
+  notes: string;
+}
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -16,7 +28,7 @@ interface AppointmentFormProps {
   date: Date;
   appointmentToEdit: Appointment | null;
   employees: Employee[];
-  existingAppointments?: Appointment[]; // Add this prop
+  existingAppointments?: Appointment[];
 }
 
 const AppointmentForm: React.FC<AppointmentFormProps> = ({
@@ -29,7 +41,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   date,
   appointmentToEdit,
   employees,
-  existingAppointments = [] // Default to empty array
+  existingAppointments = []
 }) => {
   const [serviceCategories, setServiceCategories] = useState({
     Parrucchiere: { name: 'Parrucchiere', services: [] },
@@ -55,10 +67,10 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     addAppointment,
     updateAppointment,
     onClose,
-    existingAppointments // Pass the existing appointments
+    existingAppointments
   });
 
-  // Carica servizi iniziali
+  // Load initial services
   useEffect(() => {
     const loadInitialServices = async () => {
       if (isOpen) {
@@ -75,7 +87,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     loadInitialServices();
   }, [isOpen]);
 
-  // Setup realtime listener per aggiornamenti servizi
+  // Setup realtime listener for service updates
   useEffect(() => {
     const channel = setupServicesRealtimeListener();
     
@@ -96,10 +108,44 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   const timeSlots = generateTimeSlots();
 
-  const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId));
+  const selectedEmployee = employees.find(emp => emp.id === parseInt(formData.employeeId?.toString() || '0'));
   const availableServices = selectedEmployee && serviceCategories[selectedEmployee.specialization] 
     ? serviceCategories[selectedEmployee.specialization].services
     : [];
+
+  // Create a full Appointment object for the form fields
+  const fullAppointmentData: Appointment = {
+    id: appointmentToEdit?.id || '',
+    employeeId: parseInt(formData.employeeId?.toString() || '0'),
+    date: format(date, 'yyyy-MM-dd'),
+    time: formData.time || '',
+    title: formData.title || '',
+    client: formData.client || '',
+    duration: parseInt(formData.duration?.toString() || '30'),
+    notes: formData.notes || '',
+    email: formData.email || '',
+    phone: formData.phone || '',
+    color: formData.color || appointmentColors[0].value,
+    serviceType: formData.serviceType || '',
+    clientId: formData.clientId || ''
+  };
+
+  // Handler to update form data from full appointment object
+  const handleFormDataChange = (appointmentData: Appointment) => {
+    setFormData({
+      employeeId: appointmentData.employeeId?.toString() || '',
+      time: appointmentData.time || '',
+      title: appointmentData.title || '',
+      client: appointmentData.client || '',
+      duration: appointmentData.duration?.toString() || '30',
+      notes: appointmentData.notes || '',
+      email: appointmentData.email || '',
+      phone: appointmentData.phone || '',
+      color: appointmentData.color || appointmentColors[0].value,
+      serviceType: appointmentData.serviceType || '',
+      clientId: appointmentData.clientId || ''
+    });
+  };
 
   console.log('DEBUG - AppointmentForm rendering with:', {
     selectedEmployee: selectedEmployee ? {
@@ -123,8 +169,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       appointmentToEdit={appointmentToEdit}
     >
       <AppointmentFormFields
-        formData={formData}
-        setFormData={setFormData}
+        formData={fullAppointmentData}
+        setFormData={handleFormDataChange}
         employees={employees}
         timeSlots={timeSlots}
         appointmentColors={appointmentColors}
