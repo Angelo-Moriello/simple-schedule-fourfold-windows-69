@@ -33,7 +33,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({ isOpen, onClose }) => {
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-[95vw] w-full sm:max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[95vw] w-full sm:max-w-4xl max-h-[95vh] overflow-hidden flex flex-col z-50">
           <DialogHeader className="flex-shrink-0 border-b pb-4">
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <div className="bg-blue-100 rounded-full p-2">

@@ -96,7 +96,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onClientAdded 
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md z-[60] max-w-[90vw] sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="bg-green-100 rounded-full p-2">
