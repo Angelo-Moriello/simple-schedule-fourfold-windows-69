@@ -2,17 +2,22 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, History } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Clock, History, Trash2 } from 'lucide-react';
 import { Appointment } from '@/types/appointment';
+import { deleteAppointmentFromSupabase } from '@/utils/supabase/appointmentMutations';
+import { toast } from 'sonner';
 
 interface AppointmentHistoryTabProps {
   appointments: Appointment[];
   isLoading: boolean;
+  onAppointmentDeleted?: () => void;
 }
 
 const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
   appointments,
-  isLoading
+  isLoading,
+  onAppointmentDeleted
 }) => {
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('it-IT', {
@@ -24,6 +29,23 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
 
   const formatTime = (timeStr: string) => {
     return timeStr.slice(0, 5);
+  };
+
+  const handleDeleteAppointment = async (appointmentId: string, appointmentInfo: string) => {
+    if (!confirm(`Sei sicuro di voler eliminare l'appuntamento del ${appointmentInfo}? Questa azione non può essere annullata.`)) {
+      return;
+    }
+
+    try {
+      await deleteAppointmentFromSupabase(appointmentId);
+      toast.success('Appuntamento eliminato con successo!');
+      if (onAppointmentDeleted) {
+        onAppointmentDeleted();
+      }
+    } catch (error) {
+      console.error('Errore nell\'eliminazione dell\'appuntamento:', error);
+      toast.error('Errore nell\'eliminare l\'appuntamento');
+    }
   };
 
   return (
@@ -54,12 +76,12 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
             <Card key={appointment.id}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 flex-1">
                     <div 
                       className="w-4 h-4 rounded-full"
                       style={{ backgroundColor: appointment.color }}
                     ></div>
-                    <div>
+                    <div className="flex-1">
                       <h4 className="font-medium">
                         {appointment.title || appointment.serviceType}
                       </h4>
@@ -75,9 +97,22 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
                       </div>
                     </div>
                   </div>
-                  <Badge variant="outline">
-                    {appointment.serviceType}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">
+                      {appointment.serviceType}
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteAppointment(
+                        appointment.id, 
+                        `${formatDate(appointment.date)} alle ${formatTime(appointment.time)}`
+                      )}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
                 {appointment.notes && (
                   <p className="text-sm text-gray-600 mt-2">{appointment.notes}</p>

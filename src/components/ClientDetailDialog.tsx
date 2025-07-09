@@ -98,6 +98,11 @@ const ClientDetailDialog: React.FC<ClientDetailDialogProps> = ({
     toast.success('Trattamento ricorrente aggiunto con successo!');
   };
 
+  const handleAppointmentDeleted = () => {
+    // Ricarica lo storico appuntamenti quando uno viene eliminato
+    loadAppointmentHistory();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[95vh] w-[95vw] sm:w-full overflow-hidden flex flex-col">
@@ -145,6 +150,7 @@ const ClientDetailDialog: React.FC<ClientDetailDialogProps> = ({
                 <AppointmentHistoryTab
                   appointments={appointments}
                   isLoading={isLoadingHistory}
+                  onAppointmentDeleted={handleAppointmentDeleted}
                 />
               </TabsContent>
 
