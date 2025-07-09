@@ -16,33 +16,33 @@ export const useAppointmentHistoryData = () => {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        console.log('Caricamento dati storico da Supabase...');
-        
-        const [loadedAppointments, loadedEmployees] = await Promise.all([
-          loadAppointmentsFromSupabase(),
-          loadEmployeesFromSupabase()
-        ]);
-        
-        console.log('Storico - Appuntamenti caricati:', loadedAppointments);
-        console.log('Storico - Dipendenti caricati:', loadedEmployees);
-        
-        setAppointments(Array.isArray(loadedAppointments) ? loadedAppointments : []);
-        setEmployees(Array.isArray(loadedEmployees) ? loadedEmployees : []);
-        
-      } catch (error) {
-        console.error('Errore nel caricamento storico:', error);
-        toast.error('Errore nel caricamento dello storico');
-        setAppointments([]);
-        setEmployees([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Caricamento dati storico da Supabase...');
+      
+      const [loadedAppointments, loadedEmployees] = await Promise.all([
+        loadAppointmentsFromSupabase(),
+        loadEmployeesFromSupabase()
+      ]);
+      
+      console.log('Storico - Appuntamenti caricati:', loadedAppointments);
+      console.log('Storico - Dipendenti caricati:', loadedEmployees);
+      
+      setAppointments(Array.isArray(loadedAppointments) ? loadedAppointments : []);
+      setEmployees(Array.isArray(loadedEmployees) ? loadedEmployees : []);
+      
+    } catch (error) {
+      console.error('Errore nel caricamento storico:', error);
+      toast.error('Errore nel caricamento dello storico');
+      setAppointments([]);
+      setEmployees([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -212,5 +212,6 @@ export const useAppointmentHistoryData = () => {
     filteredAppointments,
     getEmployeeName,
     getEmployeeSpecialization,
+    refreshData: loadData,
   };
 };

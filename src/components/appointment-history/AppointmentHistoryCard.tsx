@@ -1,21 +1,27 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { User, Calendar, Clock, Mail, Phone, Scissors } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { User, Calendar, Clock, Mail, Phone, Scissors, Trash2 } from 'lucide-react';
 import { Appointment, Employee } from '@/types/appointment';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { deleteAppointmentFromSupabase } from '@/utils/supabase/appointmentMutations';
+import { toast } from 'sonner';
 
 interface AppointmentHistoryCardProps {
   appointment: Appointment;
   getEmployeeName: (employeeId: number) => string;
   getEmployeeSpecialization: (employeeId: number) => string;
+  onAppointmentDeleted?: () => void;
 }
 
 const AppointmentHistoryCard: React.FC<AppointmentHistoryCardProps> = ({
   appointment,
   getEmployeeName,
   getEmployeeSpecialization,
+  onAppointmentDeleted,
 }) => {
   const formatDate = (dateStr: string) => {
     try {
@@ -27,10 +33,31 @@ const AppointmentHistoryCard: React.FC<AppointmentHistoryCardProps> = ({
     }
   };
 
+  const handleDeleteAppointment = async () => {
+    const appointmentInfo = `${formatDate(appointment.date)} alle ${appointment.time}`;
+    
+    if (!confirm(`Sei sicuro di voler eliminare l'appuntamento del ${appointmentInfo}? Questa azione non può essere annullata.`)) {
+      return;
+    }
+
+    try {
+      await deleteAppointmentFromSupabase(appointment.id);
+      toast.success('Appuntamento eliminato con successo!');
+      if (onAppointmentDeleted) {
+        onAppointmentDeleted();
+      }
+    } catch (error) {
+      console.error('Errore nell\'eliminazione dell\'appuntamento:', error);
+      toast.error('Errore nell\'eliminare l\'appuntamento');
+    }
+  };
+
   return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardContent className="p-4 sm:p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+    <TooltipProvider>
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 flex-1">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-blue-600 shrink-0" />
@@ -92,10 +119,32 @@ const AppointmentHistoryCard: React.FC<AppointmentHistoryCardProps> = ({
             {appointment.notes && (
               <p className="text-xs text-gray-500 truncate">Note: {appointment.notes}</p>
             )}
+            </div>
+          </div>
+          
+          {/* Pulsante Elimina */}
+          <div className="flex-shrink-0 ml-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteAppointment}
+                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 text-xs font-medium flex items-center gap-1"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Elimina
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Elimina questo appuntamento</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 };
 

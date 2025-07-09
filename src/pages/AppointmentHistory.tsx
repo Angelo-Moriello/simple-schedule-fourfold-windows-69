@@ -32,7 +32,12 @@ const AppointmentHistory = () => {
     filteredAppointments,
     getEmployeeName,
     getEmployeeSpecialization,
+    refreshData,
   } = useAppointmentHistoryData();
+
+  const handleAppointmentDeleted = () => {
+    refreshData();
+  };
 
   if (isLoading) {
     return (
@@ -107,6 +112,7 @@ const AppointmentHistory = () => {
                 appointment={appointment}
                 getEmployeeName={getEmployeeName}
                 getEmployeeSpecialization={getEmployeeSpecialization}
+                onAppointmentDeleted={handleAppointmentDeleted}
               />
             ))
           )}
