@@ -85,11 +85,11 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
             {appointments.map((appointment) => {
               console.log('DEBUG - Rendering appointment:', appointment.id);
               return (
-                <Card key={appointment.id} className="relative hover:shadow-md transition-shadow border-2">
+                <Card key={appointment.id} className="border-2 hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
-                    <div className="space-y-4">
-                      {/* Header con info appuntamento */}
-                      <div className="flex items-start gap-3">
+                    {/* Header con informazioni appuntamento */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-start gap-3 flex-1">
                         <div 
                           className="w-4 h-4 rounded-full flex-shrink-0 mt-1"
                           style={{ backgroundColor: appointment.color }}
@@ -98,7 +98,7 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
                           <h4 className="font-medium text-gray-900 mb-1">
                             {appointment.title || appointment.serviceType}
                           </h4>
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {formatDate(appointment.date)}
@@ -108,23 +108,14 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
                               {formatTime(appointment.time)} ({appointment.duration}min)
                             </div>
                           </div>
-                          <div className="mt-2">
-                            <Badge variant="outline" className="text-xs">
-                              {appointment.serviceType}
-                            </Badge>
-                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {appointment.serviceType}
+                          </Badge>
                         </div>
                       </div>
                       
-                      {/* Note se presenti */}
-                      {appointment.notes && (
-                        <div className="pl-7">
-                          <p className="text-sm text-gray-600 bg-gray-50 rounded p-2">{appointment.notes}</p>
-                        </div>
-                      )}
-                      
-                      {/* Sezione pulsante eliminazione - SEMPRE VISIBILE */}
-                      <div className="flex justify-end pt-3 border-t border-gray-200">
+                      {/* Pulsante Elimina - SEMPRE VISIBILE */}
+                      <div className="flex-shrink-0 ml-4">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -137,10 +128,10 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
                                   `${formatDate(appointment.date)} alle ${formatTime(appointment.time)}`
                                 );
                               }}
-                              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2"
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 text-xs font-medium flex items-center gap-1"
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Elimina Appuntamento
+                              <Trash2 className="h-3 w-3" />
+                              Elimina
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -149,6 +140,15 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
                         </Tooltip>
                       </div>
                     </div>
+                    
+                    {/* Note se presenti */}
+                    {appointment.notes && (
+                      <div className="mt-3 pl-7">
+                        <p className="text-sm text-gray-600 bg-gray-50 rounded p-2">
+                          {appointment.notes}
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
