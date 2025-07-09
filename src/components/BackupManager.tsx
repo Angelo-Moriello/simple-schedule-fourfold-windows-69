@@ -3,33 +3,31 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Save, Settings } from 'lucide-react';
-import { useBackupSettings } from '@/hooks/useBackupSettings';
-import ManualBackupCard from './backup-manager/ManualBackupCard';
-import BackupSettingsCard from './backup-manager/BackupSettingsCard';
-import RestoreBackupCard from './backup-manager/RestoreBackupCard';
-import BackupInfoCard from './backup-manager/BackupInfoCard';
-import BackupStatusInfo from './backup-manager/BackupStatusInfo';
+import { useBackupManager } from '@/hooks/useBackupManager';
+import BackupHistoryList from './backup/BackupHistoryList';
+import AutoBackupSettings from './backup/AutoBackupSettings';
+import CustomFileNameInput from './backup/CustomFileNameInput';
+import BackupStatusDisplay from './backup/BackupStatusDisplay';
+import ManualBackupButton from './backup/ManualBackupButton';
 
 const BackupManager = () => {
   const [isOpen, setIsOpen] = useState(false);
   const {
+    backupHistory,
+    isCreatingBackup,
+    lastBackup,
     autoBackupEnabled,
-    setAutoBackupEnabled,
     backupInterval,
-    setBackupInterval,
-    lastBackupTime,
-    performBackup,
-    handleRestore
-  } = useBackupSettings();
-
-  const handleManualBackup = () => {
-    performBackup(false);
-  };
-
-  const handleRestoreFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleRestore(event);
-    setIsOpen(false);
-  };
+    isConfiguring,
+    browserError,
+    customFileName,
+    setCustomFileName,
+    handleAutoBackupToggle,
+    handleIntervalChange,
+    createManualBackup,
+    downloadBackup,
+    loadAllData
+  } = useBackupManager();
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -50,24 +48,37 @@ const BackupManager = () => {
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6 py-4">
-          <ManualBackupCard onBackup={handleManualBackup} />
-
-          <BackupSettingsCard
-            autoBackupEnabled={autoBackupEnabled}
-            backupInterval={backupInterval}
-            onAutoBackupToggle={setAutoBackupEnabled}
-            onIntervalChange={setBackupInterval}
+        <div className="space-y-4">
+          <BackupStatusDisplay 
+            lastBackup={lastBackup} 
+            browserError={browserError} 
           />
 
-          <BackupStatusInfo
-            lastBackupTime={lastBackupTime}
-            autoBackupEnabled={autoBackupEnabled}
+          <div className="space-y-3">
+            <ManualBackupButton
+              onCreateBackup={createManualBackup}
+              isCreatingBackup={isCreatingBackup}
+              disabled={browserError !== null}
+            />
+
+            <AutoBackupSettings
+              autoBackupEnabled={autoBackupEnabled}
+              backupInterval={backupInterval}
+              isConfiguring={isConfiguring}
+              onToggle={handleAutoBackupToggle}
+              onIntervalChange={handleIntervalChange}
+            />
+
+            <CustomFileNameInput
+              customFileName={customFileName}
+              onChange={setCustomFileName}
+            />
+          </div>
+
+          <BackupHistoryList
+            backupHistory={backupHistory}
+            onDownload={downloadBackup}
           />
-
-          <RestoreBackupCard onRestore={handleRestoreFile} />
-
-          <BackupInfoCard />
         </div>
       </DialogContent>
     </Dialog>
