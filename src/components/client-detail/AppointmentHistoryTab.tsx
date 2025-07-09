@@ -73,19 +73,19 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
       ) : (
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {appointments.map((appointment) => (
-            <Card key={appointment.id}>
+            <Card key={appointment.id} className="relative">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3 flex-1">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
                     <div 
-                      className="w-4 h-4 rounded-full"
+                      className="w-4 h-4 rounded-full flex-shrink-0"
                       style={{ backgroundColor: appointment.color }}
                     ></div>
-                    <div className="flex-1">
-                      <h4 className="font-medium">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate">
                         {appointment.title || appointment.serviceType}
                       </h4>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {formatDate(appointment.date)}
@@ -95,27 +95,28 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
                           {formatTime(appointment.time)} ({appointment.duration}min)
                         </div>
                       </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline" className="text-xs">
+                          {appointment.serviceType}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">
-                      {appointment.serviceType}
-                    </Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteAppointment(
-                        appointment.id, 
-                        `${formatDate(appointment.date)} alle ${formatTime(appointment.time)}`
-                      )}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteAppointment(
+                      appointment.id, 
+                      `${formatDate(appointment.date)} alle ${formatTime(appointment.time)}`
+                    )}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 flex-shrink-0"
+                    title="Elimina appuntamento"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
                 {appointment.notes && (
-                  <p className="text-sm text-gray-600 mt-2">{appointment.notes}</p>
+                  <p className="text-sm text-gray-600 mt-3 pl-7">{appointment.notes}</p>
                 )}
               </CardContent>
             </Card>
