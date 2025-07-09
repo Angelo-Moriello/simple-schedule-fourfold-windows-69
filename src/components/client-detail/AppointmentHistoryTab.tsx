@@ -78,17 +78,18 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
             {appointments.map((appointment) => (
               <Card key={appointment.id} className="relative hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <div className="flex flex-col space-y-3">
+                    {/* Header con info appuntamento */}
+                    <div className="flex items-start gap-3">
                       <div 
-                        className="w-4 h-4 rounded-full flex-shrink-0"
+                        className="w-4 h-4 rounded-full flex-shrink-0 mt-1"
                         style={{ backgroundColor: appointment.color }}
                       />
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium truncate text-gray-900">
+                        <h4 className="font-medium text-gray-900 mb-1">
                           {appointment.title || appointment.serviceType}
                         </h4>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {formatDate(appointment.date)}
@@ -98,35 +99,44 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
                             {formatTime(appointment.time)} ({appointment.duration}min)
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="mt-2">
                           <Badge variant="outline" className="text-xs">
                             {appointment.serviceType}
                           </Badge>
                         </div>
                       </div>
                     </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteAppointment(
-                            appointment.id, 
-                            `${formatDate(appointment.date)} alle ${formatTime(appointment.time)}`
-                          )}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 flex-shrink-0 min-w-[40px] h-9"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Elimina appuntamento</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    
+                    {/* Note se presenti */}
+                    {appointment.notes && (
+                      <div className="pl-7">
+                        <p className="text-sm text-gray-600 bg-gray-50 rounded p-2">{appointment.notes}</p>
+                      </div>
+                    )}
+                    
+                    {/* Pulsante di eliminazione */}
+                    <div className="flex justify-end pt-2 border-t border-gray-100">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteAppointment(
+                              appointment.id, 
+                              `${formatDate(appointment.date)} alle ${formatTime(appointment.time)}`
+                            )}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Elimina
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Elimina questo appuntamento</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                   </div>
-                  {appointment.notes && (
-                    <p className="text-sm text-gray-600 mt-3 pl-7 bg-gray-50 rounded p-2">{appointment.notes}</p>
-                  )}
                 </CardContent>
               </Card>
             ))}
