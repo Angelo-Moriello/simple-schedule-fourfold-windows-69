@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Calendar, Clock, History, Trash2 } from 'lucide-react';
 import { Appointment } from '@/types/appointment';
 import { deleteAppointmentFromSupabase } from '@/utils/supabase/appointmentMutations';
@@ -37,6 +38,7 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
     }
 
     try {
+      console.log('Eliminazione appuntamento:', appointmentId);
       await deleteAppointmentFromSupabase(appointmentId);
       toast.success('Appuntamento eliminato con successo!');
       if (onAppointmentDeleted) {
@@ -72,55 +74,63 @@ const AppointmentHistoryTab: React.FC<AppointmentHistoryTabProps> = ({
         </div>
       ) : (
         <div className="space-y-3 max-h-96 overflow-y-auto">
-          {appointments.map((appointment) => (
-            <Card key={appointment.id} className="relative">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <div 
-                      className="w-4 h-4 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: appointment.color }}
-                    ></div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">
-                        {appointment.title || appointment.serviceType}
-                      </h4>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(appointment.date)}
+          <TooltipProvider>
+            {appointments.map((appointment) => (
+              <Card key={appointment.id} className="relative hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <div 
+                        className="w-4 h-4 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: appointment.color }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium truncate text-gray-900">
+                          {appointment.title || appointment.serviceType}
+                        </h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(appointment.date)}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatTime(appointment.time)} ({appointment.duration}min)
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {formatTime(appointment.time)} ({appointment.duration}min)
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            {appointment.serviceType}
+                          </Badge>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {appointment.serviceType}
-                        </Badge>
                       </div>
                     </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteAppointment(
+                            appointment.id, 
+                            `${formatDate(appointment.date)} alle ${formatTime(appointment.time)}`
+                          )}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 flex-shrink-0 min-w-[40px] h-9"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Elimina appuntamento</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteAppointment(
-                      appointment.id, 
-                      `${formatDate(appointment.date)} alle ${formatTime(appointment.time)}`
-                    )}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 flex-shrink-0"
-                    title="Elimina appuntamento"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-                {appointment.notes && (
-                  <p className="text-sm text-gray-600 mt-3 pl-7">{appointment.notes}</p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  {appointment.notes && (
+                    <p className="text-sm text-gray-600 mt-3 pl-7 bg-gray-50 rounded p-2">{appointment.notes}</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </TooltipProvider>
         </div>
       )}
     </div>
