@@ -33,7 +33,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({ isOpen, onClose }) => {
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-[95vw] w-full sm:max-w-4xl max-h-[95vh] overflow-hidden flex flex-col z-50">
+        <DialogContent className="max-w-[95vw] w-full sm:max-w-4xl max-h-[95vh] overflow-hidden flex flex-col z-50 bg-background">
           <DialogHeader className="flex-shrink-0 border-b pb-4">
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <div className="bg-blue-100 rounded-full p-2">
@@ -52,7 +52,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({ isOpen, onClose }) => {
               />
             </div>
 
-            <div className="flex-1 overflow-hidden px-1">
+            <div className="flex-1 overflow-hidden px-1 min-h-[400px]">
               <ClientList
                 filteredClients={filteredClients}
                 isLoading={isLoading}

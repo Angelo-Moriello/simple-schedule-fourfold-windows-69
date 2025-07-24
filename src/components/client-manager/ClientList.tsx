@@ -44,8 +44,8 @@ const ClientList: React.FC<ClientListProps> = ({
   }
 
   return (
-    <ScrollArea className="h-full w-full">
-      <div className="space-y-2 sm:space-y-3 pr-4">
+    <ScrollArea className="h-full w-full" style={{ height: 'calc(100vh - 280px)' }}>
+      <div className="space-y-2 sm:space-y-3 pr-3">
         {filteredClients.map((client) => (
           <Card
             key={client.id}
