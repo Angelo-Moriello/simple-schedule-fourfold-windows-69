@@ -178,11 +178,6 @@ export const useRealtimeSubscriptions = ({
       )
       .subscribe((status) => {
         console.log('DEBUG - Stato subscription appuntamenti:', status);
-        // Se la subscription va in timeout o fallisce, forza un refresh
-        if (status === 'TIMED_OUT' || status === 'CLOSED') {
-          console.log('⚠️ Subscription appuntamenti fallita, forzando refresh...');
-          setTimeout(() => forcePageRefresh(), 1000);
-        }
       });
 
     // Employee subscription
@@ -239,11 +234,6 @@ export const useRealtimeSubscriptions = ({
       )
       .subscribe((status) => {
         console.log('DEBUG - Stato subscription dipendenti:', status);
-        // Se la subscription va in timeout o fallisce, forza un refresh
-        if (status === 'TIMED_OUT' || status === 'CLOSED') {
-          console.log('⚠️ Subscription dipendenti fallita, forzando refresh...');
-          setTimeout(() => forcePageRefresh(), 1000);
-        }
       });
 
     return () => {
