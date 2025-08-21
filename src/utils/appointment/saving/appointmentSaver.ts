@@ -103,9 +103,7 @@ export const saveAppointmentSafely = async (
     }
     console.log('✅ Appuntamento salvato su Supabase:', appointmentToSave.id);
     
-    // Aggiorna la UI locale immediatamente per garantire responsività
-    addAppointment(appointmentToSave);
-
+    // UI aggiornata tramite refresh programmato esternamente
     return { success: true };
     
   } catch (error) {
