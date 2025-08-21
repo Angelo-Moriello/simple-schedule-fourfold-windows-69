@@ -103,7 +103,12 @@ export const useAppointmentFormState = ({
       console.log('DEBUG - Impostazione dati modifica:', editFormData);
       setFormData(editFormData);
     } else if (isOpen && !isEditingMode) {
-      console.log('DEBUG - Caricamento dati per nuovo appuntamento');
+      console.log('DEBUG - Caricamento dati per nuovo appuntamento', {
+        employeeId,
+        time,
+        isOpen,
+        isEditingMode
+      });
       
       const newFormData = {
         employeeId: employeeId?.toString() || '',
