@@ -126,13 +126,6 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
   const getSlotOccupationInfo = useCallback((employeeId: number, time: string) => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     
-    console.log('DEBUG - Controllo occupazione slot:', {
-      employeeId,
-      time,
-      dateString,
-      totalAppointments: appointments.length
-    });
-    
     // Check for vacation first
     const vacationInfo = getVacationInfo(employeeId, selectedDate, time);
     if (vacationInfo?.isVacation) {
@@ -152,70 +145,34 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
       apt.employeeId === employeeId && apt.date === dateString
     );
 
-    console.log('DEBUG - Appuntamenti dipendente per la data:', {
-      employeeId,
-      dateString,
-      appointmentsFound: employeeAppointments.length,
-      appointments: employeeAppointments.map(apt => ({
-        id: apt.id,
-        client: apt.client,
-        time: apt.time,
-        duration: apt.duration
-      }))
-    });
-
     for (const appointment of employeeAppointments) {
       const appointmentTime = String(appointment.time).substring(0, 5);
       const [appointmentHour, appointmentMinute] = appointmentTime.split(':').map(Number);
       const appointmentStartInMinutes = appointmentHour * 60 + appointmentMinute;
       const appointmentEndInMinutes = appointmentStartInMinutes + appointment.duration;
 
-      console.log('DEBUG - Controllo sovrapposizione:', {
-        appointmentId: appointment.id,
-        appointmentTime,
-        appointmentStartInMinutes,
-        appointmentEndInMinutes,
-        currentTimeInMinutes,
-        isInRange: currentTimeInMinutes >= appointmentStartInMinutes && currentTimeInMinutes < appointmentEndInMinutes
-      });
-
       if (currentTimeInMinutes >= appointmentStartInMinutes && 
           currentTimeInMinutes < appointmentEndInMinutes) {
-        const result = {
+        return {
           isOccupied: true,
           isVacation: false,
           occupiedBy: appointment,
           isPartiallyOccupied: currentTimeInMinutes !== appointmentStartInMinutes,
           isDirectMatch: currentTimeInMinutes === appointmentStartInMinutes
         };
-        
-        console.log('DEBUG - Slot occupato trovato:', result);
-        return result;
       }
     }
 
-    const result = { 
+    return { 
       isOccupied: false,
       isVacation: false,
       isPartiallyOccupied: false, 
       isDirectMatch: false 
     };
-    
-    console.log('DEBUG - Slot libero:', { employeeId, time, result });
-    return result;
   }, [appointments, selectedDate, getVacationInfo]);
 
   const getEmployeeAppointmentsForTimeSlot = useCallback((employeeId: number, time: string) => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
-    
-    console.log('DEBUG - Ricerca appuntamento per slot:', {
-      employeeId,
-      time,
-      dateString,
-      totalAppointments: appointments.length,
-      employeeAppointments: appointments.filter(apt => apt.employeeId === employeeId),
-      dateAppointments: appointments.filter(apt => apt.date === dateString)
-    });
     
     const exactAppointment = appointments.find(apt => {
       const dateMatch = apt.date === dateString;
@@ -223,28 +180,7 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
       const aptTime = String(apt.time).substring(0, 5);
       const timeMatch = aptTime === time;
       
-      console.log('DEBUG - Controllo singolo appuntamento:', {
-        appointmentId: apt.id,
-        client: apt.client,
-        aptDate: apt.date,
-        dateMatch,
-        aptEmployeeId: apt.employeeId,
-        employeeMatch,
-        aptTime,
-        requestedTime: time,
-        timeMatch,
-        fullMatch: dateMatch && employeeMatch && timeMatch
-      });
-      
       return dateMatch && employeeMatch && timeMatch;
-    });
-    
-    console.log('DEBUG - Risultato ricerca slot:', {
-      employeeId,
-      time,
-      found: !!exactAppointment,
-      appointmentId: exactAppointment?.id,
-      client: exactAppointment?.client
     });
     
     return exactAppointment;
@@ -252,18 +188,9 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
 
   const getEmployeeAppointmentCount = useCallback((employeeId: number): number => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
-    const count = appointments.filter(apt => 
+    return appointments.filter(apt => 
       apt.employeeId === employeeId && apt.date === dateString
     ).length;
-    
-    console.log('DEBUG - Conteggio appuntamenti:', { 
-      employeeId, 
-      date: dateString, 
-      count,
-      totalAppointments: appointments.length 
-    });
-    
-    return count;
   }, [appointments, selectedDate]);
 
   if (isMobile) {
