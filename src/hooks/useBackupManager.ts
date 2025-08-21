@@ -256,26 +256,62 @@ export const useBackupManager = () => {
         throw new Error('Il tuo browser non supporta il salvataggio in cartella');
       }
 
-      await createBackup('manual');
-      const backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as Array<{ date: string; type: string; data: string }>;
-      if (backups.length === 0) throw new Error('Nessun backup disponibile');
-      // Prende l\'ultimo backup per data
+      // Prima controlla se esistono backup, altrimenti prova a crearne uno nuovo
+      let backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as Array<{ date: string; type: string; data: string }>;
+      
+      if (backups.length === 0) {
+        console.log('Nessun backup esistente, creo un nuovo backup...');
+        try {
+          await createBackup('manual');
+          backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as Array<{ date: string; type: string; data: string }>;
+        } catch (backupError) {
+          console.error('Errore nella creazione backup:', backupError);
+          throw new Error('Impossibile creare un backup. Prova a liberare spazio o esporta i dati manualmente.');
+        }
+      }
+      
+      if (backups.length === 0) {
+        throw new Error('Nessun backup disponibile per l\'esportazione');
+      }
+
+      // Prende l'ultimo backup per data
       const latest = backups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
 
-      const dirHandle = await (window as any).showDirectoryPicker();
-      const defaultName = customFileName || `backup-${new Date(latest.date).toISOString().replace(/[:]/g, '-')}.json`;
+      // Apre il dialog per scegliere la cartella
+      const dirHandle = await (window as any).showDirectoryPicker({
+        mode: 'readwrite'
+      });
+      
+      const defaultName = customFileName || `backup-${new Date(latest.date).toISOString().replace(/[:]/g, '-').split('T')[0]}.json`;
       const fileHandle = await (dirHandle as any).getFileHandle(defaultName, { create: true });
       const writable = await (fileHandle as any).createWritable();
+      
       await writable.write(new Blob([latest.data], { type: 'application/json' }));
       await writable.close();
 
-      toast({ title: 'Backup salvato', description: `File salvato in cartella: ${defaultName}` });
+      toast({ 
+        title: 'Backup salvato con successo!', 
+        description: `File salvato come: ${defaultName}` 
+      });
     } catch (error) {
       console.error('Errore nell\'esportazione su cartella:', error);
+      
+      let errorMessage = 'Errore sconosciuto durante il salvataggio';
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Operazione annullata dall\'utente';
+        } else if (error.message.includes('not supported')) {
+          errorMessage = 'Funzione non supportata dal tuo browser. Usa Chrome o Edge aggiornati.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Errore esportazione',
-        description: error instanceof Error ? error.message : 'Errore sconosciuto durante il salvataggio',
+        description: errorMessage,
       });
     }
   };
