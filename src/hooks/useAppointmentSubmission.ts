@@ -57,10 +57,21 @@ export const useAppointmentSubmission = ({
       console.log('✅ selectedDates valido:', selectedDates.map(d => format(d, 'yyyy-MM-dd')));
     }
     
+    console.log('🔍 VALIDAZIONE - Dati form prima della validazione:', {
+      client: formData.client,
+      serviceType: formData.serviceType,
+      employeeId: formData.employeeId,
+      time: formData.time,
+      duration: formData.duration,
+      multipleEventsCount: multipleEvents.length
+    });
+
     if (!validateAppointmentForm(formData, multipleEvents)) {
       console.log('❌ Validazione fallita');
       return;
     }
+
+    console.log('✅ Validazione superata, procedendo con il salvataggio');
 
     try {
       const finalClientId = await handleClientCreation(formData, appointmentToEdit);

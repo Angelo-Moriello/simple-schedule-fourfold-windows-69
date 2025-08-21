@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Appointment } from '@/types/appointment';
 import { appointmentColors } from '@/utils/appointmentFormUtils';
-import { getStoredServices, refreshServices } from '@/utils/serviceStorage';
+import { DEFAULT_SERVICES } from '@/utils/services/types';
 
 interface UseAppointmentFormStateProps {
   isOpen: boolean;
@@ -32,30 +32,20 @@ export const useAppointmentFormState = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditingMode, setIsEditingMode] = useState(false);
-  const [serviceCategories, setServiceCategories] = useState(getStoredServices());
+  const [serviceCategories, setServiceCategories] = useState(DEFAULT_SERVICES);
   const [multipleEvents, setMultipleEvents] = useState<Appointment[]>([]);
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
 
   // Listen for service updates
   useEffect(() => {
-    const handleStorageChange = () => {
-      console.log('DEBUG - Storage changed, refreshing services');
-      const newServices = refreshServices();
-      setServiceCategories(newServices);
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
     const handleServiceUpdate = (event: any) => {
       console.log('DEBUG - Service update event received:', event.detail);
-      const newServices = refreshServices();
-      setServiceCategories(newServices);
+      setServiceCategories(event.detail);
     };
 
     window.addEventListener('servicesUpdated', handleServiceUpdate);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('servicesUpdated', handleServiceUpdate);
     };
   }, []);

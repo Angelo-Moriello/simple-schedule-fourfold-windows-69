@@ -17,11 +17,18 @@ export const useAppointmentSaving = () => {
   ) => {
     console.log('🔍 DEBUGGING - Start handleSaveAppointments:', {
       addAppointmentExists: !!addAppointment,
-      addAppointmentType: typeof addAppointment
+      addAppointmentType: typeof addAppointment,
+      mainAppointment: {
+        client: mainAppointment.client,
+        serviceType: mainAppointment.serviceType,
+        employeeId: mainAppointment.employeeId,
+        time: mainAppointment.time,
+        date: mainAppointment.date
+      }
     });
 
     if (!addAppointment) {
-      console.error('addAppointment function is missing');
+      console.error('❌ ERRORE CRITICO: addAppointment function is missing');
       toast.error('Errore interno: funzione di salvataggio mancante');
       return;
     }
