@@ -36,6 +36,26 @@ export const useAppointmentFormState = ({
   const [multipleEvents, setMultipleEvents] = useState<Appointment[]>([]);
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
 
+  // Load services when form opens
+  useEffect(() => {
+    const loadServices = async () => {
+      if (isOpen) {
+        try {
+          // Import here to avoid circular dependency
+          const { getStoredServices } = await import('@/utils/serviceStorage');
+          const services = await getStoredServices();
+          console.log('DEBUG - Servizi caricati in useAppointmentFormState:', services);
+          setServiceCategories(services);
+        } catch (error) {
+          console.error('Errore caricamento servizi:', error);
+          setServiceCategories(DEFAULT_SERVICES);
+        }
+      }
+    };
+
+    loadServices();
+  }, [isOpen]);
+
   // Listen for service updates
   useEffect(() => {
     const handleServiceUpdate = (event: any) => {

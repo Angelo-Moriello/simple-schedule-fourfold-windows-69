@@ -1,11 +1,10 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Appointment, Employee } from '@/types/appointment';
 import AppointmentFormContainer from './appointment-form/AppointmentFormContainer';
 import AppointmentFormFields from './appointment-form/AppointmentFormFields';
 import AppointmentFormActions from './appointment-form/AppointmentFormActions';
 import { useAppointmentForm, appointmentColors, generateTimeSlots } from './appointment-form/AppointmentFormLogic';
-import { getStoredServices, setupServicesRealtimeListener } from '@/utils/serviceStorage';
 import { format } from 'date-fns';
 
 interface AppointmentFormProps {
@@ -33,17 +32,13 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   employees,
   existingAppointments = []
 }) => {
-  const [serviceCategories, setServiceCategories] = useState({
-    Parrucchiere: { name: 'Parrucchiere', services: [] },
-    Estetista: { name: 'Estetista', services: [] }
-  });
-
   const {
     formData,
     setFormData,
     isSubmitting,
     handleSubmit,
     handleGoogleCalendarSync,
+    serviceCategories,
     multipleEvents,
     setMultipleEvents,
     selectedDates,
@@ -60,41 +55,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     existingAppointments
   });
 
-  // Load initial services
-  useEffect(() => {
-    const loadInitialServices = async () => {
-      if (isOpen) {
-        console.log('AppointmentForm - Form aperto, caricando servizi');
-        try {
-          const refreshedServices = await getStoredServices();
-          setServiceCategories(refreshedServices);
-        } catch (error) {
-          console.error('Errore caricamento servizi:', error);
-        }
-      }
-    };
-
-    loadInitialServices();
-  }, [isOpen]);
-
-  // Setup realtime listener for service updates
-  useEffect(() => {
-    const channel = setupServicesRealtimeListener();
-    
-    const handleServicesUpdated = (event: CustomEvent) => {
-      console.log('AppointmentForm - Ricevuto aggiornamento servizi:', event.detail);
-      setServiceCategories(event.detail);
-    };
-
-    window.addEventListener('servicesUpdated', handleServicesUpdated as EventListener);
-
-    return () => {
-      window.removeEventListener('servicesUpdated', handleServicesUpdated as EventListener);
-      if (channel) {
-        channel.unsubscribe();
-      }
-    };
-  }, []);
 
   const timeSlots = generateTimeSlots();
 
