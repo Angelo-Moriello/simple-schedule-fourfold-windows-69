@@ -59,16 +59,26 @@ export const saveAppointmentsToSupabase = async (appointments: Appointment[]) =>
 
 export const addAppointmentToSupabase = async (appointment: Appointment) => {
   try {
-    console.log('Aggiunta appuntamento a Supabase:', appointment);
+    console.log('🔍 DEBUG - Inizio aggiunta appuntamento a Supabase:', {
+      appointmentId: appointment.id,
+      client: appointment.client,
+      date: appointment.date,
+      time: appointment.time,
+      employeeId: appointment.employeeId
+    });
     
-    const appointmentId = isValidUUID(appointment.id) ? appointment.id : generateUUID();
+    // Usa l'ID dall'appuntamento senza rigenerarlo per evitare duplicati
+    const appointmentId = appointment.id;
+    console.log('🔍 DEBUG - Usando ID appuntamento:', appointmentId);
     
     let clientId = appointment.clientId;
     if (!clientId && appointment.client) {
+      console.log('🔍 DEBUG - Cercando client ID per nome:', appointment.client);
       clientId = await findClientIdByName(appointment.client);
+      console.log('🔍 DEBUG - Client ID trovato:', clientId);
     }
     
-    const { error } = await supabase.from('appointments').insert({
+    const dataToInsert = {
       id: appointmentId,
       employee_id: appointment.employeeId,
       date: appointment.date,
@@ -82,7 +92,12 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       color: appointment.color,
       service_type: appointment.serviceType,
       client_id: isValidUUID(clientId) ? clientId : null
-    });
+    };
+    
+    console.log('🔍 DEBUG - Dati da inserire:', dataToInsert);
+    
+    const { error } = await supabase.from('appointments').insert(dataToInsert);
+    
     if (error) {
       console.error('❌ Errore SQL dettagliato nell\'aggiunta appuntamento:', {
         error: error,
@@ -90,10 +105,12 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
         message: error.message,
         details: error.details,
         hint: error.hint,
-        appointment: appointment
+        appointment: appointment,
+        dataToInsert: dataToInsert
       });
       throw error;
     }
+    
     console.log('✅ Appuntamento aggiunto con successo', { id: appointmentId });
     return appointmentId;
   } catch (error) {
