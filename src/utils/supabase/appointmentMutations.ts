@@ -69,7 +69,6 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
     
     // Se l'ID non è un UUID valido, NON lo inviamo: lasciamo che Postgres generi gen_random_uuid()
     const useProvidedId = isValidUUID(appointment.id);
-    const validId = useProvidedId ? appointment.id : undefined;
     console.log('🔍 DEBUG - ID valido?', useProvidedId, 'ID:', appointment.id);
     
     let clientId = appointment.clientId;
@@ -79,7 +78,7 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       console.log('🔍 DEBUG - Client ID trovato:', clientId);
     }
     
-    const dataToInsert: any = {
+    const baseData: any = {
       employee_id: appointment.employeeId,
       date: appointment.date,
       time: appointment.time,
@@ -93,32 +92,57 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       service_type: appointment.serviceType,
       client_id: isValidUUID(clientId) ? clientId : null
     };
-    if (validId) {
-      (dataToInsert as any).id = validId;
+
+    // Funzione helper per tentare l'inserimento con o senza ID
+    const tryInsert = async (withId: boolean) => {
+      const dataToInsert = { ...baseData } as any;
+      if (withId && useProvidedId) {
+        dataToInsert.id = appointment.id;
+      } else {
+        // assicuriamoci che l'ID non venga inviato
+        delete dataToInsert.id;
+      }
+      console.log('🔍 DEBUG - Tentativo insert (withId =', withId, '):', dataToInsert);
+      const { data, error, status } = await supabase
+        .from('appointments')
+        .insert(dataToInsert)
+        .select('id')
+        .single();
+      return { data, error, status };
+    };
+
+    // Primo tentativo: solo se l'ID fornito è valido, altrimenti direttamente senza ID
+    let attemptWithId = useProvidedId;
+    let { data, error, status } = await tryInsert(attemptWithId);
+
+    // Se c'è conflitto di chiave (409/Postgres 23505), ritenta senza ID per generarlo lato DB
+    const isDuplicateKey = (e: any, s?: number) => {
+      return (
+        e?.code === '23505' ||
+        s === 409 ||
+        (typeof e?.message === 'string' && e.message.toLowerCase().includes('duplicate key'))
+      );
+    };
+
+    if (error && attemptWithId && isDuplicateKey(error, status)) {
+      console.warn('⚠️ Conflitto ID rilevato. Nuovo tentativo senza ID...');
+      ({ data, error, status } = await tryInsert(false));
     }
-    
-    console.log('🔍 DEBUG - Dati da inserire:', dataToInsert);
-    
-    const { data, error } = await supabase
-      .from('appointments')
-      .insert(dataToInsert)
-      .select('id')
-      .single();
-    
+
     if (error) {
       console.error('❌ Errore SQL dettagliato nell\'aggiunta appuntamento:', {
-        error: error,
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        appointment: appointment,
-        dataToInsert: dataToInsert
+        error,
+        code: (error as any)?.code,
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        appointment,
+        baseData
       });
       throw error;
     }
-    
-    const finalId = data?.id || validId!;
+
+    const finalId = data?.id as string;
     console.log('✅ Appuntamento aggiunto con successo', { id: finalId });
     return finalId;
   } catch (error) {
