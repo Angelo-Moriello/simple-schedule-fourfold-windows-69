@@ -32,10 +32,10 @@ const ExportFolderButton: React.FC<ExportFolderButtonProps> = ({ onExportToFolde
         className="w-full h-11 rounded-full bg-purple-600 hover:bg-purple-700 transition-all duration-200 shadow-sm hover:shadow-md"
       >
         <FolderOpen className="h-4 w-4 mr-2" />
-        Salva in Cartella Locale
+        Scarica Backup
       </Button>
       <p className="text-xs text-gray-500 text-center">
-        Salva il backup direttamente in una cartella del computer
+        Scarica il backup più recente sul dispositivo
       </p>
     </div>
   );
