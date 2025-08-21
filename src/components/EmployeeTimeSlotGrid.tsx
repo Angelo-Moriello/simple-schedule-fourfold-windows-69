@@ -174,11 +174,11 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
   const getEmployeeAppointmentsForTimeSlot = useCallback((employeeId: number, time: string) => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     
-    const exactAppointment = appointments.find(apt => {
+    return appointments.find(apt => {
       const dateMatch = apt.date === dateString;
       const employeeMatch = apt.employeeId === employeeId;
       
-      // Normalize time format - handle both HH:MM and HH:MM:SS formats
+      // Normalize time format to HH:MM for comparison
       let aptTime = String(apt.time);
       if (aptTime.includes(':')) {
         aptTime = aptTime.substring(0, 5); // Get only HH:MM part
@@ -187,9 +187,7 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
       const timeMatch = aptTime === time;
       
       return dateMatch && employeeMatch && timeMatch;
-    });
-    
-    return exactAppointment;
+    }) || null;
   }, [appointments, selectedDate]);
 
   const getEmployeeAppointmentCount = useCallback((employeeId: number): number => {

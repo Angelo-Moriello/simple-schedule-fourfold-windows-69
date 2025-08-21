@@ -97,7 +97,7 @@ const EmployeeMobileCard: React.FC<EmployeeMobileCardProps> = ({
                     <TimeSlot
                       key={`${employee.id}-${time}`}
                       time={time}
-                      appointment={directAppointment || (occupationInfo.isDirectMatch ? occupationInfo.occupiedBy : undefined)}
+                      appointment={directAppointment}
                       employee={employee}
                       onAddAppointment={onAddAppointment}
                       onEditAppointment={onEditAppointment}
