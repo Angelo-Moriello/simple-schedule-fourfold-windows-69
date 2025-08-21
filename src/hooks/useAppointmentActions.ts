@@ -31,6 +31,9 @@ export const useAppointmentActions = ({ appointments, setAppointments, forcePage
       await addAppointmentToSupabase(newAppointment);
       console.log('✅ Appuntamento salvato con successo nel database');
       toast.success('Appuntamento aggiunto con successo!');
+      
+      // Refresh automatico della pagina dopo 1 secondo (come per update/delete)
+      setTimeout(forcePageRefresh, 1000);
     } catch (error) {
       console.error('Errore nell\'aggiungere l\'appuntamento:', error);
       // Se il salvataggio fallisce, rimuovi dall'UI
