@@ -21,7 +21,7 @@ const StatisticsCards: React.FC<StatisticsCardsProps> = ({
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium">Appuntamenti Totali</p>
+              <p className="text-sm text-gray-600 font-medium">Totale nel periodo</p>
               <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 {totalAppointments}
               </p>

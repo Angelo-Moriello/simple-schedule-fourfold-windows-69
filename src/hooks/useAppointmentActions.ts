@@ -12,22 +12,21 @@ import {
 
 interface UseAppointmentActionsProps {
   appointments: Appointment[];
+  setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>;
   forcePageRefresh: () => void;
 }
 
-export const useAppointmentActions = ({ appointments, forcePageRefresh }: UseAppointmentActionsProps) => {
+export const useAppointmentActions = ({ appointments, setAppointments, forcePageRefresh }: UseAppointmentActionsProps) => {
   const addAppointment = async (newAppointment: Appointment) => {
     try {
-      console.log('DEBUG - Aggiunta appuntamento:', newAppointment);
-      await addAppointmentToSupabase(newAppointment);
-      console.log('✅ Appuntamento aggiunto con successo, avvio refresh...');
-      toast.success('Appuntamento aggiunto con successo!');
-      setTimeout(() => {
-        console.log('🔄 Eseguendo refresh dopo aggiunta appuntamento...');
-        forcePageRefresh();
-      }, 1000);
+      console.log('DEBUG - Aggiunta (solo UI) appuntamento:', newAppointment);
+      setAppointments((prev) => {
+        const exists = prev.some(a => a.id === newAppointment.id);
+        return exists ? prev : [...prev, newAppointment];
+      });
+      toast.success('Appuntamento aggiunto!');
     } catch (error) {
-      console.error('Errore nell\'aggiungere l\'appuntamento:', error);
+      console.error("Errore nell'aggiornare lo stato locale degli appuntamenti:", error);
       toast.error('Errore nell\'aggiungere l\'appuntamento');
     }
   };

@@ -49,7 +49,7 @@ const AppointmentScheduler = () => {
     deleteEmployee,
     updateEmployeeName,
     handleUpdateEmployeeVacations
-  } = useAppointmentActions({ appointments, forcePageRefresh });
+  } = useAppointmentActions({ appointments, setAppointments, forcePageRefresh });
 
   if (isLoading) {
     return (

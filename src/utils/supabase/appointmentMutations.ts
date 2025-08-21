@@ -12,11 +12,9 @@ export const saveAppointmentsToSupabase = async (appointments: Appointment[]) =>
   try {
     console.log('Salvataggio appuntamenti su Supabase:', appointments);
     
-    const { error: deleteError } = await supabase.from('appointments').delete().gt('created_at', '2000-01-01');
-    if (deleteError) {
-      console.error('Errore nella cancellazione appuntamenti esistenti:', deleteError);
-      throw deleteError;
-    }
+    // RIMOSSO: non cancelliamo più tutti gli appuntamenti esistenti per evitare perdita di dati
+    // Ora useremo una upsert per aggiornare/creare senza sovrascrivere l'intera tabella
+
     
     if (appointments.length > 0) {
       const appointmentsToInsert = await Promise.all(appointments.map(async (app) => {
@@ -44,10 +42,12 @@ export const saveAppointmentsToSupabase = async (appointments: Appointment[]) =>
       
       console.log('Appuntamenti con UUID e client_id corretti:', appointmentsToInsert);
       
-      const { error: insertError } = await supabase.from('appointments').insert(appointmentsToInsert);
-      if (insertError) {
-        console.error('Errore nell\'inserimento appuntamenti:', insertError);
-        throw insertError;
+      const { error: upsertError } = await supabase
+        .from('appointments')
+        .upsert(appointmentsToInsert, { onConflict: 'id' });
+      if (upsertError) {
+        console.error("Errore nell'upsert degli appuntamenti:", upsertError);
+        throw upsertError;
       }
     }
     console.log('Appuntamenti salvati con successo');
