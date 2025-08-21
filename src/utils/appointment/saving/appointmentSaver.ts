@@ -103,7 +103,8 @@ export const saveAppointmentSafely = async (
     }
     console.log('✅ Appuntamento salvato su Supabase:', appointmentToSave.id);
     
-    // Rimosso il refresh automatico - le subscription realtime aggiorneranno la UI
+    // Aggiorna la UI locale immediatamente per garantire responsività
+    addAppointment(appointmentToSave);
 
     return { success: true };
     
