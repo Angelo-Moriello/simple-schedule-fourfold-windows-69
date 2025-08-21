@@ -79,12 +79,23 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       client_id: clientId
     });
     if (error) {
-      console.error('Errore SQL nell\'aggiunta appuntamento:', error);
+      console.error('❌ Errore SQL dettagliato nell\'aggiunta appuntamento:', {
+        error: error,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        appointment: appointment
+      });
       throw error;
     }
-    console.log('Appuntamento aggiunto con successo');
+    console.log('✅ Appuntamento aggiunto con successo');
   } catch (error) {
-    console.error('Errore nell\'aggiungere appuntamento su Supabase:', error);
+    console.error('❌ Errore completo nell\'aggiungere appuntamento su Supabase:', {
+      error: error,
+      appointment: appointment,
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 };

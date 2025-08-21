@@ -112,10 +112,12 @@ export const saveAppointmentSafely = async (
     
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Errore sconosciuto';
-    console.error('❌ Errore nel salvare appuntamento:', {
+    console.error('❌ Errore dettagliato nel salvare appuntamento:', {
       appointmentId: appointment.id,
       client: appointment.client,
-      error: errorMsg,
+      error: error,
+      errorMessage: errorMsg,
+      errorStack: error instanceof Error ? error.stack : undefined,
       fullError: error
     });
     
