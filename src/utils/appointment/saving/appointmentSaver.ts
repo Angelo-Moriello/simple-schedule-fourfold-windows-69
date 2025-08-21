@@ -102,8 +102,14 @@ export const saveAppointmentSafely = async (
     }
     console.log('✅ Appuntamento salvato su Supabase:', appointmentToSave.id);
     
-    // Non aggiorniamo lo stato locale qui per evitare doppio inserimento (ci pensa il realtime)
-    console.log('ℹ️ Stato locale non aggiornato manualmente: attendo aggiornamento realtime');
+    // Chiamiamo addAppointment per triggerare il refresh
+    console.log('🔄 Chiamando addAppointment callback per triggerare refresh...');
+    if (addAppointment && typeof addAppointment === 'function') {
+      addAppointment(appointmentToSave);
+      console.log('✅ Callback addAppointment chiamato con successo');
+    } else {
+      console.error('❌ ERRORE: addAppointment callback non disponibile o non è una funzione');
+    }
     
     return { success: true };
     
