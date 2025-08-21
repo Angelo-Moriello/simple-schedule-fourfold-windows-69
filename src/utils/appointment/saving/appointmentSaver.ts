@@ -109,7 +109,7 @@ export const saveAppointmentSafely = async (
       setTimeout(() => {
         console.log('🔄 Eseguo refresh pagina (creazione appuntamento)');
         window.location.reload();
-      }, 1000);
+      }, 3000); // Aumentato a 3 secondi per dare tempo a Supabase
     }
 
     return { success: true };
