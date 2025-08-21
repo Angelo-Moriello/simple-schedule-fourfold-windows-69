@@ -32,10 +32,10 @@ const AppointmentScheduler = () => {
 
   const { appointments, employees, isLoading, setAppointments, setEmployees } = useAppointmentData(selectedDate);
 
-  // Funzione di refresh più sicura che non forza il reload della pagina
+  // Funzione di refresh che ricarica i dati
   const forcePageRefresh = () => {
-    console.log('🔄 Refresh richiesto, ma evitato per prevenire loop infiniti');
-    // Non facciamo nulla qui - le subscription realtime gestiscono gli aggiornamenti
+    console.log('🔄 Refresh richiesto, ricaricando i dati...');
+    window.location.reload();
   };
 
   useRealtimeSubscriptions({ setAppointments, setEmployees, forcePageRefresh });

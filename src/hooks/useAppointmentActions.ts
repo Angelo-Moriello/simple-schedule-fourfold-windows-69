@@ -21,7 +21,7 @@ export const useAppointmentActions = ({ appointments, forcePageRefresh }: UseApp
       console.log('DEBUG - Aggiunta appuntamento:', newAppointment);
       await addAppointmentToSupabase(newAppointment);
       toast.success('Appuntamento aggiunto con successo!');
-      setTimeout(forcePageRefresh, 200);
+      setTimeout(forcePageRefresh, 1000);
     } catch (error) {
       console.error('Errore nell\'aggiungere l\'appuntamento:', error);
       toast.error('Errore nell\'aggiungere l\'appuntamento');
@@ -33,7 +33,7 @@ export const useAppointmentActions = ({ appointments, forcePageRefresh }: UseApp
       console.log('DEBUG - Aggiornamento appuntamento:', updatedAppointment);
       await updateAppointmentInSupabase(updatedAppointment);
       toast.success('Appuntamento modificato con successo!');
-      setTimeout(forcePageRefresh, 200);
+      setTimeout(forcePageRefresh, 1000);
     } catch (error) {
       console.error('Errore nella modifica dell\'appuntamento:', error);
       toast.error('Errore nella modifica dell\'appuntamento');
@@ -45,7 +45,7 @@ export const useAppointmentActions = ({ appointments, forcePageRefresh }: UseApp
       console.log('DEBUG - Eliminazione appuntamento:', appointmentId);
       await deleteAppointmentFromSupabase(appointmentId);
       toast.success('Appuntamento eliminato con successo!');
-      setTimeout(forcePageRefresh, 200);
+      setTimeout(forcePageRefresh, 1000);
     } catch (error) {
       console.error('Errore nell\'eliminazione dell\'appuntamento:', error);
       toast.error('Errore nell\'eliminazione dell\'appuntamento');
