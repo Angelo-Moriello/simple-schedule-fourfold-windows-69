@@ -82,7 +82,8 @@ export const clearGeneratedIdsCache = () => {
 
 export const saveAppointmentSafely = async (
   appointment: Appointment,
-  addAppointment: (appointment: Appointment) => void
+  addAppointment: (appointment: Appointment) => void,
+  options?: { triggerReload?: boolean }
 ): Promise<SaveResult> => {
   try {
     // Usa l'ID esistente dell'appuntamento invece di generarne uno nuovo
@@ -102,15 +103,15 @@ export const saveAppointmentSafely = async (
     }
     console.log('✅ Appuntamento salvato su Supabase:', appointmentToSave.id);
     
-    // Chiamiamo addAppointment per triggerare il refresh
-    console.log('🔄 Chiamando addAppointment callback per triggerare refresh...');
-    if (addAppointment && typeof addAppointment === 'function') {
-      addAppointment(appointmentToSave);
-      console.log('✅ Callback addAppointment chiamato con successo');
-    } else {
-      console.error('❌ ERRORE: addAppointment callback non disponibile o non è una funzione');
+    // Triggera un refresh della pagina dopo un breve delay per permettere a Supabase di consolidare i dati
+    if (options?.triggerReload) {
+      console.log('🔄 Pianifico refresh pagina dopo creazione appuntamento...');
+      setTimeout(() => {
+        console.log('🔄 Eseguo refresh pagina (creazione appuntamento)');
+        window.location.reload();
+      }, 1000);
     }
-    
+
     return { success: true };
     
   } catch (error) {
@@ -154,7 +155,7 @@ export const saveMultipleAppointments = async (
       originalId: appointment.id
     });
 
-    const result = await saveAppointmentSafely(appointment, addAppointment);
+    const result = await saveAppointmentSafely(appointment, addAppointment, { triggerReload: false });
     
     if (result.success) {
       savedCount++;

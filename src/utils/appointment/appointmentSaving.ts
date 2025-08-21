@@ -24,7 +24,7 @@ export const saveAppointments = async (
   try {
     // 1. Salva appuntamento principale
     console.log('📋 1. Salvando appuntamento principale...');
-    const mainResult = await saveAppointmentSafely(mainAppointment, addAppointment);
+    const mainResult = await saveAppointmentSafely(mainAppointment, addAppointment, { triggerReload: true });
     
     if (!mainResult.success) {
       failedSaves.push(`Principale: ${mainResult.error}`);
