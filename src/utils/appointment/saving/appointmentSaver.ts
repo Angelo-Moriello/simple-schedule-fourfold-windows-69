@@ -85,30 +85,24 @@ export const saveAppointmentSafely = async (
   addAppointment: (appointment: Appointment) => void
 ): Promise<SaveResult> => {
   try {
-    // Genera sempre un nuovo ID unico, ignorando quello esistente
-    const uniqueId = await generateUniqueId();
-    
-    const appointmentWithUniqueId = {
-      ...appointment,
-      id: uniqueId
-    };
+    // Usa l'ID esistente dell'appuntamento invece di generarne uno nuovo
+    const appointmentToSave = { ...appointment };
 
-    console.log('💾 Salvando appuntamento con ID unico:', {
-      client: appointmentWithUniqueId.client,
-      date: appointmentWithUniqueId.date,
-      time: appointmentWithUniqueId.time,
-      id: appointmentWithUniqueId.id,
-      originalId: appointment.id
+    console.log('💾 Salvando appuntamento:', {
+      client: appointmentToSave.client,
+      date: appointmentToSave.date,
+      time: appointmentToSave.time,
+      id: appointmentToSave.id
     });
 
     // Salva su Supabase PRIMA
-    await addAppointmentToSupabase(appointmentWithUniqueId);
-    console.log('✅ Appuntamento salvato su Supabase:', appointmentWithUniqueId.id);
+    await addAppointmentToSupabase(appointmentToSave);
+    console.log('✅ Appuntamento salvato su Supabase:', appointmentToSave.id);
     
     // Solo se il salvataggio su Supabase è riuscito, aggiorna lo stato locale
     try {
-      addAppointment(appointmentWithUniqueId);
-      console.log('✅ Stato locale aggiornato con successo:', appointmentWithUniqueId.id);
+      addAppointment(appointmentToSave);
+      console.log('✅ Stato locale aggiornato con successo:', appointmentToSave.id);
     } catch (localError) {
       console.warn('⚠️ Errore aggiornamento stato locale (ma salvato su DB):', localError);
       // Non considerare questo un errore critico dato che il salvataggio su DB è riuscito
