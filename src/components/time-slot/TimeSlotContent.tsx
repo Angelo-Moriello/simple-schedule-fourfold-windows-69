@@ -48,12 +48,34 @@ const TimeSlotContent: React.FC<TimeSlotContentProps> = ({
     }
   };
 
+  const isRecurringAppointment = (apt: Appointment) => {
+    return apt.title?.includes('(Ricorrente)') || apt.color === '#22c55e';
+  };
+
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (appointment) {
-      onDeleteAppointment(appointment.id);
-    } else if (occupiedBy) {
-      onDeleteAppointment(occupiedBy.id);
+    const targetAppointment = appointment || occupiedBy;
+    if (targetAppointment) {
+      // Check if it's a recurring appointment
+      if (isRecurringAppointment(targetAppointment)) {
+        handleRecurringAppointmentDelete(targetAppointment);
+      } else {
+        onDeleteAppointment(targetAppointment.id);
+      }
+    }
+  };
+
+  const handleRecurringAppointmentDelete = async (apt: Appointment) => {
+    const confirmMessage = `Questo è un appuntamento ricorrente. Vuoi eliminare:
+- Solo questo appuntamento specifico?
+- O l'intera serie di appuntamenti ricorrenti?
+
+Clicca OK per eliminare solo questo appuntamento, o Annulla per annullare l'operazione.`;
+    
+    if (confirm(confirmMessage)) {
+      // Elimina solo questo singolo appuntamento
+      console.log('Eliminazione singolo appuntamento ricorrente:', apt.id);
+      onDeleteAppointment(apt.id);
     }
   };
 
