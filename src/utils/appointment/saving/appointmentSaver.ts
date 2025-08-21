@@ -102,14 +102,8 @@ export const saveAppointmentSafely = async (
     }
     console.log('✅ Appuntamento salvato su Supabase:', appointmentToSave.id);
     
-    // Solo se il salvataggio su Supabase è riuscito, aggiorna lo stato locale
-    try {
-      addAppointment(appointmentToSave);
-      console.log('✅ Stato locale aggiornato con successo:', appointmentToSave.id);
-    } catch (localError) {
-      console.warn('⚠️ Errore aggiornamento stato locale (ma salvato su DB):', localError);
-      // Non considerare questo un errore critico dato che il salvataggio su DB è riuscito
-    }
+    // Non aggiorniamo lo stato locale qui per evitare doppio inserimento (ci pensa il realtime)
+    console.log('ℹ️ Stato locale non aggiornato manualmente: attendo aggiornamento realtime');
     
     return { success: true };
     
