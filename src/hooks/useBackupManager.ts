@@ -316,12 +316,13 @@ export const useBackupManager = () => {
       }
 
       // Fallback: download tradizionale
-      const blob = new Blob([latest.data], { type: 'application/json' });
+      const blob = new Blob([content], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = defaultName;
       link.style.display = 'none';
+
       
       document.body.appendChild(link);
       link.click();

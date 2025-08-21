@@ -43,6 +43,9 @@ export const downloadBackupFile = async (backup: BackupEntry, customPath?: strin
       payloadString = fetched;
     }
 
+    if (!payloadString) {
+      throw new Error('Contenuto del backup non disponibile');
+    }
     const blob = new Blob([payloadString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     

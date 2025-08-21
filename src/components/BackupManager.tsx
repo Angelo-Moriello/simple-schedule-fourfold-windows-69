@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Save, Settings } from 'lucide-react';
 import { useBackupManager } from '@/hooks/useBackupManager';
 import BackupHistoryList from './backup/BackupHistoryList';
@@ -34,6 +34,12 @@ const BackupManager = () => {
     loadAllData
   } = useBackupManager();
 
+  useEffect(() => {
+    if (isOpen && !browserError) {
+      loadAllData();
+    }
+  }, [isOpen, browserError]);
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -51,6 +57,9 @@ const BackupManager = () => {
             <Settings className="h-5 w-5" />
             Gestione Backup
           </DialogTitle>
+          <DialogDescription>
+            Gestisci, scarica e importa i backup locali e dal database.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
