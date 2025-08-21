@@ -67,9 +67,10 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       employeeId: appointment.employeeId
     });
     
-    // Usa l'ID dall'appuntamento senza rigenerarlo per evitare duplicati
-    const appointmentId = appointment.id;
-    console.log('🔍 DEBUG - Usando ID appuntamento:', appointmentId);
+    // Se l'ID non è un UUID valido, NON lo inviamo: lasciamo che Postgres generi gen_random_uuid()
+    const useProvidedId = isValidUUID(appointment.id);
+    const validId = useProvidedId ? appointment.id : undefined;
+    console.log('🔍 DEBUG - ID valido?', useProvidedId, 'ID:', appointment.id);
     
     let clientId = appointment.clientId;
     if (!clientId && appointment.client) {
@@ -78,8 +79,7 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       console.log('🔍 DEBUG - Client ID trovato:', clientId);
     }
     
-    const dataToInsert = {
-      id: appointmentId,
+    const dataToInsert: any = {
       employee_id: appointment.employeeId,
       date: appointment.date,
       time: appointment.time,
@@ -93,10 +93,17 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       service_type: appointment.serviceType,
       client_id: isValidUUID(clientId) ? clientId : null
     };
+    if (validId) {
+      (dataToInsert as any).id = validId;
+    }
     
     console.log('🔍 DEBUG - Dati da inserire:', dataToInsert);
     
-    const { error } = await supabase.from('appointments').insert(dataToInsert);
+    const { data, error } = await supabase
+      .from('appointments')
+      .insert(dataToInsert)
+      .select('id')
+      .single();
     
     if (error) {
       console.error('❌ Errore SQL dettagliato nell\'aggiunta appuntamento:', {
@@ -111,8 +118,9 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       throw error;
     }
     
-    console.log('✅ Appuntamento aggiunto con successo', { id: appointmentId });
-    return appointmentId;
+    const finalId = data?.id || validId!;
+    console.log('✅ Appuntamento aggiunto con successo', { id: finalId });
+    return finalId;
   } catch (error) {
     console.error('❌ Errore completo nell\'aggiungere appuntamento su Supabase:', {
       error: error,
