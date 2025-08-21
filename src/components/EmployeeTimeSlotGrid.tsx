@@ -174,11 +174,40 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
   const getEmployeeAppointmentsForTimeSlot = useCallback((employeeId: number, time: string) => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     
+    // Debug logging for troubleshooting
+    const relevantAppointments = appointments.filter(apt => 
+      apt.client.toLowerCase().includes('rosamaria')
+    );
+    
+    if (relevantAppointments.length > 0) {
+      console.log('DEBUG - Appuntamenti rosamaria trovati:', relevantAppointments);
+      console.log('DEBUG - Ricerca per:', { employeeId, time, dateString });
+    }
+    
     const exactAppointment = appointments.find(apt => {
       const dateMatch = apt.date === dateString;
       const employeeMatch = apt.employeeId === employeeId;
-      const aptTime = String(apt.time).substring(0, 5);
+      
+      // Normalize time format - handle both HH:MM and HH:MM:SS formats
+      let aptTime = String(apt.time);
+      if (aptTime.includes(':')) {
+        aptTime = aptTime.substring(0, 5); // Get only HH:MM part
+      }
+      
       const timeMatch = aptTime === time;
+      
+      // Debug logging for rosamaria appointments
+      if (apt.client.toLowerCase().includes('rosamaria')) {
+        console.log('DEBUG - Controllo appuntamento rosamaria:', {
+          appointment: apt,
+          dateMatch,
+          employeeMatch,
+          aptTime,
+          expectedTime: time,
+          timeMatch,
+          finalMatch: dateMatch && employeeMatch && timeMatch
+        });
+      }
       
       return dateMatch && employeeMatch && timeMatch;
     });
