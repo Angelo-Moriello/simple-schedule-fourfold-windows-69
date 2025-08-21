@@ -75,12 +75,13 @@ useEffect(() => {
     const generateRecurringAndReload = async () => {
       try {
         const recurringTreatments = await loadRecurringTreatmentsFromSupabase();
-        const startDate = subDays(selectedDate, 30);
-        const endDate = addDays(selectedDate, 30);
+        // Aumentato il range a 1 anno per coprire tutti gli appuntamenti ricorrenti
+        const startDate = subDays(selectedDate, 365); // 1 anno nel passato
+        const endDate = addDays(selectedDate, 365); // 1 anno nel futuro
 
-        // Genera solo i ricorrenti nel range della data selezionata
+        // Genera appuntamenti ricorrenti nel range esteso
         await generateAppointmentsForDateRange(recurringTreatments, startDate, endDate);
-        console.log('Appuntamenti ricorrenti generati per il periodo', { startDate, endDate });
+        console.log('Appuntamenti ricorrenti generati per il periodo esteso (1 anno):', { startDate, endDate });
 
         // IMPORTANTE: ricarica TUTTI gli appuntamenti dal database (non solo quelli del range)
         // per mantenere visibili anche gli appuntamenti di altri mesi come luglio
