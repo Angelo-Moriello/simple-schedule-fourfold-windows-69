@@ -23,12 +23,16 @@ const supabaseOptions = {
     detectSessionInUrl: true
   },
   realtime: {
-    // Timeout più lunghi per mobile per evitare disconnessioni
-    timeout: isMobile() ? 30000 : 20000, // 30s per mobile, 20s per desktop
-    heartbeatIntervalMs: isMobile() ? 15000 : 10000, // 15s per mobile, 10s per desktop
+    // Timeout più lunghi e riconnessione automatica più robusta
+    timeout: isMobile() ? 60000 : 45000, // Timeout più lunghi per evitare disconnessioni
+    heartbeatIntervalMs: isMobile() ? 20000 : 15000, // Heartbeat meno frequenti per stabilità
     reconnectAfterMs: (tries: number) => {
-      const baseDelay = isMobile() ? 2000 : 1000;
-      return Math.min(tries * baseDelay, 10000);
+      const baseDelay = isMobile() ? 3000 : 2000;
+      return Math.min(tries * baseDelay, 15000); // Riconnessione più graduale
+    },
+    // Abilita riconnessione automatica robusta
+    params: {
+      eventsPerSecond: 10
     }
   },
   global: {
