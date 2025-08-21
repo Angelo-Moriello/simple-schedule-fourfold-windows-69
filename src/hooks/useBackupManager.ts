@@ -9,9 +9,10 @@ import {
   setAutoBackupInterval,
   getAutoBackupInterval,
   isBrowserSupported
-} from '@/lib/local-backup';
+ } from '@/lib/local-backup';
 import { BackupEntry } from '@/lib/backup/types';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/backup/browser-compatibility';
+import { getBackupPayload, saveBackupPayload } from '@/lib/backup/idb-storage';
 
 export const useBackupManager = () => {
   const [backupHistory, setBackupHistory] = useState<BackupEntry[]>([]);
@@ -193,7 +194,7 @@ export const useBackupManager = () => {
 
   const restoreBackup = async (backup: BackupEntry) => {
     try {
-      const backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as Array<{ date: string; type: string; data: string }>;
+      const backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as Array<{ date: string; type: string; data?: string; payloadKey?: string }>;
       const target = backups.find((b) => {
         const iso = (backup as any)?.iso as string | undefined;
         if (iso) return b.date === iso && b.type === backup.type;
@@ -204,7 +205,14 @@ export const useBackupManager = () => {
         }
       });
       if (!target) throw new Error('Backup non trovato');
-      const parsed = JSON.parse(target.data);
+
+      let raw: string | null | undefined = target.data;
+      if (!raw && (target as any).payloadKey) {
+        raw = await getBackupPayload((target as any).payloadKey as string);
+      }
+      if (!raw) throw new Error('Contenuto backup non disponibile');
+
+      const parsed = JSON.parse(raw);
       const payload = parsed?.data || parsed;
 
       // Ripristino solo i dati locali (non modifica le tabelle su Supabase)
@@ -233,8 +241,10 @@ export const useBackupManager = () => {
       const dateIso = parsed?.date || new Date().toISOString();
       const type = (parsed?.type as 'manual' | 'automatic') || 'manual';
 
+      // Salva il contenuto in IndexedDB e aggiungi i metadati in localStorage
+      const payloadKey = await saveBackupPayload(JSON.stringify(parsed), dateIso);
       const backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as any[];
-      backups.push({ date: dateIso, type, data: JSON.stringify(parsed) });
+      backups.push({ date: dateIso, type, payloadKey });
       const ok = safeLocalStorageSet('local-backups', JSON.stringify(backups));
       if (!ok) throw new Error('Impossibile salvare il backup importato');
 
@@ -253,13 +263,13 @@ export const useBackupManager = () => {
   const exportBackupToFolder = async () => {
     try {
       // Prima controlla se esistono backup, altrimenti prova a crearne uno nuovo
-      let backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as Array<{ date: string; type: string; data: string }>;
+      let backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as Array<{ date: string; type: string; data?: string; payloadKey?: string }>;
       
       if (backups.length === 0) {
         console.log('Nessun backup esistente, creo un nuovo backup...');
         try {
           await createBackup('manual');
-          backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as Array<{ date: string; type: string; data: string }>;
+          backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as Array<{ date: string; type: string; data?: string; payloadKey?: string }>;
         } catch (backupError) {
           console.error('Errore nella creazione backup:', backupError);
           throw new Error('Impossibile creare un backup. Prova a liberare spazio o esporta i dati manualmente.');
@@ -274,6 +284,13 @@ export const useBackupManager = () => {
       const latest = backups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
       const defaultName = customFileName || `backup-${new Date(latest.date).toISOString().replace(/[:]/g, '-').split('T')[0]}.json`;
 
+      // Recupera il contenuto del backup (IndexedDB o legacy localStorage)
+      let content: string | undefined | null = latest.data;
+      if (!content && (latest as any).payloadKey) {
+        content = await getBackupPayload((latest as any).payloadKey as string);
+      }
+      if (!content) throw new Error('Contenuto backup non disponibile');
+
       // Prova prima con showDirectoryPicker se disponibile e non in iframe
       if ((window as any).showDirectoryPicker && window.parent === window) {
         try {
@@ -284,7 +301,7 @@ export const useBackupManager = () => {
           const fileHandle = await (dirHandle as any).getFileHandle(defaultName, { create: true });
           const writable = await (fileHandle as any).createWritable();
           
-          await writable.write(new Blob([latest.data], { type: 'application/json' }));
+          await writable.write(new Blob([content], { type: 'application/json' }));
           await writable.close();
 
           toast({ 

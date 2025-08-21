@@ -2,6 +2,7 @@
 import { BackupData } from './types';
 import { safeLocalStorageGet, safeLocalStorageSet, isBrowserSupported } from './browser-compatibility';
 import { supabase } from '@/integrations/supabase/client';
+import { saveBackupPayload, deleteBackupPayload } from './idb-storage';
 
 export const createBackup = async (type: 'manual' | 'automatic'): Promise<void> => {
   try {
@@ -78,19 +79,47 @@ export const createBackup = async (type: 'manual' | 'automatic'): Promise<void> 
       }
     };
 
-    const backups: BackupData[] = JSON.parse(safeLocalStorageGet('local-backups', '[]'));
-    backups.push({
-      date: timestamp,
-      type,
-      data: JSON.stringify(backupData)
-    });
+    const previousMetasRaw: any[] = JSON.parse(safeLocalStorageGet('local-backups', '[]'));
 
-    // Keep backups for the last 12 months
+    // Migra eventuali vecchi backup con payload in localStorage verso IndexedDB
+    const previousMetas: BackupData[] = [];
+    for (const m of previousMetasRaw) {
+      if (m && typeof m === 'object') {
+        if (m.data && !m.payloadKey) {
+          try {
+            const key = await saveBackupPayload(m.data as string, m.date as string);
+            previousMetas.push({ date: m.date, type: m.type, payloadKey: key });
+          } catch (e) {
+            console.warn('Migrazione payload fallita, salvo solo metadati:', e);
+            previousMetas.push({ date: m.date, type: m.type });
+          }
+        } else {
+          previousMetas.push({ date: m.date, type: m.type, payloadKey: m.payloadKey });
+        }
+      }
+    }
+
+    // Salva il nuovo payload in IndexedDB e memorizza solo i metadati in localStorage
+    const payloadString = JSON.stringify(backupData);
+    const payloadKey = await saveBackupPayload(payloadString, timestamp);
+
+    const newMeta: BackupData = { date: timestamp, type, payloadKey };
+    const updated = [...previousMetas, newMeta];
+
+    // Mantieni solo gli ultimi 12 mesi
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    
-    const filteredBackups = backups.filter((backup: BackupData) => 
-      new Date(backup.date) >= oneYearAgo
+
+    const filteredBackups: BackupData[] = updated.filter((backup: BackupData) => new Date(backup.date) >= oneYearAgo)
+      .map(b => ({ date: b.date, type: b.type, payloadKey: b.payloadKey }));
+
+    // Pulisci i payload orfani rimossi dal filtro
+    const removed = updated.filter(b => !filteredBackups.some(f => f.date === b.date && f.type === b.type));
+    await Promise.all(
+      removed
+        .map(r => r.payloadKey)
+        .filter((k): k is string => typeof k === 'string' && k.length > 0)
+        .map(k => deleteBackupPayload(k))
     );
 
     const success = safeLocalStorageSet('local-backups', JSON.stringify(filteredBackups));

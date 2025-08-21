@@ -6,8 +6,11 @@ export interface BackupEntry {
   iso?: string;
 }
 
+// Metadata stored in localStorage; payload is stored separately (IndexedDB)
 export interface BackupData {
   date: string;
   type: 'manual' | 'automatic';
-  data: string;
+  data?: string; // legacy inline payload
+  payloadKey?: string; // key for IndexedDB payload
 }
+

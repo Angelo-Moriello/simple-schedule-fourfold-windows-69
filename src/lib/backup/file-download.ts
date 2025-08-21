@@ -1,6 +1,7 @@
 
 import { BackupEntry, BackupData } from './types';
 import { safeLocalStorageGet, isBrowserSupported } from './browser-compatibility';
+import { getBackupPayload } from './idb-storage';
 
 export const downloadBackupFile = async (backup: BackupEntry, customPath?: string): Promise<void> => {
   try {
@@ -33,7 +34,16 @@ export const downloadBackupFile = async (backup: BackupEntry, customPath?: strin
       throw new Error('DOM non disponibile per il download');
     }
 
-    const blob = new Blob([targetBackup.data], { type: 'application/json' });
+    let payloadString = targetBackup.data;
+    if (!payloadString && (targetBackup as any).payloadKey) {
+      const fetched = await getBackupPayload((targetBackup as any).payloadKey as string);
+      if (!fetched) {
+        throw new Error('Contenuto del backup non disponibile');
+      }
+      payloadString = fetched;
+    }
+
+    const blob = new Blob([payloadString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     
     const fileName = customPath || `backup-${backup.date.replace(/[/:, ]/g, '-')}.json`;
