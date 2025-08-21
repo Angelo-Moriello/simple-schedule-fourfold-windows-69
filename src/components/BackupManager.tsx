@@ -9,6 +9,8 @@ import AutoBackupSettings from './backup/AutoBackupSettings';
 import CustomFileNameInput from './backup/CustomFileNameInput';
 import BackupStatusDisplay from './backup/BackupStatusDisplay';
 import ManualBackupButton from './backup/ManualBackupButton';
+import ImportFileButton from './backup/ImportFileButton';
+import ExportFolderButton from './backup/ExportFolderButton';
 
 const BackupManager = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,6 +28,9 @@ const BackupManager = () => {
     handleIntervalChange,
     createManualBackup,
     downloadBackup,
+    exportBackupToFolder,
+    importBackupFromFile,
+    restoreBackup,
     loadAllData
   } = useBackupManager();
 
@@ -61,6 +66,16 @@ const BackupManager = () => {
               disabled={browserError !== null}
             />
 
+            <ExportFolderButton
+              onExportToFolder={exportBackupToFolder}
+              disabled={browserError !== null}
+            />
+
+            <ImportFileButton
+              onImportFile={importBackupFromFile}
+              disabled={browserError !== null}
+            />
+
             <AutoBackupSettings
               autoBackupEnabled={autoBackupEnabled}
               backupInterval={backupInterval}
@@ -78,6 +93,7 @@ const BackupManager = () => {
           <BackupHistoryList
             backupHistory={backupHistory}
             onDownload={downloadBackup}
+            onRestore={restoreBackup}
           />
         </div>
       </DialogContent>
