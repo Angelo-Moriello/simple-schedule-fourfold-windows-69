@@ -95,8 +95,11 @@ export const saveAppointmentSafely = async (
       id: appointmentToSave.id
     });
 
-    // Salva su Supabase PRIMA
-    await addAppointmentToSupabase(appointmentToSave);
+    // Salva su Supabase PRIMA e ottieni l'ID definitivo
+    const savedId = await addAppointmentToSupabase(appointmentToSave);
+    if (savedId) {
+      appointmentToSave.id = savedId;
+    }
     console.log('✅ Appuntamento salvato su Supabase:', appointmentToSave.id);
     
     // Solo se il salvataggio su Supabase è riuscito, aggiorna lo stato locale

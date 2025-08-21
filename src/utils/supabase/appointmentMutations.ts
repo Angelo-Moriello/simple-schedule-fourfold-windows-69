@@ -1,8 +1,13 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Appointment } from '@/types/appointment';
 import { generateUUID, findClientIdByName } from './appointmentHelpers';
 
+// Valida che una stringa sia un UUID v1-v5
+const isValidUUID = (value: string | null | undefined): boolean => {
+  if (typeof value !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+};
 export const saveAppointmentsToSupabase = async (appointments: Appointment[]) => {
   try {
     console.log('Salvataggio appuntamenti su Supabase:', appointments);
@@ -21,7 +26,7 @@ export const saveAppointmentsToSupabase = async (appointments: Appointment[]) =>
         }
         
         return {
-          id: app.id.includes('-') ? app.id : generateUUID(),
+          id: isValidUUID(app.id) ? app.id : generateUUID(),
           employee_id: app.employeeId,
           date: app.date,
           time: app.time,
@@ -33,7 +38,7 @@ export const saveAppointmentsToSupabase = async (appointments: Appointment[]) =>
           phone: app.phone,
           color: app.color,
           service_type: app.serviceType,
-          client_id: clientId
+          client_id: isValidUUID(clientId) ? clientId : null
         };
       }));
       
@@ -56,7 +61,7 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
   try {
     console.log('Aggiunta appuntamento a Supabase:', appointment);
     
-    const appointmentId = appointment.id.includes('-') ? appointment.id : generateUUID();
+    const appointmentId = isValidUUID(appointment.id) ? appointment.id : generateUUID();
     
     let clientId = appointment.clientId;
     if (!clientId && appointment.client) {
@@ -76,7 +81,7 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       phone: appointment.phone || '',
       color: appointment.color,
       service_type: appointment.serviceType,
-      client_id: clientId
+      client_id: isValidUUID(clientId) ? clientId : null
     });
     if (error) {
       console.error('❌ Errore SQL dettagliato nell\'aggiunta appuntamento:', {
@@ -89,7 +94,8 @@ export const addAppointmentToSupabase = async (appointment: Appointment) => {
       });
       throw error;
     }
-    console.log('✅ Appuntamento aggiunto con successo');
+    console.log('✅ Appuntamento aggiunto con successo', { id: appointmentId });
+    return appointmentId;
   } catch (error) {
     console.error('❌ Errore completo nell\'aggiungere appuntamento su Supabase:', {
       error: error,
@@ -123,7 +129,7 @@ export const updateAppointmentInSupabase = async (appointment: Appointment) => {
         phone: appointment.phone || '',
         color: appointment.color,
         service_type: appointment.serviceType,
-        client_id: clientId
+        client_id: isValidUUID(clientId) ? clientId : null
       })
       .eq('id', appointment.id);
     if (error) {
