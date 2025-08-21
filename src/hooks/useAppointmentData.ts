@@ -16,12 +16,11 @@ export const useAppointmentData = (selectedDate: Date) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const loadData = async () => {
+useEffect(() => {
+    const loadInitialData = async () => {
       try {
         setIsLoading(true);
-        
-        // Check if we need to migrate from localStorage
+        // Migrazione eventuali dati locali (solo al mount)
         const hasLocalData = localStorage.getItem('employees') || localStorage.getItem('appointments');
         if (hasLocalData) {
           toast.info('Migrazione dati in corso...');
@@ -36,13 +35,13 @@ export const useAppointmentData = (selectedDate: Date) => {
             toast.error('Errore durante la migrazione dei dati');
           }
         }
-        
-        // Load current data from Supabase
+
+        // Carica i dati di base
         const [loadedEmployees, loadedAppointments] = await Promise.all([
           loadEmployeesFromSupabase(),
           loadAppointmentsFromSupabase()
         ]);
-        
+
         console.log('DEBUG - Initial data load:', { 
           employees: loadedEmployees.length, 
           appointments: loadedAppointments.length,
@@ -54,27 +53,11 @@ export const useAppointmentData = (selectedDate: Date) => {
             client: apt.client
           }))
         });
-        
+
         setEmployees(loadedEmployees);
         setAppointments(loadedAppointments);
-        
-        // Generate recurring appointments
-        try {
-          const recurringTreatments = await loadRecurringTreatmentsFromSupabase();
-          const startDate = subDays(selectedDate, 3);
-          const endDate = addDays(selectedDate, 30);
-          
-          await generateAppointmentsForDateRange(recurringTreatments, startDate, endDate);
-          console.log('Appuntamenti ricorrenti generati per il periodo');
-        } catch (recurringError) {
-          console.error('Errore nella generazione appuntamenti ricorrenti:', recurringError);
-        }
-        
-        // Reload appointments after generation
-        const finalAppointments = await loadAppointmentsFromSupabase();
-        setAppointments(finalAppointments);
-        
-        toast.success(`Caricati ${loadedEmployees.length} dipendenti e ${finalAppointments.length} appuntamenti`);
+
+        toast.success(`Caricati ${loadedEmployees.length} dipendenti e ${loadedAppointments.length} appuntamenti`);
       } catch (error) {
         console.error('Errore nel caricamento dei dati:', error);
         toast.error('Errore nel caricamento dei dati da Supabase');
@@ -83,8 +66,31 @@ export const useAppointmentData = (selectedDate: Date) => {
       }
     };
 
-    loadData();
+    loadInitialData();
   }, []);
+
+  // Rigenera appuntamenti ricorrenti e ricarica gli appuntamenti quando cambia la data selezionata (copre anche date passate)
+  useEffect(() => {
+    let cancelled = false;
+    const generateAndReload = async () => {
+      try {
+        const recurringTreatments = await loadRecurringTreatmentsFromSupabase();
+        const startDate = subDays(selectedDate, 30); // estende alle date passate
+        const endDate = addDays(selectedDate, 30);
+
+        await generateAppointmentsForDateRange(recurringTreatments, startDate, endDate);
+        console.log('Appuntamenti ricorrenti generati per il periodo', { startDate, endDate });
+
+        const finalAppointments = await loadAppointmentsFromSupabase();
+        if (!cancelled) setAppointments(finalAppointments);
+      } catch (recurringError) {
+        console.error('Errore nella generazione appuntamenti ricorrenti:', recurringError);
+      }
+    };
+
+    generateAndReload();
+    return () => { cancelled = true; };
+  }, [selectedDate]);
 
   return {
     appointments,
