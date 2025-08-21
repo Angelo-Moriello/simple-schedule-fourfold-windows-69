@@ -11,6 +11,7 @@ import {
   isBrowserSupported
 } from '@/lib/local-backup';
 import { BackupEntry } from '@/lib/backup/types';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/backup/browser-compatibility';
 
 export const useBackupManager = () => {
   const [backupHistory, setBackupHistory] = useState<BackupEntry[]>([]);
@@ -190,6 +191,95 @@ export const useBackupManager = () => {
     }
   };
 
+  const restoreBackup = async (backup: BackupEntry) => {
+    try {
+      const backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as Array<{ date: string; type: string; data: string }>;
+      const target = backups.find((b) => {
+        const iso = (backup as any)?.iso as string | undefined;
+        if (iso) return b.date === iso && b.type === backup.type;
+        try {
+          return new Date(b.date).toLocaleString('it-IT') === backup.date && b.type === backup.type;
+        } catch {
+          return false;
+        }
+      });
+      if (!target) throw new Error('Backup non trovato');
+      const parsed = JSON.parse(target.data);
+      const payload = parsed?.data || parsed;
+
+      // Ripristino solo i dati locali (non modifica le tabelle su Supabase)
+      safeLocalStorageSet('services', JSON.stringify(payload.services ?? {}));
+      safeLocalStorageSet('serviceCategories', JSON.stringify(payload.serviceCategories ?? []));
+      safeLocalStorageSet('appSettings', JSON.stringify(payload.appSettings ?? {}));
+
+      toast({
+        title: 'Ripristino completato',
+        description: 'Impostazioni locali ripristinate. I dati del database restano invariati.',
+      });
+    } catch (error) {
+      console.error('Errore nel ripristino backup:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Errore ripristino',
+        description: error instanceof Error ? error.message : 'Errore sconosciuto durante il ripristino',
+      });
+    }
+  };
+
+  const importBackupFromFile = async (file: File) => {
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const dateIso = parsed?.date || new Date().toISOString();
+      const type = (parsed?.type as 'manual' | 'automatic') || 'manual';
+
+      const backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as any[];
+      backups.push({ date: dateIso, type, data: JSON.stringify(parsed) });
+      const ok = safeLocalStorageSet('local-backups', JSON.stringify(backups));
+      if (!ok) throw new Error('Impossibile salvare il backup importato');
+
+      await loadBackupHistory();
+      toast({ title: 'Backup importato', description: 'File aggiunto alla cronologia backup' });
+    } catch (error) {
+      console.error('Errore nell\'importazione backup:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Errore importazione',
+        description: error instanceof Error ? error.message : 'File non valido',
+      });
+    }
+  };
+
+  const exportBackupToFolder = async () => {
+    try {
+      if (!(window as any).showDirectoryPicker) {
+        throw new Error('Il tuo browser non supporta il salvataggio in cartella');
+      }
+
+      await createBackup('manual');
+      const backups = JSON.parse(safeLocalStorageGet('local-backups', '[]')) as Array<{ date: string; type: string; data: string }>;
+      if (backups.length === 0) throw new Error('Nessun backup disponibile');
+      // Prende l\'ultimo backup per data
+      const latest = backups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+      const dirHandle = await (window as any).showDirectoryPicker();
+      const defaultName = customFileName || `backup-${new Date(latest.date).toISOString().replace(/[:]/g, '-')}.json`;
+      const fileHandle = await (dirHandle as any).getFileHandle(defaultName, { create: true });
+      const writable = await (fileHandle as any).createWritable();
+      await writable.write(new Blob([latest.data], { type: 'application/json' }));
+      await writable.close();
+
+      toast({ title: 'Backup salvato', description: `File salvato in cartella: ${defaultName}` });
+    } catch (error) {
+      console.error('Errore nell\'esportazione su cartella:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Errore esportazione',
+        description: error instanceof Error ? error.message : 'Errore sconosciuto durante il salvataggio',
+      });
+    }
+  };
+
   const loadAllData = async () => {
     await loadBackupHistory();
     await loadLastBackupTime();
@@ -212,6 +302,9 @@ export const useBackupManager = () => {
     handleIntervalChange,
     createManualBackup,
     downloadBackup,
+    exportBackupToFolder,
+    importBackupFromFile,
+    restoreBackup,
     loadAllData
   };
 };

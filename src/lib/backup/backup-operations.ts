@@ -85,12 +85,12 @@ export const createBackup = async (type: 'manual' | 'automatic'): Promise<void> 
       data: JSON.stringify(backupData)
     });
 
-    // Keep only backups from last 30 days
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Keep backups for the last 12 months
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     
     const filteredBackups = backups.filter((backup: BackupData) => 
-      new Date(backup.date) >= thirtyDaysAgo
+      new Date(backup.date) >= oneYearAgo
     );
 
     const success = safeLocalStorageSet('local-backups', JSON.stringify(filteredBackups));
@@ -116,7 +116,9 @@ export const getBackupHistory = async () => {
     const backups: BackupData[] = JSON.parse(safeLocalStorageGet('local-backups', '[]'));
     return backups.map((backup: BackupData) => ({
       date: new Date(backup.date).toLocaleString('it-IT'),
-      type: backup.type
+      type: backup.type,
+      // Include ISO to match reliably during download/restore
+      iso: backup.date
     }));
   } catch (error) {
     console.error('Errore nel recupero cronologia backup:', error);

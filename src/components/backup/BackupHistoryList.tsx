@@ -6,9 +6,10 @@ import { BackupEntry } from '@/lib/backup/types';
 interface BackupHistoryListProps {
   backupHistory: BackupEntry[];
   onDownload: (backup: BackupEntry) => void;
+  onRestore?: (backup: BackupEntry) => void;
 }
 
-const BackupHistoryList: React.FC<BackupHistoryListProps> = ({ backupHistory, onDownload }) => {
+const BackupHistoryList: React.FC<BackupHistoryListProps> = ({ backupHistory, onDownload, onRestore }) => {
   if (backupHistory.length === 0) return null;
 
   return (
@@ -24,14 +25,28 @@ const BackupHistoryList: React.FC<BackupHistoryListProps> = ({ backupHistory, on
               <span className="text-sm">{backup.type === 'manual' ? '👆' : '🤖'}</span>
               {backup.date}
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDownload(backup)}
-              className="h-6 w-6 p-0 rounded-full hover:bg-gray-200"
-            >
-              <span className="text-xs">⬇️</span>
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDownload(backup)}
+                className="h-6 w-6 p-0 rounded-full hover:bg-gray-200"
+                aria-label="Scarica backup"
+              >
+                <span className="text-xs">⬇️</span>
+              </Button>
+              {onRestore && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onRestore(backup)}
+                  className="h-6 w-6 p-0 rounded-full hover:bg-gray-200"
+                  aria-label="Ripristina backup"
+                >
+                  <span className="text-xs">↩️</span>
+                </Button>
+              )}
+            </div>
           </div>
         ))}
       </div>

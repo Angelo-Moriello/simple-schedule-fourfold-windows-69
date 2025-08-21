@@ -9,10 +9,18 @@ export const downloadBackupFile = async (backup: BackupEntry, customPath?: strin
     }
 
     const backups: BackupData[] = JSON.parse(safeLocalStorageGet('local-backups'));
-    const targetBackup = backups.find((b: BackupData) => 
-      new Date(b.date).toLocaleString('it-IT') === backup.date && b.type === backup.type
-    );
-
+    const targetBackup = backups.find((b: BackupData) => {
+      const iso = (backup as any)?.iso as string | undefined;
+      if (iso) {
+        return b.date === iso && b.type === backup.type;
+      }
+      // Fallback confronto su stringa localizzata
+      try {
+        return new Date(b.date).toLocaleString('it-IT') === backup.date && b.type === backup.type;
+      } catch {
+        return false;
+      }
+    });
     if (!targetBackup) {
       throw new Error('Backup non trovato');
     }
