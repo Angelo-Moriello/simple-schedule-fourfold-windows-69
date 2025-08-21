@@ -4,9 +4,12 @@ import { Appointment, Employee } from '@/types/appointment';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UseRealtimeSubscriptionsProps {
-  setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>;
-  setEmployees: React.Dispatch<React.SetStateAction<Employee[]>>;
+  updateAppointmentSync?: (appointment: Appointment, operation: 'add' | 'update' | 'delete') => void;
+  refreshAppointments?: () => Promise<void>;
   forcePageRefresh: () => void;
+  // Backward compatibility
+  setAppointments?: React.Dispatch<React.SetStateAction<Appointment[]>>;
+  setEmployees?: React.Dispatch<React.SetStateAction<Employee[]>>;
 }
 
 // Helper function to get client info by ID
@@ -36,9 +39,11 @@ const getClientInfo = async (clientId: string | null) => {
 };
 
 export const useRealtimeSubscriptions = ({ 
-  setAppointments, 
-  setEmployees, 
-  forcePageRefresh 
+  updateAppointmentSync,
+  refreshAppointments,
+  forcePageRefresh,
+  setAppointments,
+  setEmployees 
 }: UseRealtimeSubscriptionsProps) => {
 
   useEffect(() => {
@@ -109,13 +114,19 @@ export const useRealtimeSubscriptions = ({
               
               console.log('📅 DEBUG - Nuovo appuntamento creato:', newAppointment);
               
-              setAppointments(prev => {
-                const exists = prev.some(apt => apt.id === newAppointment.id);
-                if (!exists) {
-                  return [...prev, newAppointment];
-                }
-                return prev;
-              });
+              // Usa il nuovo sistema di sincronizzazione se disponibile
+              if (updateAppointmentSync) {
+                updateAppointmentSync(newAppointment, 'add');
+              } else if (setAppointments) {
+                // Fallback per compatibilità
+                setAppointments(prev => {
+                  const exists = prev.some(apt => apt.id === newAppointment.id);
+                  if (!exists) {
+                    return [...prev, newAppointment];
+                  }
+                  return prev;
+                });
+              }
               
             } else if (payload.eventType === 'UPDATE') {
               let clientName = payload.new.client;
@@ -163,13 +174,28 @@ export const useRealtimeSubscriptions = ({
               
               console.log('📝 DEBUG - Appuntamento aggiornato:', updatedAppointment);
               
-              setAppointments(prev => prev.map(apt =>
-                apt.id === updatedAppointment.id ? updatedAppointment : apt
-              ));
+              // Usa il nuovo sistema di sincronizzazione se disponibile
+              if (updateAppointmentSync) {
+                updateAppointmentSync(updatedAppointment, 'update');
+              } else if (setAppointments) {
+                // Fallback per compatibilità
+                setAppointments(prev => prev.map(apt =>
+                  apt.id === updatedAppointment.id ? updatedAppointment : apt
+                ));
+              }
               
             } else if (payload.eventType === 'DELETE') {
               console.log('🗑️ DEBUG - DELETE appuntamento:', payload.old.id);
-              setAppointments(prev => prev.filter(apt => apt.id !== payload.old.id));
+              
+              // Usa il nuovo sistema di sincronizzazione se disponibile
+              if (updateAppointmentSync) {
+                // Per il delete, crea un oggetto temporaneo con l'ID
+                const deletedAppointment: Appointment = { id: payload.old.id } as Appointment;
+                updateAppointmentSync(deletedAppointment, 'delete');
+              } else if (setAppointments) {
+                // Fallback per compatibilità
+                setAppointments(prev => prev.filter(apt => apt.id !== payload.old.id));
+              }
             }
           } catch (error) {
             console.error('❌ DEBUG - Errore nel processare cambiamento realtime appuntamento:', error);
@@ -203,13 +229,16 @@ export const useRealtimeSubscriptions = ({
                 vacations: payload.new.vacations || []
               };
               
-              setEmployees(prev => {
-                const exists = prev.some(emp => emp.id === newEmployee.id);
-                if (!exists) {
-                  return [...prev, newEmployee];
-                }
-                return prev;
-              });
+              // Gestione dipendenti rimane uguale (no sync per ora)
+              if (setEmployees) {
+                setEmployees(prev => {
+                  const exists = prev.some(emp => emp.id === newEmployee.id);
+                  if (!exists) {
+                    return [...prev, newEmployee];
+                  }
+                  return prev;
+                });
+              }
               
             } else if (payload.eventType === 'UPDATE') {
               const updatedEmployee: Employee = {
@@ -220,12 +249,16 @@ export const useRealtimeSubscriptions = ({
                 vacations: payload.new.vacations || []
               };
               
-              setEmployees(prev => prev.map(emp =>
-                emp.id === updatedEmployee.id ? updatedEmployee : emp
-              ));
+              if (setEmployees) {
+                setEmployees(prev => prev.map(emp =>
+                  emp.id === updatedEmployee.id ? updatedEmployee : emp
+                ));
+              }
               
             } else if (payload.eventType === 'DELETE') {
-              setEmployees(prev => prev.filter(emp => emp.id !== payload.old.id));
+              if (setEmployees) {
+                setEmployees(prev => prev.filter(emp => emp.id !== payload.old.id));
+              }
             }
           } catch (error) {
             console.error('Errore nel processare cambiamento realtime dipendente:', error);
@@ -241,5 +274,5 @@ export const useRealtimeSubscriptions = ({
       supabase.removeChannel(appointmentsChannel);
       supabase.removeChannel(employeesChannel);
     };
-  }, [setAppointments, setEmployees, forcePageRefresh]);
+  }, [updateAppointmentSync, refreshAppointments, setAppointments, setEmployees, forcePageRefresh]);
 };

@@ -12,20 +12,18 @@ import {
 
 interface UseAppointmentActionsProps {
   appointments: Appointment[];
-  setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>;
+  updateAppointmentSync: (appointment: Appointment, operation: 'add' | 'update' | 'delete') => void;
+  refreshAppointments: () => Promise<void>;
   forcePageRefresh: () => void;
 }
 
-export const useAppointmentActions = ({ appointments, setAppointments, forcePageRefresh }: UseAppointmentActionsProps) => {
+export const useAppointmentActions = ({ appointments, updateAppointmentSync, refreshAppointments, forcePageRefresh }: UseAppointmentActionsProps) => {
   const addAppointment = async (newAppointment: Appointment) => {
     try {
       console.log('DEBUG - Aggiunta appuntamento:', newAppointment);
       
-      // Aggiorna immediatamente l'UI per feedback immediato
-      setAppointments((prev) => {
-        const exists = prev.some(a => a.id === newAppointment.id);
-        return exists ? prev : [...prev, newAppointment];
-      });
+      // Aggiorna immediatamente l'UI tramite il sistema di sincronizzazione
+      updateAppointmentSync(newAppointment, 'add');
       
       // Salva nel database
       await addAppointmentToSupabase(newAppointment);
@@ -36,8 +34,8 @@ export const useAppointmentActions = ({ appointments, setAppointments, forcePage
       setTimeout(forcePageRefresh, 3000);
     } catch (error) {
       console.error('Errore nell\'aggiungere l\'appuntamento:', error);
-      // Se il salvataggio fallisce, rimuovi dall'UI
-      setAppointments((prev) => prev.filter(a => a.id !== newAppointment.id));
+      // Se il salvataggio fallisce, rimuovi tramite sincronizzazione
+      updateAppointmentSync(newAppointment, 'delete');
       toast.error('Errore nell\'aggiungere l\'appuntamento');
     }
   };
@@ -45,12 +43,18 @@ export const useAppointmentActions = ({ appointments, setAppointments, forcePage
   const updateAppointment = async (updatedAppointment: Appointment) => {
     try {
       console.log('DEBUG - Aggiornamento appuntamento:', updatedAppointment);
+      
+      // Aggiorna tramite sistema di sincronizzazione
+      updateAppointmentSync(updatedAppointment, 'update');
+      
       await updateAppointmentInSupabase(updatedAppointment);
       console.log('✅ Appuntamento aggiornato con successo nel database');
       toast.success('Appuntamento modificato con successo!');
       setTimeout(forcePageRefresh, 3000);
     } catch (error) {
       console.error('Errore nella modifica dell\'appuntamento:', error);
+      // Refresh per ripristinare lo stato corretto
+      await refreshAppointments();
       toast.error('Errore nella modifica dell\'appuntamento');
     }
   };
@@ -58,6 +62,17 @@ export const useAppointmentActions = ({ appointments, setAppointments, forcePage
   const deleteAppointment = async (appointmentId: string) => {
     try {
       console.log('DEBUG - Eliminazione appuntamento:', appointmentId);
+      
+      // Trova l'appuntamento da eliminare per il rollback se necessario
+      const appointmentToDelete = appointments.find(apt => apt.id === appointmentId);
+      if (!appointmentToDelete) {
+        toast.error('Appuntamento non trovato');
+        return;
+      }
+      
+      // Rimuovi tramite sistema di sincronizzazione
+      updateAppointmentSync(appointmentToDelete, 'delete');
+      
       await deleteAppointmentFromSupabase(appointmentId);
       console.log('✅ Appuntamento eliminato con successo dal database');
       toast.success('Appuntamento eliminato con successo!');
@@ -66,8 +81,9 @@ export const useAppointmentActions = ({ appointments, setAppointments, forcePage
       setTimeout(forcePageRefresh, 3000);
     } catch (error) {
       console.error('Errore nell\'eliminazione dell\'appuntamento:', error);
+      // Refresh per ripristinare lo stato corretto
+      await refreshAppointments();
       toast.error('Errore nell\'eliminazione dell\'appuntamento');
-      // Non fare refresh se c'è un errore
     }
   };
 

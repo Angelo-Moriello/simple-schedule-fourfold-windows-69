@@ -186,12 +186,21 @@ const EmployeeTimeSlotGrid: React.FC<EmployeeTimeSlotGridProps> = ({
     return exactAppointment;
   }, [appointments, selectedDate]);
 
-  const getEmployeeAppointmentCount = (employeeId: number) => {
+  const getEmployeeAppointmentCount = useCallback((employeeId: number): number => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
-    return appointments.filter(apt => 
+    const count = appointments.filter(apt => 
       apt.employeeId === employeeId && apt.date === dateString
     ).length;
-  };
+    
+    console.log('DEBUG - Conteggio appuntamenti:', { 
+      employeeId, 
+      date: dateString, 
+      count,
+      totalAppointments: appointments.length 
+    });
+    
+    return count;
+  }, [appointments, selectedDate]);
 
   if (isMobile) {
     return (

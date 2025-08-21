@@ -30,7 +30,7 @@ const AppointmentScheduler = () => {
     handleNavigateToStatistics
   } = useAppointmentSchedulerState();
 
-  const { appointments, employees, isLoading, setAppointments, setEmployees } = useAppointmentData(selectedDate);
+  const { appointments, employees, isLoading, updateAppointmentSync, refreshAppointments, setEmployees } = useAppointmentData(selectedDate);
 
   // Funzione di refresh che ricarica i dati
   const forcePageRefresh = () => {
@@ -38,7 +38,7 @@ const AppointmentScheduler = () => {
     window.location.reload();
   };
 
-  useRealtimeSubscriptions({ setAppointments, setEmployees, forcePageRefresh });
+  useRealtimeSubscriptions({ updateAppointmentSync, refreshAppointments, forcePageRefresh, setEmployees });
 
   const {
     addAppointment,
@@ -49,7 +49,7 @@ const AppointmentScheduler = () => {
     deleteEmployee,
     updateEmployeeName,
     handleUpdateEmployeeVacations
-  } = useAppointmentActions({ appointments, setAppointments, forcePageRefresh });
+  } = useAppointmentActions({ appointments, updateAppointmentSync, refreshAppointments, forcePageRefresh });
 
   if (isLoading) {
     return (
