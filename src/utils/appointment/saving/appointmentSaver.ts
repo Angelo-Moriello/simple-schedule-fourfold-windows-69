@@ -103,14 +103,7 @@ export const saveAppointmentSafely = async (
     }
     console.log('✅ Appuntamento salvato su Supabase:', appointmentToSave.id);
     
-    // Triggera un refresh della pagina dopo un breve delay per permettere a Supabase di consolidare i dati
-    if (options?.triggerReload) {
-      console.log('🔄 Pianifico refresh pagina dopo creazione appuntamento...');
-      setTimeout(() => {
-        console.log('🔄 Eseguo refresh pagina (creazione appuntamento)');
-        window.location.reload();
-      }, 3000); // Aumentato a 3 secondi per dare tempo a Supabase
-    }
+    // Rimosso il refresh automatico - le subscription realtime aggiorneranno la UI
 
     return { success: true };
     
