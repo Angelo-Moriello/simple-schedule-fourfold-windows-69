@@ -20,8 +20,12 @@ export const useAppointmentActions = ({ appointments, forcePageRefresh }: UseApp
     try {
       console.log('DEBUG - Aggiunta appuntamento:', newAppointment);
       await addAppointmentToSupabase(newAppointment);
+      console.log('✅ Appuntamento aggiunto con successo, avvio refresh...');
       toast.success('Appuntamento aggiunto con successo!');
-      setTimeout(forcePageRefresh, 1000);
+      setTimeout(() => {
+        console.log('🔄 Eseguendo refresh dopo aggiunta appuntamento...');
+        forcePageRefresh();
+      }, 1000);
     } catch (error) {
       console.error('Errore nell\'aggiungere l\'appuntamento:', error);
       toast.error('Errore nell\'aggiungere l\'appuntamento');
