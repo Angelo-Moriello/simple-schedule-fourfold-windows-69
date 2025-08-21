@@ -5,7 +5,9 @@ import {
   syncAppointmentsData, 
   updateLocalCache, 
   forceDataRefresh,
-  validateDataConsistency
+  validateDataConsistency,
+  backupCacheToStorage,
+  restoreCacheFromBackup
 } from '@/utils/appointment/dataSync';
 
 export const useAppointmentSync = () => {
@@ -13,7 +15,7 @@ export const useAppointmentSync = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
-  // Caricamento iniziale sicuro
+  // Caricamento iniziale con protezione anti-perdita
   const loadInitialData = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -24,7 +26,7 @@ export const useAppointmentSync = () => {
         if (isValid) {
           setAppointments(result.data);
           setLastSyncTime(new Date());
-          console.log('✅ Dati iniziali caricati con successo:', result.data.length);
+          backupCacheToStorage(); // Backup di sicurezza
         } else {
           console.warn('⚠️ Problemi di consistenza nei dati, tentativo di riparazione...');
           // Tenta di pulire i dati duplicati
@@ -33,38 +35,63 @@ export const useAppointmentSync = () => {
           );
           setAppointments(cleanedData);
           setLastSyncTime(new Date());
+          backupCacheToStorage();
         }
       } else {
-        console.error('❌ Errore nel caricamento iniziale:', result.error);
-        toast.error('Errore nel caricamento dei dati');
+        // Tentativo di ripristino da backup
+        const backupData = restoreCacheFromBackup();
+        if (backupData.length > 0) {
+          setAppointments(backupData);
+          setLastSyncTime(new Date());
+          toast.warning('Dati ripristinati da backup locale');
+        } else {
+          console.error('❌ Errore nel caricamento iniziale:', result.error);
+          toast.error('Errore nel caricamento dei dati');
+        }
       }
     } catch (error) {
       console.error('❌ Errore critico nel caricamento:', error);
-      toast.error('Errore critico nel caricamento dati');
+      
+      // Ultimo tentativo: ripristino da backup
+      const backupData = restoreCacheFromBackup();
+      if (backupData.length > 0) {
+        setAppointments(backupData);
+        setLastSyncTime(new Date());
+        toast.warning('Dati ripristinati da backup di emergenza');
+      } else {
+        toast.error('Errore critico nel caricamento dati');
+      }
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Sincronizzazione periodica automatica
+  // Sincronizzazione periodica automatica con backup
   useEffect(() => {
     loadInitialData();
 
-    // Sync automatico ogni 30 secondi per mantenere dati aggiornati
-    const intervalId = setInterval(async () => {
+    // Sync automatico ogni 15 secondi per mantenere dati aggiornati
+    const syncIntervalId = setInterval(async () => {
       try {
         const result = await syncAppointmentsData(false);
         if (result.success && result.data) {
           setAppointments(result.data);
           setLastSyncTime(new Date());
-          console.log('🔄 Sincronizzazione automatica completata');
         }
       } catch (error) {
         console.warn('⚠️ Errore sincronizzazione automatica:', error);
       }
-    }, 30000);
+    }, 15000);
 
-    return () => clearInterval(intervalId);
+    // Backup automatico ogni 60 secondi
+    const backupIntervalId = setInterval(() => {
+      backupCacheToStorage();
+    }, 60000);
+
+    return () => {
+      clearInterval(syncIntervalId);
+      clearInterval(backupIntervalId);
+    };
   }, [loadInitialData]);
 
   // Aggiorna appuntamento con sincronizzazione
@@ -98,6 +125,9 @@ export const useAppointmentSync = () => {
     });
     
     setLastSyncTime(new Date());
+    
+    // Backup immediato dopo ogni modifica importante
+    setTimeout(() => backupCacheToStorage(), 100);
   }, []);
 
   // Refresh manuale con feedback
