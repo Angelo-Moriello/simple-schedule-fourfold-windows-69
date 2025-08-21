@@ -19,14 +19,22 @@ interface UseAppointmentActionsProps {
 export const useAppointmentActions = ({ appointments, setAppointments, forcePageRefresh }: UseAppointmentActionsProps) => {
   const addAppointment = async (newAppointment: Appointment) => {
     try {
-      console.log('DEBUG - Aggiunta (solo UI) appuntamento:', newAppointment);
+      console.log('DEBUG - Aggiunta appuntamento:', newAppointment);
+      
+      // Aggiorna immediatamente l'UI per feedback immediato
       setAppointments((prev) => {
         const exists = prev.some(a => a.id === newAppointment.id);
         return exists ? prev : [...prev, newAppointment];
       });
-      toast.success('Appuntamento aggiunto!');
+      
+      // Salva nel database
+      await addAppointmentToSupabase(newAppointment);
+      console.log('✅ Appuntamento salvato con successo nel database');
+      toast.success('Appuntamento aggiunto con successo!');
     } catch (error) {
-      console.error("Errore nell'aggiornare lo stato locale degli appuntamenti:", error);
+      console.error('Errore nell\'aggiungere l\'appuntamento:', error);
+      // Se il salvataggio fallisce, rimuovi dall'UI
+      setAppointments((prev) => prev.filter(a => a.id !== newAppointment.id));
       toast.error('Errore nell\'aggiungere l\'appuntamento');
     }
   };
