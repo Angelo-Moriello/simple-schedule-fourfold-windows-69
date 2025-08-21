@@ -89,10 +89,10 @@ export const useAppointmentSaving = (forcePageRefresh?: () => void) => {
         toast.success(`Appuntamento principale creato! Alcuni ricorrenti non sono stati salvati: ${result.failedSaves.length} falliti`);
       }
       
-      // Refresh automatico della pagina dopo il salvataggio (tempo maggiore per appuntamenti multipli)
+      // Refresh automatico della pagina dopo conferma database
       if (forcePageRefresh) {
         console.log('🔄 Eseguendo refresh automatico dopo salvataggio multiplo...');
-        setTimeout(forcePageRefresh, 10000);
+        forcePageRefresh();
       }
       
     } catch (error) {
