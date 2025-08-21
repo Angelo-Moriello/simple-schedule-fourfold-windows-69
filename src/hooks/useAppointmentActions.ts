@@ -32,8 +32,8 @@ export const useAppointmentActions = ({ appointments, setAppointments, forcePage
       console.log('✅ Appuntamento salvato con successo nel database');
       toast.success('Appuntamento aggiunto con successo!');
       
-      // Refresh automatico della pagina dopo conferma database
-      forcePageRefresh();
+      // Refresh automatico della pagina dopo 3 secondi dalla conferma database
+      setTimeout(forcePageRefresh, 3000);
     } catch (error) {
       console.error('Errore nell\'aggiungere l\'appuntamento:', error);
       // Se il salvataggio fallisce, rimuovi dall'UI
@@ -48,7 +48,7 @@ export const useAppointmentActions = ({ appointments, setAppointments, forcePage
       await updateAppointmentInSupabase(updatedAppointment);
       console.log('✅ Appuntamento aggiornato con successo nel database');
       toast.success('Appuntamento modificato con successo!');
-      forcePageRefresh();
+      setTimeout(forcePageRefresh, 3000);
     } catch (error) {
       console.error('Errore nella modifica dell\'appuntamento:', error);
       toast.error('Errore nella modifica dell\'appuntamento');
@@ -62,8 +62,8 @@ export const useAppointmentActions = ({ appointments, setAppointments, forcePage
       console.log('✅ Appuntamento eliminato con successo dal database');
       toast.success('Appuntamento eliminato con successo!');
       
-      // Refresh automatico dopo conferma database
-      forcePageRefresh();
+      // Refresh automatico dopo 3 secondi dalla conferma database
+      setTimeout(forcePageRefresh, 3000);
     } catch (error) {
       console.error('Errore nell\'eliminazione dell\'appuntamento:', error);
       toast.error('Errore nell\'eliminazione dell\'appuntamento');
