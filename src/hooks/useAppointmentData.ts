@@ -69,26 +69,32 @@ useEffect(() => {
     loadInitialData();
   }, []);
 
-  // Rigenera appuntamenti ricorrenti e ricarica gli appuntamenti quando cambia la data selezionata (copre anche date passate)
+  // Rigenera appuntamenti ricorrenti quando cambia la data selezionata
   useEffect(() => {
     let cancelled = false;
-    const generateAndReload = async () => {
+    const generateRecurringAndReload = async () => {
       try {
         const recurringTreatments = await loadRecurringTreatmentsFromSupabase();
-        const startDate = subDays(selectedDate, 30); // estende alle date passate
+        const startDate = subDays(selectedDate, 30);
         const endDate = addDays(selectedDate, 30);
 
+        // Genera solo i ricorrenti nel range della data selezionata
         await generateAppointmentsForDateRange(recurringTreatments, startDate, endDate);
         console.log('Appuntamenti ricorrenti generati per il periodo', { startDate, endDate });
 
-        const finalAppointments = await loadAppointmentsFromSupabase();
-        if (!cancelled) setAppointments(finalAppointments);
+        // IMPORTANTE: ricarica TUTTI gli appuntamenti dal database (non solo quelli del range)
+        // per mantenere visibili anche gli appuntamenti di altri mesi come luglio
+        const allAppointments = await loadAppointmentsFromSupabase();
+        if (!cancelled) {
+          setAppointments(allAppointments);
+          console.log('Ricaricati tutti gli appuntamenti dal database:', allAppointments.length);
+        }
       } catch (recurringError) {
         console.error('Errore nella generazione appuntamenti ricorrenti:', recurringError);
       }
     };
 
-    generateAndReload();
+    generateRecurringAndReload();
     return () => { cancelled = true; };
   }, [selectedDate]);
 
