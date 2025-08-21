@@ -82,11 +82,8 @@ export const useAppointmentSaving = () => {
         toast.success(`Appuntamento principale creato! Alcuni ricorrenti non sono stati salvati: ${result.failedSaves.length} falliti`);
       }
       
-      // Forza il refresh dei dati per aggiornare la UI
-      console.log('🔄 Triggering page refresh to update data...');
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // Rimosso il reload forzato - le subscription realtime aggiorneranno automaticamente la UI
+      console.log('✅ Salvataggio completato, la UI verrà aggiornata automaticamente dalle subscription realtime');
       
     } catch (error) {
       console.error('❌ Errore critico nel processo di salvataggio:', error);
@@ -96,11 +93,8 @@ export const useAppointmentSaving = () => {
         message: error instanceof Error ? error.message : 'Unknown error'
       });
       
-      // Mostra errore ma forza comunque il refresh per verificare se è stato salvato
-      toast.error('Errore nel salvataggio. La pagina verrà ricaricata per verificare lo stato.');
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      // Mostra errore senza forzare il reload
+      toast.error('Errore nel salvataggio degli appuntamenti');
     }
   };
 

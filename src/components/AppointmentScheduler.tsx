@@ -32,9 +32,10 @@ const AppointmentScheduler = () => {
 
   const { appointments, employees, isLoading, setAppointments, setEmployees } = useAppointmentData(selectedDate);
 
-  // Simple page refresh function
+  // Funzione di refresh più sicura che non forza il reload della pagina
   const forcePageRefresh = () => {
-    window.location.reload();
+    console.log('🔄 Refresh richiesto, ma evitato per prevenire loop infiniti');
+    // Non facciamo nulla qui - le subscription realtime gestiscono gli aggiornamenti
   };
 
   useRealtimeSubscriptions({ setAppointments, setEmployees, forcePageRefresh });
@@ -93,7 +94,7 @@ const AppointmentScheduler = () => {
         selectedDate={selectedDate}
         appointmentToEdit={appointmentToEdit}
         employees={employees}
-        appointments={appointments} // Pass appointments to modals
+        appointments={appointments}
         onCloseAppointmentForm={handleCloseAppointmentForm}
         onCloseEmployeeForm={handleCloseEmployeeForm}
         onCloseClientManager={handleCloseClientManager}
