@@ -22,6 +22,7 @@ interface AppointmentModalsProps {
   updateAppointment: (appointment: Appointment) => void;
   addEmployee: (employee: Employee) => void;
   updateEmployee: (employee: Employee) => void;
+  forcePageRefresh?: () => void;
 }
 
 const AppointmentModals: React.FC<AppointmentModalsProps> = ({
@@ -40,7 +41,8 @@ const AppointmentModals: React.FC<AppointmentModalsProps> = ({
   addAppointment,
   updateAppointment,
   addEmployee,
-  updateEmployee
+  updateEmployee,
+  forcePageRefresh
 }) => {
   return (
     <>
@@ -55,6 +57,7 @@ const AppointmentModals: React.FC<AppointmentModalsProps> = ({
         appointmentToEdit={appointmentToEdit}
         employees={employees}
         existingAppointments={appointments} // Pass existing appointments
+        forcePageRefresh={forcePageRefresh}
       />
 
       <EmployeeForm

@@ -14,6 +14,7 @@ interface UseAppointmentSubmissionProps {
   updateAppointment?: (appointment: Appointment) => void;
   onClose: () => void;
   existingAppointments?: Appointment[];
+  forcePageRefresh?: () => void;
 }
 
 export const useAppointmentSubmission = ({
@@ -22,11 +23,12 @@ export const useAppointmentSubmission = ({
   addAppointment,
   updateAppointment,
   onClose,
-  existingAppointments = []
+  existingAppointments = [],
+  forcePageRefresh
 }: UseAppointmentSubmissionProps) => {
   const { handleClientCreation } = useClientHandling();
   const { createAppointments } = useAppointmentCreation();
-  const { handleSaveAppointments } = useAppointmentSaving();
+  const { handleSaveAppointments } = useAppointmentSaving(forcePageRefresh);
 
   const submitAppointment = async (
     formData: any,

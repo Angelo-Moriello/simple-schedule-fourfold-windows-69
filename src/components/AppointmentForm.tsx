@@ -18,6 +18,7 @@ interface AppointmentFormProps {
   appointmentToEdit: Appointment | null;
   employees: Employee[];
   existingAppointments?: Appointment[];
+  forcePageRefresh?: () => void;
 }
 
 const AppointmentForm: React.FC<AppointmentFormProps> = ({
@@ -30,7 +31,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   date,
   appointmentToEdit,
   employees,
-  existingAppointments = []
+  existingAppointments = [],
+  forcePageRefresh
 }) => {
   const {
     formData,
@@ -52,6 +54,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     addAppointment,
     updateAppointment,
     onClose,
+    forcePageRefresh,
     existingAppointments
   });
 

@@ -13,6 +13,7 @@ interface UseAppointmentFormProps {
   addAppointment?: (appointment: Appointment) => void;
   updateAppointment?: (appointment: Appointment) => void;
   onClose: () => void;
+  forcePageRefresh?: () => void;
 }
 
 export const useAppointmentForm = ({
@@ -24,6 +25,7 @@ export const useAppointmentForm = ({
   addAppointment,
   updateAppointment,
   onClose,
+  forcePageRefresh,
   existingAppointments = []
 }: UseAppointmentFormProps & { existingAppointments?: Appointment[] }) => {
   const {
@@ -49,7 +51,8 @@ export const useAppointmentForm = ({
     addAppointment,
     updateAppointment,
     onClose,
-    existingAppointments
+    existingAppointments,
+    forcePageRefresh
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

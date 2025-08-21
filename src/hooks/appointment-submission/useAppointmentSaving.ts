@@ -7,7 +7,7 @@ import {
 } from '@/utils/appointment/appointmentSaving';
 import { validateAppointment } from '@/utils/appointment/saving/appointmentValidator';
 
-export const useAppointmentSaving = () => {
+export const useAppointmentSaving = (forcePageRefresh?: () => void) => {
   const handleSaveAppointments = async (
     mainAppointment: Appointment,
     additionalAppointments: Appointment[],
@@ -89,8 +89,11 @@ export const useAppointmentSaving = () => {
         toast.success(`Appuntamento principale creato! Alcuni ricorrenti non sono stati salvati: ${result.failedSaves.length} falliti`);
       }
       
-      // Rimosso il reload forzato - le subscription realtime aggiorneranno automaticamente la UI
-      console.log('✅ Salvataggio completato, la UI verrà aggiornata automaticamente dalle subscription realtime');
+      // Refresh automatico della pagina dopo il salvataggio
+      if (forcePageRefresh) {
+        console.log('🔄 Eseguendo refresh automatico dopo salvataggio multiplo...');
+        setTimeout(forcePageRefresh, 1000);
+      }
       
     } catch (error) {
       console.error('❌ Errore critico nel processo di salvataggio:', error);

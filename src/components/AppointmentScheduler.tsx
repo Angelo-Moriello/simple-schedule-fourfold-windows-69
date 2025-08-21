@@ -102,6 +102,7 @@ const AppointmentScheduler = () => {
         updateAppointment={updateAppointment}
         addEmployee={addEmployee}
         updateEmployee={updateEmployee}
+        forcePageRefresh={forcePageRefresh}
       />
     </>
   );
