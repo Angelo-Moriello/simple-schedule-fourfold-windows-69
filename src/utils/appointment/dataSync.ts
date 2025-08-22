@@ -11,8 +11,9 @@ export interface DataSyncResult {
 // Cache globale degli appuntamenti per evitare perdite di dati
 let appointmentsCache: Appointment[] = [];
 let lastSyncTime = 0;
-const SYNC_INTERVAL = 2000; // 2 secondi per refresh più frequente
-const BACKUP_SYNC_INTERVAL = 10000; // 10 secondi per backup di sicurezza
+let lastRealtimeUpdate = 0; // Traccia ultimo aggiornamento realtime
+const SYNC_INTERVAL = 30000; // Aumentato a 30 secondi per ridurre conflitti
+const REALTIME_PROTECTION_WINDOW = 5000; // 5 secondi di protezione dopo realtime update
 
 // Gestisce la sincronizzazione intelligente dei dati con protezione anti-perdita
 export const syncAppointmentsData = async (
@@ -20,6 +21,12 @@ export const syncAppointmentsData = async (
 ): Promise<DataSyncResult> => {
   try {
     const now = Date.now();
+    
+    // PROTEZIONE ANTI-CONFLITTO: Non sincronizzare se ci sono stati aggiornamenti realtime recenti
+    if (!forceRefresh && (now - lastRealtimeUpdate) < REALTIME_PROTECTION_WINDOW) {
+      console.log('🛡️ Sincronizzazione sospesa per proteggere aggiornamenti realtime recenti');
+      return { success: true, data: [...appointmentsCache] };
+    }
     
     // Se non è passato abbastanza tempo e non è forzato, restituisci la cache
     if (!forceRefresh && (now - lastSyncTime) < SYNC_INTERVAL && appointmentsCache.length > 0) {
@@ -78,6 +85,9 @@ export const updateLocalCache = (
   operation: 'add' | 'update' | 'delete',
   appointment: Appointment
 ): void => {
+  // Marca timestamp di aggiornamento realtime per protezione
+  lastRealtimeUpdate = Date.now();
+  
   switch (operation) {
     case 'add':
       // Aggiungi solo se non esiste già

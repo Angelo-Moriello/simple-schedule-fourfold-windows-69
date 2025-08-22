@@ -70,7 +70,7 @@ export const useAppointmentSync = () => {
   useEffect(() => {
     loadInitialData();
 
-    // Sync automatico ogni 15 secondi per mantenere dati aggiornati
+    // Sync automatico ridotto a 30 secondi per evitare conflitti con realtime
     const syncIntervalId = setInterval(async () => {
       try {
         const result = await syncAppointmentsData(false);
@@ -81,7 +81,7 @@ export const useAppointmentSync = () => {
       } catch (error) {
         console.warn('⚠️ Errore sincronizzazione automatica:', error);
       }
-    }, 15000);
+    }, 30000); // Cambiato da 15000 a 30000
 
     // Backup automatico ogni 60 secondi
     const backupIntervalId = setInterval(() => {
