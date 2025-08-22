@@ -35,7 +35,44 @@ const AppointmentSchedulerControls: React.FC<AppointmentSchedulerControlsProps> 
 }) => {
   // Calcola gli appuntamenti per la giornata selezionata
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
-  const todayAppointments = appointments.filter(apt => apt.date === selectedDateString);
+  
+  // Debug: controlla il formato delle date negli appuntamenti
+  console.log('🔍 DEBUG - Controllo date appuntamenti:', {
+    selectedDateString,
+    totalAppointments: appointments.length,
+    sampleDates: appointments.slice(0, 5).map(apt => ({
+      id: apt.id,
+      date: apt.date,
+      dateType: typeof apt.date
+    })),
+    uniqueDates: [...new Set(appointments.map(apt => apt.date))].slice(0, 10)
+  });
+  
+  const todayAppointments = appointments.filter(apt => {
+    const isMatch = apt.date === selectedDateString;
+    if (!isMatch && apt.date && apt.date.includes('2025-07-15')) {
+      console.log('⚠️ Data non corrisponde:', {
+        aptDate: apt.date,
+        selectedDate: selectedDateString,
+        aptId: apt.id,
+        client: apt.client
+      });
+    }
+    return isMatch;
+  });
+  
+  console.log('📊 Filtro appuntamenti per data:', {
+    selectedDate: selectedDateString,
+    totalAppointments: appointments.length,
+    filteredAppointments: todayAppointments.length,
+    todayAppointments: todayAppointments.map(apt => ({
+      id: apt.id,
+      client: apt.client,
+      time: apt.time,
+      employeeId: apt.employeeId
+    }))
+  });
+  
   const appointmentCount = todayAppointments.length;
 
   return (
