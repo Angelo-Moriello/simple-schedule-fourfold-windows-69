@@ -9,7 +9,6 @@ export const loadAppointmentsFromSupabase = async (): Promise<Appointment[]> => 
     const { data, error } = await supabase
       .from('appointments')
       .select('*')
-      .limit(10000) // Limite esplicito alto per evitare limiti di default
       .order('date', { ascending: false });
     
     if (error) {
