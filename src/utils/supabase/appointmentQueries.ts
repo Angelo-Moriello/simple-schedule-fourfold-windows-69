@@ -9,6 +9,7 @@ export const loadAppointmentsFromSupabase = async (): Promise<Appointment[]> => 
     const { data, error } = await supabase
       .from('appointments')
       .select('*')
+      .limit(10000) // Limite esplicito alto per evitare limiti di default
       .order('date', { ascending: false });
     
     if (error) {
@@ -49,7 +50,7 @@ export const loadAppointmentsFromSupabase = async (): Promise<Appointment[]> => 
       };
     }));
     
-    console.log('Appuntamenti caricati:', appointments);
+    console.log(`✅ Appuntamenti caricati: ${appointments.length} su ${data?.length || 0} record dal database`);
     return appointments;
   } catch (error) {
     console.error('Errore nel caricare gli appuntamenti da Supabase:', error);
