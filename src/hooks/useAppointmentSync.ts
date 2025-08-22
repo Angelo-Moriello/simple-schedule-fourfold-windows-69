@@ -9,6 +9,7 @@ import {
   backupCacheToStorage,
   restoreCacheFromBackup
 } from '@/utils/appointment/dataSync';
+import { getAppointmentsCount } from '@/utils/supabaseStorage';
 
 export const useAppointmentSync = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -139,7 +140,9 @@ export const useAppointmentSync = () => {
       if (result.success && result.data) {
         setAppointments(result.data);
         setLastSyncTime(new Date());
-        toast.success(`Dati aggiornati: ${result.data.length} appuntamenti`);
+        const total = await getAppointmentsCount();
+        const shown = total && total > 0 ? total : result.data.length;
+        toast.success(`Dati aggiornati: ${shown} appuntamenti`);
         console.log('✅ Refresh manuale completato');
       } else {
         toast.error('Errore nel refresh dei dati');
